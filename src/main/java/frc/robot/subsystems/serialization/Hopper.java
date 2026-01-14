@@ -15,8 +15,9 @@ import static edu.wpi.first.units.Units.Volts;
 public class Hopper extends SubsystemBase {
     private TalonFX motor;
     private VoltageOut voltageOutReq;
-    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", 4.5, "V"); // the documentation used "V"
-                                                                                         // but I could use Volts
+    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", 4.5, "V", newVoltage -> {
+        motor.setVoltage(newVoltage);
+    });
 
     public Hopper() {
         motor = new TalonFX(11);
@@ -24,7 +25,7 @@ public class Hopper extends SubsystemBase {
 
     public Command startMotor() {
         return runOnce(() -> {
-            motor.setControl(voltageOutReq.withOutput(10));
+            motor.setControl(voltageOutReq.withOutput(10)); // hardcoded voltage
         });
     }
 
@@ -34,7 +35,7 @@ public class Hopper extends SubsystemBase {
         });
     }
 
-    @Override
-    public void periodic() {
-    }
+    // @Override
+    // public void periodic() {
+    // }
 }
