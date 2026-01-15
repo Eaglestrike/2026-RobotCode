@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Hopper extends SubsystemBase {
     private TalonFX motor;
-    private VoltageOut voltageOutReq;
+    private VoltageOut voltageOutReq = new VoltageOut(0);
     private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", 4.5, "V");
 
     public Hopper() {
