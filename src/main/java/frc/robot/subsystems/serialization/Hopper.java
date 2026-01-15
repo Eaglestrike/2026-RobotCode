@@ -1,6 +1,5 @@
 package frc.robot.subsystems.serialization;
 
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 
