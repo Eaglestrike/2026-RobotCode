@@ -12,17 +12,16 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
-    private Slot0Configs slot0Configs;
+    private Slot0Configs slot0Configs = new Slot0Configs();
 
     public ShooterHood() {
         motor = new TalonFX(0);
         var talonFXConfigs = new TalonFXConfiguration();
 
-        // set Motion Magic settings
         var motionMagicConfigs = talonFXConfigs.MotionMagic;
-        motionMagicConfigs.MotionMagicCruiseVelocity = 80; // Target cruise velocity of 80 rps
-        motionMagicConfigs.MotionMagicAcceleration = 160; // Target acceleration of 160 rps/s (0.5 seconds)
-        motionMagicConfigs.MotionMagicJerk = 1600; // Target jerk of 1600 rps/s/s (0.1 seconds)
+        motionMagicConfigs.MotionMagicCruiseVelocity = 80;
+        motionMagicConfigs.MotionMagicAcceleration = 160;
+        motionMagicConfigs.MotionMagicJerk = 1600;
 
         motor.getConfigurator().apply(talonFXConfigs);
     }
@@ -52,11 +51,11 @@ public class ShooterHood extends SubsystemBase {
         motor.getConfigurator().apply(slot0Configs);
     });
 
-    private final MotionMagicVoltage m_request = new MotionMagicVoltage(0);
+    private final MotionMagicVoltage request = new MotionMagicVoltage(0);
 
     public Command goToPos(double position) {
         return runOnce(() -> {
-            motor.setControl(m_request.withPosition(position));
+            motor.setControl(request.withPosition(position));
         });
     }
 
