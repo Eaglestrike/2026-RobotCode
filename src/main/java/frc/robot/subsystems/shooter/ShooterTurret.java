@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import dev.doglog.DogLog;
 
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Rotations;
 
 import java.lang.String;
 
@@ -55,13 +56,18 @@ public class ShooterTurret extends SubsystemBase {
         var cfg = new TalonFXConfiguration();
         cfg.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
         cfg.Feedback.FeedbackRemoteSensorID = this.cantCoder.getDeviceID();
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
         this.motor.getConfigurator().apply(cfg);
     }
 
     public Command requestPosition(Angle pos) {
         if (pos.lt(Radians.of(0)) || pos.gt(this.maxRotation)) {
             DogLog.logFault(String.format("[ShooterTurret] Invalid position (%.2f) requested >:(", pos));
-            return runOnce(() -> {});
+            return runOnce(() -> {
+            });
         } else {
             return runOnce(() -> {
                 this.motor.setControl(this.position.withPosition(pos));
