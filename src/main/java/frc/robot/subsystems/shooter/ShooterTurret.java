@@ -8,9 +8,13 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import dev.doglog.DogLog;
+
+import static edu.wpi.first.units.Units.Radians;
+
 import java.lang.String;
 
 public class ShooterTurret extends SubsystemBase {
@@ -22,7 +26,7 @@ public class ShooterTurret extends SubsystemBase {
     /**
      * Maximum rotation in radians
      */
-    private final double maxRotation = 2d;
+    private final Angle maxRotation = Radians.of(2);
 
     private final DoubleSubscriber kP = DogLog.tunable("ShooterTurret/kP", 0.0, x -> {
         slot0Configs.kP = x;
@@ -54,16 +58,10 @@ public class ShooterTurret extends SubsystemBase {
         this.motor.getConfigurator().apply(cfg);
     }
 
-    /**
-     * Request that the turret move to a specified position (duh)
-     * 
-     * @param pos - Position in radians
-     */
-    public Command requestPosition(float pos) {
-        if (pos < 0 || pos > this.maxRotation) {
+    public Command requestPosition(Angle pos) {
+        if (pos.lt(Radians.of(0)) || pos.gt(this.maxRotation)) {
             DogLog.logFault(String.format("[ShooterTurret] Invalid position (%.2f) requested >:(", pos));
-            return runOnce(() -> {
-            });
+            return runOnce(() -> {});
         } else {
             return runOnce(() -> {
                 this.motor.setControl(this.position.withPosition(pos));
