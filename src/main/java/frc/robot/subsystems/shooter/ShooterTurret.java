@@ -1,31 +1,36 @@
 package frc.robot.subsystems.shooter;
 
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
-import com.ctre.phoenix6.hardware.CANcoder;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Rotations;
+
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 
+import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import dev.doglog.DogLog;
-
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Rotations;
-
-import java.lang.String;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
     private CANcoder cantCoder;
     private MotionMagicVoltage position = new MotionMagicVoltage(0).withSlot(0);
     private Slot0Configs slot0Configs;
+    private EagleSwerveDrivetrain drive;
 
     /**
      * Maximum rotation in radians
+     * TODO: if this is >360 degrees, implement proper wrapping in {@link #setFacing}!!!
      */
     private final Angle maxRotation = Radians.of(2);
 
@@ -50,7 +55,8 @@ public class ShooterTurret extends SubsystemBase {
         motor.getConfigurator().apply(slot0Configs);
     });
 
-    public ShooterTurret() {
+    public ShooterTurret(EagleSwerveDrivetrain drive) {
+        this.drive = drive;
         this.motor = new TalonFX(0);
         this.cantCoder = new CANcoder(0);
         var cfg = new TalonFXConfiguration();
@@ -73,6 +79,20 @@ public class ShooterTurret extends SubsystemBase {
                 this.motor.setControl(this.position.withPosition(pos));
             });
         }
+    }
+
+    public Command setFacing(Pose2d to) {
+        return run(() -> {
+            var pose = drive.getState().Pose.plus(new Transform2d(ShooterConstants.OFFSET, new Rotation2d()));
+            var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
+                    .minus(pose.getRotation());
+
+            this.motor.setControl(this.position.withPosition(angle.getRotations()));
+        });
+    }
+
+    public StatusSignal<Angle> getAngle() {
+        return this.cantCoder.getAbsolutePosition();
     }
 
     public Command stop() {
