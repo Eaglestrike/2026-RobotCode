@@ -1,10 +1,8 @@
 package frc.robot.subsystems;
 
-
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -24,20 +22,29 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Toggle the intake mechanism
-     * @return runOnce command that schedules the intake to drop or retract
+     * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
         return Commands.none();
     }
 
+    public Command stow() {
+        return Commands.none();
+    }
+
     /**
      * Command to climb to a specified level
-     * @param level The level to climb to (REPLACE OBJECT WITH ACTUAL TYPE - PROBABLY INT OR ENUM)
+     * 
+     * @param level The level to climb to (REPLACE OBJECT WITH ACTUAL TYPE -
+     *              PROBABLY INT OR ENUM)
      * @return SequenceCommand that performs the climbing action
      */
     public Command climb(Object level) {
         return Commands.none();
+    }
+
+    public Object getClimbState() {
+        return null;
     }
 
     public void setMode(ShootMode mode) {
@@ -47,8 +54,8 @@ public class Superstructure extends SubsystemBase {
     /**
      * Turns shooting on or off
      */
-    public void toggleShooting() {
-
+    public void setShooting(boolean shooting) {
+        isShooting = shooting;
     }
 
     @Override
