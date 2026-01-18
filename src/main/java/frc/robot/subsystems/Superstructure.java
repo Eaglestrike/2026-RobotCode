@@ -24,10 +24,23 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Toggle the intake mechanism
-     * @return runOnce command that schedules the intake to drop or retract
+     * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
+        return Commands.none();
+    }
+
+    /**
+     * @return runOnce command that schedules the intake to stow
+     */
+    public Command stowIntake() {
+        return Commands.none();
+    }
+
+    /**
+     * Stows everything, including turret, hood, intake, and climber
+     */
+    public Command stow() {
         return Commands.none();
     }
 
@@ -40,6 +53,10 @@ public class Superstructure extends SubsystemBase {
         return Commands.none();
     }
 
+    public Object getClimbState() {
+        return null;
+    }
+
     public void setMode(ShootMode mode) {
         currentMode = mode;
     }
@@ -47,9 +64,10 @@ public class Superstructure extends SubsystemBase {
     /**
      * Turns shooting on or off
      */
-    public void toggleShooting() {
-
+    public void setShooting(boolean shooting) {
+        isShooting = shooting;
     }
+
 
     @Override
     public void periodic() {
