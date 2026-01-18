@@ -28,6 +28,16 @@ public class Superstructure extends SubsystemBase {
         return Commands.none();
     }
 
+    /**
+     * @return runOnce command that schedules the intake to stow
+     */
+    public Command stowIntake() {
+        return Commands.none();
+    }
+
+    /**
+     * Stows everything, including turret, hood, intake, and climber
+     */
     public Command stow() {
         return Commands.none();
     }
@@ -60,6 +70,7 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // If shooting, then periodically recalibrate shooter (turret, hood and flywheel speeds)
+        // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
+        // speeds)
     }
 }
