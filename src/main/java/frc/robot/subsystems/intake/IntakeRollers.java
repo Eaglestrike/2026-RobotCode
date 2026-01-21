@@ -1,5 +1,6 @@
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import dev.doglog.DogLog;
@@ -11,10 +12,11 @@ public class IntakeRollers extends SubsystemBase {
 
     private TalonFX motor;
     private Command startCommand;
+    private final VoltageOut m_voltageRequest = new VoltageOut(0);
 
     public IntakeRollers() {
         startCommand = run(() -> {
-            motor.setVoltage(voltage.get());
+            motor.setControl(m_voltageRequest.withOutput(voltage.get()));
         });
 
         motor = new TalonFX(0); // placeholder??
