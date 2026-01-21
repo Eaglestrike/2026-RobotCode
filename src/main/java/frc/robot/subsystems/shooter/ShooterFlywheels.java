@@ -1,7 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
@@ -16,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.*;
 
 public class ShooterFlywheels extends SubsystemBase {
     private TalonFX motor;
-    private MotionMagicVelocityVoltage motionMagic;
+    private MotionMagicVelocityVoltage motionMagic = new MotionMagicVelocityVoltage(0);
     private Slot0Configs slot0Configs = new Slot0Configs();
 
     private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", 0.0, newKS -> {
@@ -47,8 +45,8 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = new VoltageConfigs();
-        voltages.PeakForwardVoltage = TODO;
-        voltages.PeakReverseVoltage = -TODO;
+        voltages.PeakForwardVoltage = 8;
+        voltages.PeakReverseVoltage = -8;
         TalonFXConfiguration config = new TalonFXConfiguration();
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -59,7 +57,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
-            motor.setControl(new MotionMagicVelocityVoltage(targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(motionMagic.withVelocity(targetVel).withAcceleration(targetAccel.get()));
         });
     }
 
