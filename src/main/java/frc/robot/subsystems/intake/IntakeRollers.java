@@ -11,26 +11,23 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class IntakeRollers extends SubsystemBase {
 
     private TalonFX motor;
-    private Command startCommand;
-    private final VoltageOut m_voltageRequest = new VoltageOut(0);
+    private final VoltageOut voltageRequest = new VoltageOut(0);
+    private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", 1.0);
 
     public IntakeRollers() {
-        startCommand = run(() -> {
-            motor.setControl(m_voltageRequest.withOutput(voltage.get()));
+        motor = new TalonFX(0);
+    }
+
+    public Command start() {
+        return runOnce(() -> {
+            motor.setControl(voltageRequest.withOutput(voltage.get()));
         });
-
-        motor = new TalonFX(0); // placeholder??
-
     }
 
-    public void start() {
-        startCommand.schedule();
+    public Command stop() {
+        return runOnce(() -> {
+            motor.setControl(voltageRequest.withOutput(0));
+        });
     }
-
-    public void stop() {
-        startCommand.cancel();
-    }
-
-    private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", 1.0);
 
 }
