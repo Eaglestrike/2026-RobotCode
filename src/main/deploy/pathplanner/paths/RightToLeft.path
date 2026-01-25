@@ -28,7 +28,16 @@
       "linkedName": "BeforeGroundFuel"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.13794202302631578,
+      "rotationDegrees": 59.99999999999999
+    },
+    {
+      "waypointRelativePos": 0.484056332236842,
+      "rotationDegrees": 100.0
+    }
+  ],
   "constraintZones": [
     {
       "name": "Constraints Zone",

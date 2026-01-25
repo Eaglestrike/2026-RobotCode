@@ -7,6 +7,6 @@ import edu.wpi.first.math.numbers.N3;
 
 public record PoseObservation(
         double timestamp,
-        Pose2d pose,
-        Matrix<N3, N1> standardDeviations) {
+        Pose2d pose/*,
+        Matrix<N3, N1> standardDeviations */) {
 }

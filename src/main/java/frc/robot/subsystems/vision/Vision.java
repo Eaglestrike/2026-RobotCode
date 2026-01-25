@@ -1,56 +1,30 @@
 package frc.robot.subsystems.vision;
 
-import org.photonvision.simulation.VisionSystemSim;
-
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 
 public class Vision extends SubsystemBase {
-    private final Camera frontCam;
-    private final Camera backCam;
-    private final VisionSystemSim visionSim;
-    private final EagleSwerveDrivetrain drivetrain;
+    private final EagleSwerveDrivetrain drive;
 
-    public Vision(EagleSwerveDrivetrain drivetrain) {
-        this.drivetrain = drivetrain;
+    private final Camera[] cameras = {
+            new Camera(VisionConstants.FRONT_LEFT_NAME, VisionConstants.FRONT_LEFT_TRANSFORM, this::addVisionMeasurement),
+            new Camera(VisionConstants.FRONT_RIGHT_NAME, VisionConstants.FRONT_RIGHT_TRANSFORM, this::addVisionMeasurement),
+            new Camera(VisionConstants.BACK_LEFT_NAME, VisionConstants.BACK_LEFT_TRANSFORM, this::addVisionMeasurement),
+            new Camera(VisionConstants.BACK_RIGHT_NAME, VisionConstants.BACK_RIGHT_TRANSFORM, this::addVisionMeasurement)
+    };
 
-        frontCam = new Camera(
-                VisionConstants.FRONT_CAMERA_NAME,
-                VisionConstants.FRONT_CAMERA_POSITION,
-                (PoseObservation observation) -> drivetrain.addVisionMeasurement(
-                        observation.pose(),
-                        observation.timestamp(),
-                        observation.standardDeviations()),
-                () -> drivetrain.getState().Pose,
-                () -> drivetrain.getState().Speeds);
-        
-        backCam = new Camera(
-            VisionConstants.BACK_CAMERA_NAME,
-            VisionConstants.BACK_CAMERA_POSITION,
-            (PoseObservation observation) -> drivetrain.addVisionMeasurement(
-                    observation.pose(),
-                    observation.timestamp(),
-                    observation.standardDeviations()),
-            () -> drivetrain.getState().Pose,
-            () -> drivetrain.getState().Speeds);
-
-        if (RobotBase.isSimulation()) {
-            visionSim = new VisionSystemSim("main");
-            visionSim.addAprilTags(VisionConstants.aprilTagFieldLayout);
-            visionSim.addCamera(frontCam.getSimCamera(), VisionConstants.FRONT_CAMERA_POSITION);
-            visionSim.addCamera(backCam.getSimCamera(), VisionConstants.BACK_CAMERA_POSITION);
-        } else {
-            visionSim = null;
-        }
+    Vision(EagleSwerveDrivetrain drive) {
+        this.drive = drive;
     }
 
     @Override
     public void periodic() {
-        frontCam.periodic();
-        backCam.periodic();
-        if (RobotBase.isSimulation()) {
-            visionSim.update(drivetrain.getState().Pose);
+        for (var camera : cameras) {
+            camera.periodic();
         }
+    }
+
+    private void addVisionMeasurement(PoseObservation observation) {
+        drive.addVisionMeasurement(observation.pose(), observation.timestamp());
     }
 }

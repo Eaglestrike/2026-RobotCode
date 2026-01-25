@@ -20,7 +20,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
-public class SwerveTelemetry {
+public class EagleSwerveTelemetry {
     private final double MaxSpeed;
 
     /**
@@ -28,7 +28,7 @@ public class SwerveTelemetry {
      * 
      * @param maxSpeed Maximum speed in meters per second
      */
-    public SwerveTelemetry(double maxSpeed) {
+    public EagleSwerveTelemetry(double maxSpeed) {
         MaxSpeed = maxSpeed;
         SignalLogger.start();
 
