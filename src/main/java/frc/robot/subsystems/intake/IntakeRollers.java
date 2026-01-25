@@ -9,7 +9,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeRollers extends SubsystemBase {
-
     private TalonFX motor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
     private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", 1.0);
@@ -29,5 +28,4 @@ public class IntakeRollers extends SubsystemBase {
             motor.setControl(voltageRequest.withOutput(0));
         });
     }
-
 }
