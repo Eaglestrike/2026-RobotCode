@@ -2,6 +2,10 @@ package frc.robot.subsystems.intake;
 
 public final class IntakeConstants {
 	public static final class Rollers {
+		public static final int MOTOR_ID = 41;
+		public static final boolean INVERTED = false;
+
+		public static final double MAX_VOLTS = 4.0;
 	}
 
 	public static final class Wrist {

@@ -4,15 +4,19 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
-import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
-import com.ctre.phoenix6.swerve.SwerveRequest;
-
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -21,6 +25,9 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.Superstructure;
+import frc.robot.subsystems.Superstructure.ShootMode;
+import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
 
@@ -45,8 +52,29 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(2);
     private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
+    // auto
+    private final SendableChooser<Command> autoChooser;
+
+    // subsystems
+    private final Superstructure superstructure = new Superstructure();
+
     public RobotContainer() {
         configureBindings();
+
+        NamedCommands.registerCommand("ClimbL1", superstructure.climb(1));
+        NamedCommands.registerCommand("SetModeFerry", Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
+        NamedCommands.registerCommand("SetModeShoot", Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
+        NamedCommands.registerCommand("StartShooting", Commands.runOnce(() -> superstructure.setShooting(true)));
+        NamedCommands.registerCommand("StopShooting", Commands.runOnce(() -> superstructure.setShooting(false)));
+        NamedCommands.registerCommand("Intake", superstructure.intake());
+        NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
+        NamedCommands.registerCommand("Stow", superstructure.stow());
+        NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(null));
+        NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(null));
+
+        autoChooser = AutoBuilder.buildAutoChooser("Tests");
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+
     }
 
     private void configureBindings() {
@@ -74,7 +102,21 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
     }
 
+    public Command getOffTower() {
+        if (superstructure.getClimbState() == null) {
+            return Commands.print("Not currently climbing, cannot get off tower");
+        }
+
+        int direction = drivetrain.getState().Pose.getY() > 4 ? 1 : -1; // Replace 4 with 1/2 field width
+        return Commands.sequence(
+                superstructure.climb(0),
+                Commands.runOnce(() -> drivetrain.setControl(
+                        drive.withVelocityY(MaxSpeed * direction * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
+                Commands.waitSeconds(0.5),
+                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
+    }
+
     public Command getAutonomousCommand() {
-        return Commands.print("No autonomous command configured");
+        return autoChooser.getSelected();
     }
 }

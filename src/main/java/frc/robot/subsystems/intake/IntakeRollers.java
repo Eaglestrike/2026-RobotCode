@@ -14,12 +14,18 @@ public class IntakeRollers extends SubsystemBase {
     private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", 1.0);
 
     public IntakeRollers() {
-        motor = new TalonFX(0);
+        motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID);
     }
 
     public Command start() {
         return runOnce(() -> {
-            motor.setControl(voltageRequest.withOutput(voltage.get()));
+            double volts = voltage.get();
+            if(volts > IntakeConstants.Rollers.MAX_VOLTS) {
+                volts = IntakeConstants.Rollers.MAX_VOLTS;
+            } else if (volts < -IntakeConstants.Rollers.MAX_VOLTS) {
+                volts = -IntakeConstants.Rollers.MAX_VOLTS;
+            }
+            motor.setControl(voltageRequest.withOutput(volts));
         });
     }
 
