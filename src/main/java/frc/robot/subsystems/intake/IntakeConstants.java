@@ -2,23 +2,6 @@ package frc.robot.subsystems.intake;
 
 public final class IntakeConstants {
 	public static final class Rollers {
-		public static final int SIDE_MOTOR_ID = 40;
-		public static final int TOP_MOTOR_ID = 41;
-
-		public static final boolean SIDE_INVERTED = false;
-		public static final boolean TOP_INVERTED = true;
-
-		public static final double MAX_VOLTS_SIDE = 12.0;
-		public static final double MAX_VOLTS_TOP = 12.0;
-
-		public static final double IN_VOLTS_SIDE = 9.0;
-		public static final double IN_VOLTS_TOP = 9.0;
-
-		public static final double OUT_VOLTS_SIDE = -7.0;
-		public static final double OUT_VOLTS_TOP = -7.0;
-
-		public static final double EJECT_VOLTS_SIDE = -10.0;
-		public static final double EJECT_VOLTS_TOP = -10.0;
 	}
 
 	public static final class Wrist {
