@@ -7,6 +7,7 @@ package frc.robot;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
@@ -14,6 +15,8 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -49,6 +52,9 @@ public class RobotContainer {
     private final CommandXboxController operatorController = new CommandXboxController(2);
     private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
+    // auto
+    private final SendableChooser<Command> autoChooser;
+
     // subsystems
     private final Superstructure superstructure = new Superstructure();
 
@@ -65,6 +71,9 @@ public class RobotContainer {
         NamedCommands.registerCommand("Stow", superstructure.stow());
         NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(null));
         NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(null));
+
+        autoChooser = AutoBuilder.buildAutoChooser("Tests");
+        SmartDashboard.putData("Auto Chooser", autoChooser);
 
     }
 
@@ -108,6 +117,6 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return Commands.print("No autonomous command configured");
+        return autoChooser.getSelected();
     }
 }
