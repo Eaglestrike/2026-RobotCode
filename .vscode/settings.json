@@ -62,4 +62,5 @@
   "java.dependency.enableDependencyCheckup": false,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
+  "wpilib.skipSelectSimulateExtension": true,
 }

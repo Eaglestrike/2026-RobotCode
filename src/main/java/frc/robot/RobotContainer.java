@@ -56,7 +56,7 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
 
     // subsystems
-    private final Superstructure superstructure = new Superstructure();
+    private final Superstructure superstructure = new Superstructure(drivetrain);
 
     public RobotContainer() {
         configureBindings();
