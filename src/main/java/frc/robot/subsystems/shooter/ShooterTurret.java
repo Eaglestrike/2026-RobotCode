@@ -2,15 +2,13 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.sim.ChassisReference;
 import com.ctre.phoenix6.sim.TalonFXSimState;
-import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
-import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -18,46 +16,31 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import dev.doglog.DogLog;
-
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Volts;
-
-import java.lang.String;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
     private MotionMagicVoltage position = new MotionMagicVoltage(0).withSlot(0);
     private EagleSwerveDrivetrain drive;
 
-    /**
-     * Maximum rotation in radians
-     * TODO: if this is >360 degrees, implement proper wrapping in
-     * {@link #setFacing}!!!
-     */
-    private final Angle maxRotation = Radians.of(2);
+    private final Angle minRotation = Degrees.of(-180);
+    private final Angle maxRotation = Degrees.of(180);
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
         this.motor = new TalonFX(0);
         var cfg = new TalonFXConfiguration();
-        // cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        // cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-        // this.maxRotation.in(Rotations);
-        // cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        // cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = 0.0;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = this.minRotation.in(Rotations);
         cfg.Feedback.SensorToMechanismRatio = 135.0 / 15.0;
         cfg.MotionMagic.MotionMagicCruiseVelocity = 20.0;
         cfg.MotionMagic.MotionMagicAcceleration = 20.0;
@@ -114,16 +97,10 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public Command requestPosition(Angle pos) {
-        if (pos.lt(Radians.of(0)) || pos.gt(this.maxRotation)) {
-            DogLog.logFault(String.format("[ShooterTurret] Invalid position (%.2f) requested >:(", pos.magnitude()));
-            return runOnce(() -> {
-            });
-        } else {
-            return runOnce(() -> {
-                DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
-                this.motor.setControl(this.position.withPosition(pos));
-            });
-        }
+        return runOnce(() -> {
+            DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
+            this.motor.setControl(this.position.withPosition(pos));
+        });
     }
 
     public void setFacing(Pose2d to) {
@@ -133,10 +110,6 @@ public class ShooterTurret extends SubsystemBase {
 
         this.motor.setControl(this.position.withPosition(angle.getRotations()));
     }
-
-    // public StatusSignal<Angle> getAngle() {
-
-    // }
 
     public Command stop() {
         return runOnce(() -> {
