@@ -68,6 +68,7 @@ public class Superstructure extends SubsystemBase {
         isShooting = shooting;
     }
 
+
     @Override
     public void periodic() {
         // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
