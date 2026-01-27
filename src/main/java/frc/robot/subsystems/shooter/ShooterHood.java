@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
+    private final MotionMagicVoltage request = new MotionMagicVoltage(0).withEnableFOC(true);
 
     public ShooterHood() {
         motor = new TalonFX(20);
@@ -29,13 +30,12 @@ public class ShooterHood extends SubsystemBase {
         cfg.Feedback.SensorToMechanismRatio = 362.0 / 32.0;
         cfg.MotionMagic.MotionMagicCruiseVelocity = 1.0;
         cfg.MotionMagic.MotionMagicAcceleration = 1.0;
-        cfg.Slot0.kP = 10.0;
-        cfg.Slot0.kI = 0.0;
-        cfg.Slot0.kD = 0.0;
+        cfg.Slot0.kP = 8.0;
+        cfg.Slot0.kD = 0.2;
         cfg.Slot0.kS = 0.0;
-        cfg.Slot0.kV = 0.5;
-        cfg.Slot0.kA = 0.1;
-        cfg.Slot0.kG = 0.2;
+        cfg.Slot0.kV = 1.11;
+        cfg.Slot0.kA = 0.04;
+        cfg.Slot0.kG = 0.26;
         cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
         this.motor.getConfigurator().apply(cfg);
 
@@ -53,11 +53,6 @@ public class ShooterHood extends SubsystemBase {
         DogLog.tunable("ShooterHood/kP", cfg.Slot0.kP, x -> {
             System.out.println("Updating kP to " + x);
             cfg.Slot0.kP = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kI", cfg.Slot0.kI, x -> {
-            System.out.println("Updating kI to " + x);
-            cfg.Slot0.kI = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
         DogLog.tunable("ShooterHood/kD", cfg.Slot0.kD, x -> {
@@ -87,15 +82,12 @@ public class ShooterHood extends SubsystemBase {
         });
 
         var talonFXSim = motor.getSimState();
-        talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+        talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
         DogLog.tunable("HoodRequest", 0.0, x -> {
             goToPos(Radians.of(x)).schedule();
         });
-
     }
-
-    private final MotionMagicVoltage request = new MotionMagicVoltage(0);
 
     public Command goToPos(Angle position) {
         return runOnce(() -> {
@@ -117,19 +109,19 @@ public class ShooterHood extends SubsystemBase {
 
     /* sim */
     private static final double gearRatio = 362.0 / 32.0;
-    private final DCMotor gearbox = DCMotor.getKrakenX60(1);
+    private final DCMotor gearbox = DCMotor.getKrakenX44Foc(1);
     private final SingleJointedArmSim sim = new SingleJointedArmSim(
             LinearSystemId.createSingleJointedArmSystem(
                     gearbox,
-                    0.0102629383,
+                    0.022,
                     gearRatio),
             gearbox,
             gearRatio,
-            0.250405,
-            -1.36 / gearRatio,
+            0.252559,
+            -0.22,
             0,
             true,
-            -1.36 / gearRatio);
+            -0.22);
 
     @Override
     public void simulationPeriodic() {
@@ -147,11 +139,22 @@ public class ShooterHood extends SubsystemBase {
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
+        // offset of the hood relative to the turret frame (forward, lateral, up)
+        double offsetX = 0.106;
+        double offsetY = 0.0;
+
+        var yaw = turretPose.getRotation().getZ();
+
+        // rotate the XY offset by the turret yaw to transform into field coordinates
+        double cos = Math.cos(yaw);
+        double sin = Math.sin(yaw);
+        double fieldOffsetX = cos * offsetX - sin * offsetY;
+        double fieldOffsetY = sin * offsetX + cos * offsetY;
+
         return new Pose3d(
-                turretPose.getX() + 0.106,
-                turretPose.getY(),
+                turretPose.getX() + fieldOffsetX,
+                turretPose.getY() + fieldOffsetY,
                 turretPose.getZ() + 0.0713,
-                new Rotation3d(0, this.motor.getPosition().getValue().in(Radians),
-                        turretPose.getRotation().getZ()));
+                new Rotation3d(0, this.motor.getPosition().getValue().in(Radians), yaw));
     }
 }

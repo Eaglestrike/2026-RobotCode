@@ -27,7 +27,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
-    private MotionMagicVoltage position = new MotionMagicVoltage(0).withSlot(0);
+    private MotionMagicVoltage position = new MotionMagicVoltage(0).withEnableFOC(true);
     private EagleSwerveDrivetrain drive;
 
     private final Angle minRotation = Degrees.of(-180);
@@ -45,7 +45,6 @@ public class ShooterTurret extends SubsystemBase {
         cfg.MotionMagic.MotionMagicCruiseVelocity = 20.0;
         cfg.MotionMagic.MotionMagicAcceleration = 20.0;
         cfg.Slot0.kP = 100.0;
-        cfg.Slot0.kI = 0.0;
         cfg.Slot0.kD = 5.0;
         cfg.Slot0.kV = 1.2;
         cfg.Slot0.kS = 0.0;
@@ -65,11 +64,6 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.tunable("ShooterTurret/kP", cfg.Slot0.kP, x -> {
             System.out.println("Updating kP to " + x);
             cfg.Slot0.kP = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterTurret/kI", cfg.Slot0.kI, x -> {
-            System.out.println("Updating kI to " + x);
-            cfg.Slot0.kI = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
         DogLog.tunable("ShooterTurret/kD", cfg.Slot0.kD, x -> {
