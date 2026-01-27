@@ -72,17 +72,17 @@
                 },
                 {
                     "axis": "y",
-                    "degrees": -10.0
+                    "degrees": 70
                 },
                 {
                     "axis": "z",
-                    "degrees": 0.0
+                    "degrees": 0
                 }
             ],
             "zeroedPosition": [
-                -0.039745,
-                -0.008,
-                -0.085
+                -0.083,
+                -0.012,
+                0.02
             ]
         }
     ]
