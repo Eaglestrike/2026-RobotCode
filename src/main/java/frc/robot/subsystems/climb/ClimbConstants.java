@@ -14,10 +14,11 @@ public class ClimbConstants {
     public final static double kA = 0.0;
     public final static double kS = 0.0;
     public final static double kG = 0.0;
+    public final static double OFFSET = 0.0;
+    public final static double MAX_VOLTS = 12.0;
+    public final static double MANUAL_RATIO = 1.0;
 
-    // Done in inches, I am a slave to the imperial system
     public final static double L1_HEIGHT = 0.0;
     public final static double L2_HEIGHT = 0.0;
     public final static double L3_HEIGHT = 0.0;
-    public final static double L4_HEIGHT = 0.0;
 }
