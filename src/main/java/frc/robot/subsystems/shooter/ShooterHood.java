@@ -1,15 +1,22 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -17,74 +24,126 @@ public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
 
     public ShooterHood() {
-        motor = new TalonFX(0);
+        motor = new TalonFX(20);
         var cfg = new TalonFXConfiguration();
         cfg.Feedback.SensorToMechanismRatio = 362.0 / 32.0;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = 20.0;
-        cfg.MotionMagic.MotionMagicAcceleration = 20.0;
-        cfg.Slot0.kP = 100.0;
+        cfg.MotionMagic.MotionMagicCruiseVelocity = 1.0;
+        cfg.MotionMagic.MotionMagicAcceleration = 1.0;
+        cfg.Slot0.kP = 10.0;
         cfg.Slot0.kI = 0.0;
-        cfg.Slot0.kD = 5.0;
-        cfg.Slot0.kV = 1.2;
+        cfg.Slot0.kD = 0.0;
         cfg.Slot0.kS = 0.0;
+        cfg.Slot0.kV = 0.5;
+        cfg.Slot0.kA = 0.1;
+        cfg.Slot0.kG = 0.2;
         cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
         this.motor.getConfigurator().apply(cfg);
 
-        DogLog.tunable("ShooterTurret/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
+        DogLog.tunable("ShooterHood/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
             System.out.println("Updating CruiseVelo to " + x);
             cfg.MotionMagic.MotionMagicCruiseVelocity = x;
             motor.getConfigurator().apply(cfg);
         });
-        DogLog.tunable("ShooterTurret/Acceleration", cfg.MotionMagic.MotionMagicAcceleration, x -> {
+        DogLog.tunable("ShooterHood/Acceleration", cfg.MotionMagic.MotionMagicAcceleration, x -> {
             System.out.println("Updating Acceleration to " + x);
             cfg.MotionMagic.MotionMagicAcceleration = x;
             motor.getConfigurator().apply(cfg);
         });
 
-        DogLog.tunable("ShooterTurret/kP", cfg.Slot0.kP, x -> {
+        DogLog.tunable("ShooterHood/kP", cfg.Slot0.kP, x -> {
             System.out.println("Updating kP to " + x);
             cfg.Slot0.kP = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
-        DogLog.tunable("ShooterTurret/kI", cfg.Slot0.kI, x -> {
+        DogLog.tunable("ShooterHood/kI", cfg.Slot0.kI, x -> {
             System.out.println("Updating kI to " + x);
             cfg.Slot0.kI = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
-        DogLog.tunable("ShooterTurret/kD", cfg.Slot0.kD, x -> {
+        DogLog.tunable("ShooterHood/kD", cfg.Slot0.kD, x -> {
             System.out.println("Updating kD to " + x);
             cfg.Slot0.kD = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
-        DogLog.tunable("ShooterTurret/kS", cfg.Slot0.kS, x -> {
+        DogLog.tunable("ShooterHood/kS", cfg.Slot0.kS, x -> {
             System.out.println("Updating kS to " + x);
             cfg.Slot0.kS = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
-        DogLog.tunable("ShooterTurret/kV", cfg.Slot0.kV, x -> {
+        DogLog.tunable("ShooterHood/kV", cfg.Slot0.kV, x -> {
             System.out.println("Updating kV to " + x);
             cfg.Slot0.kV = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
-        DogLog.tunable("ShooterTurret/kA", cfg.Slot0.kA, x -> {
+        DogLog.tunable("ShooterHood/kA", cfg.Slot0.kA, x -> {
             System.out.println("Updating kA to " + x);
             cfg.Slot0.kA = x;
             motor.getConfigurator().apply(cfg.Slot0);
         });
+        DogLog.tunable("ShooterHood/kG", cfg.Slot0.kG, x -> {
+            System.out.println("Updating kG to " + x);
+            cfg.Slot0.kG = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+
+        DogLog.tunable("HoodRequest", 0.0, x -> {
+            goToPos(Radians.of(x)).schedule();
+        });
+
     }
 
     private final MotionMagicVoltage request = new MotionMagicVoltage(0);
 
-    public Command goToPos(double position) {
+    public Command goToPos(Angle position) {
         return runOnce(() -> {
             motor.setControl(request.withPosition(position));
         });
     }
 
+    public Command stop() {
+        return runOnce(() -> {
+            this.motor.stopMotor();
+        });
+    }
+
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(-1.36);
+            motor.setPosition(Radians.of(-1.36));
         });
+    }
+
+    /* sim */
+    private static final double gearRatio = 362.0 / 32.0;
+    private final DCMotor gearbox = DCMotor.getKrakenX60(1);
+    private final SingleJointedArmSim sim = new SingleJointedArmSim(
+            LinearSystemId.createSingleJointedArmSystem(
+                    gearbox,
+                    0.0102629383,
+                    gearRatio),
+            gearbox,
+            gearRatio,
+            0.250405,
+            -1.36 / gearRatio,
+            0,
+            true,
+            -1.36 / gearRatio);
+
+    @Override
+    public void simulationPeriodic() {
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
+        var motorVoltage = talonFXSim.getMotorVoltageMeasure();
+        DogLog.log("ShooterHood/MotorVoltage", motorVoltage.in(Volts), "Volts");
+
+        sim.setInputVoltage(motorVoltage.in(Volts));
+        sim.update(0.020);
+
+        talonFXSim.setRawRotorPosition(sim.getAngleRads() * gearRatio);
+        talonFXSim.setRotorVelocity(sim.getVelocityRadPerSec() * gearRatio);
+        DogLog.log("ShooterHood/SimPosition", sim.getAngleRads(), "Radians");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
