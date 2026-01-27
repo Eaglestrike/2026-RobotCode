@@ -1,11 +1,15 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Radians;
+
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -65,4 +69,13 @@ public class ShooterHood extends SubsystemBase {
         });
     }
 
+    public DoubleSubscriber hoodang = DogLog.tunable("TestHoodAng", 0.0);
+
+    public Pose3d getComponentPose3d(Pose3d turretPose) {
+        return new Pose3d(
+                turretPose.getX() + 0.115626,
+                turretPose.getY(),
+                turretPose.getZ() + 0.071,
+                new Rotation3d(0, hoodang.get(), turretPose.getRotation().getZ()));
+    }
 }

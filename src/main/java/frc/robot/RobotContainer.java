@@ -14,6 +14,8 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -49,8 +51,10 @@ public class RobotContainer {
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
     private final CommandJoystick rightJoystick = new CommandJoystick(1);
-    private final CommandXboxController operatorController = new CommandXboxController(2);
-    private final CommandXboxController buttonBoard = new CommandXboxController(3);
+    // private final CommandXboxController operatorController = new
+    // CommandXboxController(2);
+    // private final CommandXboxController buttonBoard = new
+    // CommandXboxController(3);
 
     // auto
     private final SendableChooser<Command> autoChooser;
@@ -93,10 +97,10 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> slowModeOn = true))
                 .onFalse(Commands.runOnce(() -> slowModeOn = false));
 
-        operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
+        rightJoystick.button(3).onTrue(drivetrain.runOnce(() -> {
             System.out.println("Zeroing drive");
             drivetrain.seedFieldCentric();
-            drivetrain.resetTranslation(new Translation2d(0, 0));
+            drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
         }).ignoringDisable(true));
 
         drivetrain.registerTelemetry(logger::telemeterize);
@@ -118,5 +122,9 @@ public class RobotContainer {
 
     public Command getAutonomousCommand() {
         return autoChooser.getSelected();
+    }
+
+    public EagleSwerveDrivetrain getDrivetrain() {
+        return drivetrain;
     }
 }
