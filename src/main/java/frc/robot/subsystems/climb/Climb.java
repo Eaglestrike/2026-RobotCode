@@ -11,6 +11,8 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import dev.doglog.DogLog;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -19,6 +21,43 @@ public class Climb extends SubsystemBase {
     private final TalonFX master = new TalonFX(ClimbConstants.MASTER_CLIMB_MOTOR_ID, "rio");
     private final TalonFX follower = new TalonFX(ClimbConstants.FOLLOWER_CLIMB_MOTOR_ID, "rio");
     private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
+    private final TalonFXConfiguration cfg = new TalonFXConfiguration();
+    private final Slot0Configs slot0Configs = cfg.Slot0;
+    private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", 0.0, newKS -> {
+        slot0Configs.kS = newKS;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kG = DogLog.tunable("ShooterFlywheels/kG", 0.0, newKG -> {
+        slot0Configs.kG = newKG;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kV = DogLog.tunable("ShooterFlywheels/kV", 0.0, newKV -> {
+        slot0Configs.kV = newKV;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kA = DogLog.tunable("ShooterFlywheels/kA", 0.0, newKA -> {
+        slot0Configs.kA = newKA;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kP = DogLog.tunable("ShooterFlywheels/kP", 0.0, newKP -> {
+        slot0Configs.kP = newKP;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kI = DogLog.tunable("ShooterFlywheels/kI", 0.0, newKI -> {
+        slot0Configs.kI = newKI;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
+    private final DoubleSubscriber kD = DogLog.tunable("ShooterFlywheels/kD", 0.0, newKD -> {
+        slot0Configs.kD = newKD;
+        master.getConfigurator().apply(slot0Configs);
+        follower.getConfigurator().apply(slot0Configs);
+    });
 
     public Climb() {
         // master motor config
@@ -31,18 +70,13 @@ public class Climb extends SubsystemBase {
         followerMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
         followerMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
-        // Create config object
-        TalonFXConfiguration cfg = new TalonFXConfiguration();
-
-        // I fear configuring these
-        Slot0Configs slot0 = cfg.Slot0;
-        slot0.kS = ClimbConstants.kS;
-        slot0.kG = ClimbConstants.kG;
-        slot0.kV = ClimbConstants.kV;
-        slot0.kA = ClimbConstants.kA;
-        slot0.kP = ClimbConstants.kP;
-        slot0.kI = ClimbConstants.kI;
-        slot0.kD = ClimbConstants.kD;
+        slot0Configs.kS = ClimbConstants.kS;
+        slot0Configs.kG = ClimbConstants.kG;
+        slot0Configs.kV = ClimbConstants.kV;
+        slot0Configs.kA = ClimbConstants.kA;
+        slot0Configs.kP = ClimbConstants.kP;
+        slot0Configs.kI = ClimbConstants.kI;
+        slot0Configs.kD = ClimbConstants.kD;
 
         VoltageConfigs voltages = new VoltageConfigs();
         voltages.PeakForwardVoltage = ClimbConstants.MAX_VOLTS;
