@@ -11,6 +11,13 @@ import frc.robot.FieldConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterHood;
 import frc.robot.subsystems.shooter.ShooterTurret;
+import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.intake.IntakeConstants;
+import frc.robot.subsystems.intake.IntakeRollers;
+import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.serialization.Feeder;
+import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.shooter.Shooter;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -26,12 +33,27 @@ public class Superstructure extends SubsystemBase {
     private ShooterTurret turret;
     private ShooterHood hood;
 
-    /**
-     * TODO: Modify the constructor to initialize using all the other subsystems
-     */
-    public Superstructure(EagleSwerveDrivetrain drive) {
-        currentMode = ShootMode.SHOOT;
-        isShooting = false;
+    private final Climb climb;
+    private final Shooter shooter;
+    private final IntakeRollers intakeRollers;
+    private IntakeWrist intakeWrist;
+    private final Feeder feeder;
+    private final Hopper hopper;
+
+
+                                /**
+                                 * TODO: Modify the constructor to initialize using all the other subsystems
+                                 */
+        public Superstructure(EagleSwerveDrivetrain driveClimb climb, Shooter shooter, IntakeRollers intakeRollers,
+                                        IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
+            currentMode = ShootMode.SHOOT;
+            isShooting = false;
+            this.climb = climb;
+            this.shooter = shooter;
+            this.intakeRollers = intakeRollers;
+            this.intakeWrist = intakeWrist;
+            this.feeder = feeder;
+            this.hopper = hopper;
 
         this.drive = drive;
         this.turret = new ShooterTurret(drive);
@@ -42,21 +64,35 @@ public class Superstructure extends SubsystemBase {
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
-        return Commands.none();
+        return Commands.sequence(
+            intakeRollers.run(IntakeConstants.Rollers.INTAKE_VOLTS),
+            intakeWrist.moveTo(IntakeConstants.Wrist.INTAKE_POSITION)
+        );
+
+        
     }
 
     /**
      * @return runOnce command that schedules the intake to stow
      */
     public Command stowIntake() {
-        return Commands.none();
+        return Commands.sequence(
+            intakeRollers.stop(),
+            intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION)
+        );
     }
 
     /**
      * Stows everything, including turret, hood, intake, and climber
      */
     public Command stow() {
-        return Commands.none();
+        return Commands.parallel(
+            intakeRollers.stop(),
+            intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION)
+            shooter.stowShooter(),
+            climb.stowClimb()
+
+        );
     }
 
     /**
