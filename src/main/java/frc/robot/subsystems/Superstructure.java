@@ -1,8 +1,16 @@
 package frc.robot.subsystems;
 
+import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.FieldConstants;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ShooterHood;
+import frc.robot.subsystems.shooter.ShooterTurret;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -12,13 +20,22 @@ public class Superstructure extends SubsystemBase {
 
     private ShootMode currentMode;
     private boolean isShooting;
+    private EagleSwerveDrivetrain drive;
+
+    // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
+    private ShooterTurret turret;
+    private ShooterHood hood;
 
     /**
      * TODO: Modify the constructor to initialize using all the other subsystems
      */
-    public Superstructure() {
+    public Superstructure(EagleSwerveDrivetrain drive) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
+
+        this.drive = drive;
+        this.turret = new ShooterTurret(drive);
+        this.hood = new ShooterHood();
     }
 
     /**
@@ -68,10 +85,15 @@ public class Superstructure extends SubsystemBase {
         isShooting = shooting;
     }
 
-
     @Override
     public void periodic() {
         // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
         // speeds)
+        turret.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                this.turret.getComponentPose3d(),
+                this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
+        });
     }
 }
