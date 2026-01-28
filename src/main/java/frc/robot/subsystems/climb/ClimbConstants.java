@@ -3,8 +3,8 @@ package frc.robot.subsystems.climb;
 public class ClimbConstants {
 
     // Add motor IDs later
-    public static final int LEFT_CLIMB_MOTOR_ID = (Integer) null;
-    public static final int RIGHT_CLIMB_MOTOR_ID = (Integer) null;
+    public static final int LEFT_CLIMB_MOTOR_ID = 0;
+    public static final int RIGHT_CLIMB_MOTOR_ID = 0;
 
     // You... probably already know what these are
     public final static double kP = 0.0;
@@ -21,4 +21,6 @@ public class ClimbConstants {
     public final static double L1_HEIGHT = 0.0;
     public final static double L2_HEIGHT = 0.0;
     public final static double L3_HEIGHT = 0.0;
+    public final static double STOW_HEIGHT = 0.0;
+
 }

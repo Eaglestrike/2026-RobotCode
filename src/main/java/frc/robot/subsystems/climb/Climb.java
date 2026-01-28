@@ -3,6 +3,7 @@ package frc.robot.subsystems.climb;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.VoltageConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -13,8 +14,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // These comments will give you a peek into my sanity as it goes down the drain.
 public class Climb extends SubsystemBase {
-    private final TalonFX m_Left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, "rio");
-    private final TalonFX m_Right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
     private final MotionMagicVoltage m_mmReq = new MotionMagicVoltage(0);
 
     public Climb() {
@@ -41,11 +42,17 @@ public class Climb extends SubsystemBase {
         slot0.kI = ClimbConstants.kI;
         slot0.kD = ClimbConstants.kD;
 
+        VoltageConfigs voltages = new VoltageConfigs();
+        voltages.PeakForwardVoltage = ClimbConstants.MAX_VOLTS;
+        voltages.PeakReverseVoltage = -ClimbConstants.MAX_VOLTS;
+
         // Apply configurations
-        m_Left.getConfigurator().apply(cfg);
-        m_Left.getConfigurator().apply(LeftMotorConfigs);
-        m_Right.getConfigurator().apply(cfg);
-        m_Right.getConfigurator().apply(RightMotorConfigs);
+        left.getConfigurator().apply(cfg);
+        left.getConfigurator().apply(LeftMotorConfigs);
+        left.getConfigurator().apply(voltages);
+        right.getConfigurator().apply(cfg);
+        right.getConfigurator().apply(RightMotorConfigs);
+        left.getConfigurator().apply(voltages);
 
     }
 
@@ -53,8 +60,8 @@ public class Climb extends SubsystemBase {
     public Command moveTo(double position) {
         return runOnce(
                 () -> {
-                    m_Left.setControl(m_mmReq.withPosition(position).withSlot(0));
-                    m_Right.setControl(m_mmReq.withPosition(position).withSlot(0));
+                    left.setControl(m_mmReq.withPosition(position).withSlot(0));
+                    right.setControl(m_mmReq.withPosition(position).withSlot(0));
                 });
     }
 
@@ -63,8 +70,8 @@ public class Climb extends SubsystemBase {
         return runOnce(
                 () -> {
                     System.out.println("Zeroing Climb");
-                    m_Left.setPosition(ClimbConstants.OFFSET);
-                    m_Right.setPosition(ClimbConstants.OFFSET);
+                    left.setPosition(ClimbConstants.OFFSET);
+                    right.setPosition(ClimbConstants.OFFSET);
                 });
     }
 
@@ -72,8 +79,8 @@ public class Climb extends SubsystemBase {
     public Command kill() {
         return runOnce(
                 () -> {
-                    m_Left.disable();
-                    m_Right.disable();
+                    left.disable();
+                    right.disable();
                 });
     }
 
@@ -82,9 +89,9 @@ public class Climb extends SubsystemBase {
     public Command setManualVoltage(double joystickPosition) {
         return run(
                 () -> {
-                    m_Left.setVoltage(
+                    left.setVoltage(
                             joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
-                    m_Right.setVoltage(
+                    right.setVoltage(
                             joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }
