@@ -4,9 +4,11 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj2.command.Command;
@@ -14,20 +16,20 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // These comments will give you a peek into my sanity as it goes down the drain.
 public class Climb extends SubsystemBase {
-    private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, "rio");
-    private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
-    private final MotionMagicVoltage m_mmReq = new MotionMagicVoltage(0);
+    private final TalonFX master = new TalonFX(ClimbConstants.MASTER_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX follower = new TalonFX(ClimbConstants.FOLLOWER_CLIMB_MOTOR_ID, "rio");
+    private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
 
     public Climb() {
-        // Left motor config
-        MotorOutputConfigs LeftMotorConfigs = new MotorOutputConfigs();
-        LeftMotorConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
-        LeftMotorConfigs.NeutralMode = NeutralModeValue.Brake;
+        // master motor config
+        MotorOutputConfigs masterMotorConfigs = new MotorOutputConfigs();
+        masterMotorConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
+        masterMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
-        // Right motor config
-        MotorOutputConfigs RightMotorConfigs = new MotorOutputConfigs();
-        RightMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
-        RightMotorConfigs.NeutralMode = NeutralModeValue.Brake;
+        // follower motor config
+        MotorOutputConfigs followerMotorConfigs = new MotorOutputConfigs();
+        followerMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
+        followerMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
         // Create config object
         TalonFXConfiguration cfg = new TalonFXConfiguration();
@@ -47,21 +49,21 @@ public class Climb extends SubsystemBase {
         voltages.PeakReverseVoltage = -ClimbConstants.MAX_VOLTS;
 
         // Apply configurations
-        left.getConfigurator().apply(cfg);
-        left.getConfigurator().apply(LeftMotorConfigs);
-        left.getConfigurator().apply(voltages);
-        right.getConfigurator().apply(cfg);
-        right.getConfigurator().apply(RightMotorConfigs);
-        left.getConfigurator().apply(voltages);
+        master.getConfigurator().apply(cfg);
+        master.getConfigurator().apply(masterMotorConfigs);
+        master.getConfigurator().apply(voltages);
+        follower.getConfigurator().apply(cfg);
+        follower.getConfigurator().apply(followerMotorConfigs);
+        master.getConfigurator().apply(voltages);
 
+        follower.setControl(new Follower(ClimbConstants.MASTER_CLIMB_MOTOR_ID, MotorAlignmentValue.Opposed));
     }
 
     // Move both motors to a specified position
     public Command moveTo(double position) {
         return runOnce(
                 () -> {
-                    left.setControl(m_mmReq.withPosition(position).withSlot(0));
-                    right.setControl(m_mmReq.withPosition(position).withSlot(0));
+                    master.setControl(mmReq.withPosition(position).withSlot(0));
                 });
     }
 
@@ -70,8 +72,8 @@ public class Climb extends SubsystemBase {
         return runOnce(
                 () -> {
                     System.out.println("Zeroing Climb");
-                    left.setPosition(ClimbConstants.OFFSET);
-                    right.setPosition(ClimbConstants.OFFSET);
+                    master.setPosition(ClimbConstants.OFFSET);
+                    follower.setPosition(ClimbConstants.OFFSET);
                 });
     }
 
@@ -79,19 +81,15 @@ public class Climb extends SubsystemBase {
     public Command kill() {
         return runOnce(
                 () -> {
-                    left.disable();
-                    right.disable();
+                    master.disable();
+                    follower.disable();
                 });
     }
 
-    // I have no idea what this does lol, just copied from 2025 code and retrofitted
-    // to fit this thing
     public Command setManualVoltage(double joystickPosition) {
         return run(
                 () -> {
-                    left.setVoltage(
-                            joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
-                    right.setVoltage(
+                    master.setVoltage(
                             joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }
