@@ -29,7 +29,15 @@ import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
+import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.climb.ClimbConstants;
+import frc.robot.subsystems.intake.IntakeRollers;
+import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.serialization.Feeder;
+import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.vision.Vision;
+
 
 public class RobotContainer {
 
@@ -60,12 +68,18 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
 
     // subsystems
-    private final Superstructure superstructure = new Superstructure(drivetrain);
+    private final Shooter shooter = new Shooter(drivetrain);
+    private final IntakeRollers intakeRollers = new IntakeRollers();
+    private final IntakeWrist intakeWrist = new IntakeWrist();
+    private final Feeder feeder = new Feeder();
+    private final Hopper hopper = new Hopper();
+    private final Climb climb = new Climb();
+    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder, hopper);
 
     public RobotContainer() {
         configureBindings();
 
-        NamedCommands.registerCommand("ClimbL1", superstructure.climb(1));
+        NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
         NamedCommands.registerCommand("SetModeFerry", Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
         NamedCommands.registerCommand("SetModeShoot", Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
         NamedCommands.registerCommand("StartShooting", Commands.runOnce(() -> superstructure.setShooting(true)));
@@ -113,7 +127,7 @@ public class RobotContainer {
 
         int direction = drivetrain.getState().Pose.getY() > 4 ? 1 : -1; // Replace 4 with 1/2 field width
         return Commands.sequence(
-                superstructure.climb(0),
+                superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(
                         drive.withVelocityY(MaxSpeed * direction * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
                 Commands.waitSeconds(0.5),

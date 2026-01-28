@@ -39,18 +39,19 @@ public class Shooter extends SubsystemBase {
         });
     }
 
-    public boolean isAtVelocity(double maxVelocity) {
+    public boolean isAtVelocity() {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isAtVelocity'");
+        return true;
     }
 
     public boolean isFacingTarget() {
         // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isFacingTarget'");
+        return true;
     }
 
-    public void runKicker(boolean b) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'runKicker'");
+    
+
+    public ShooterFlywheels getFlywheels() {
+        return flywheel;
     }
 }

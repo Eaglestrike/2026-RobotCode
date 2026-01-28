@@ -8,4 +8,5 @@ public final class ShooterConstants {
      */
     public static final Translation2d OFFSET = new Translation2d();
     public static final double MAX_VELOCITY = 0.0;
+    public static final double IDLE_VELOCITY = 0;
 }

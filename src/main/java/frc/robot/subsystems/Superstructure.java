@@ -1,19 +1,9 @@
 package frc.robot.subsystems;
 
-import java.util.Map;
-
-import dev.doglog.DogLog;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SelectCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
-import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ShooterHood;
-import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.intake.IntakeConstants;
@@ -23,7 +13,6 @@ import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
-import frc.robot.subsystems.shooter.ShooterFlywheels;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -33,10 +22,8 @@ public class Superstructure extends SubsystemBase {
 
     private ShootMode currentMode;
     private boolean isShooting;
-    private EagleSwerveDrivetrain drive;
 
     // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
-   
 
     private final Climb climb;
     private final Shooter shooter;
@@ -45,30 +32,33 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
 
-// probably should have init mechanism that starts ythe hoppper and flywheels
-    public Superstructure(EagleSwerveDrivetrain drive, Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-                                        IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
-            currentMode = ShootMode.SHOOT;
-            isShooting = false;
-            this.climb = climb;
-            this.shooter = shooter;
-            this.intakeRollers = intakeRollers;
-            this.intakeWrist = intakeWrist;
-            this.feeder = feeder;
-            this.hopper = hopper;
-            this.drive = drive;
+    
+    // probably should have init mechanism that starts ythe hoppper and flywheels
+    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
+        currentMode = ShootMode.SHOOT;
+        isShooting = false;
+        this.climb = climb;
+        this.shooter = shooter;
+        this.intakeRollers = intakeRollers;
+        this.intakeWrist = intakeWrist;
+        this.feeder = feeder;
+        this.hopper = hopper;
     }
 
+    public void initialize() {
+        // TODO Auto-generated method stub
+        hopper.startMotor();
+        shooter.getFlywheels().startAtVelocity(ShooterConstants.IDLE_VELOCITY);
+    }
     /**
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
         return Commands.sequence(
-            intakeRollers.start(),
-            intakeWrist.moveTo(IntakeConstants.Wrist.MAX_ANGLE_RAD)
-        );
-
-        
+                intakeRollers.start(),
+                intakeWrist.moveTo(IntakeConstants.Wrist.MAX_ANGLE_RAD
+        ));
     }
 
     /**
@@ -76,9 +66,8 @@ public class Superstructure extends SubsystemBase {
      */
     public Command stowIntake() {
         return Commands.sequence(
-            intakeRollers.stop(),
-            intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION)
-        );
+                intakeRollers.stop(),
+                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION));
     }
 
     /**
@@ -86,11 +75,10 @@ public class Superstructure extends SubsystemBase {
      */
     public Command stow() {
         return Commands.parallel(
-            intakeRollers.stop(),
-            intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION),
-            shooter.stowShooter(),
-            climb.moveTo(ClimbConstants.ClimbState.STOWED.getPosition())
-
+                intakeRollers.stop(),
+                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION),
+                shooter.stowShooter(),
+                climb.moveTo(ClimbConstants.ClimbState.STOWED.getPosition())
         );
     }
 
@@ -103,15 +91,13 @@ public class Superstructure extends SubsystemBase {
      */
     public Command climb(ClimbConstants.ClimbState level) {
         return Commands.sequence(
-            stow(),
-            climb.moveTo(level.getPosition())
-        );
-
+                stow(),
+                climb.moveTo(level.getPosition()
+        ));
     }
 
     public Object getClimbState() {
         return climb;
-        
     }
 
     public void setMode(ShootMode mode) {
@@ -127,32 +113,26 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
-        // speeds)
-        // bring shooter flywheel speeds up to speed
-        // TODO:
-        // if it is facing use the kicker to actually shoot
-        // based on mode (ferry or shoot) set different target positions
-        if (isShooting){          
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            ShooterFlywheels.startAtVelocity(ShooterConstants.MAX_VELOCITY);
-            boolean facing = shooter.isFacingTarget();     // TODO: add isFacing into shooter and someone else will
-                                                       // immplemetn it
-            boolean atSpeed = shooter.isAtVelocity(ShooterConstants.MAX_VELOCITY);
-
-            if (shooter.isFacingTarget() && shooter.isAtVelocity(ShooterConstants.MAX_VELOCITY)) {
-                shooter.runKicker(true);
-            } 
-            else {
-                shooter.runKicker(false);
+        if(isShooting) {
+            if (currentMode == ShootMode.FERRY) {
+                shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
+            } else if (currentMode == ShootMode.SHOOT) {
+                shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
             }
-        }      
-        
+            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+            //TODO: set flywheel speeds based on distance to target
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.MAX_VELOCITY);
+
+            if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
+                feeder.startMotor();
+            } else {
+                feeder.stopMotor();
+            }
+        }
         else {
-            ShooterFlywheels.startAtVelocity(0.0);
-            shooter.runKicker(false);
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.IDLE_VELOCITY);
+            feeder.stopMotor();
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
         }
-
     }
 }
