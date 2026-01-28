@@ -21,6 +21,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -402,7 +403,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    public Command alignPID(Supplier<Pose2d> targetSupplier) {
+    public Command alignPID(Supplier<Pose3d> targetSupplier) {
         return Commands.none(); // TODO: Alan is rethinking implementation
     }
 

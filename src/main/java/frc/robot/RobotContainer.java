@@ -87,8 +87,8 @@ public class RobotContainer {
         NamedCommands.registerCommand("Intake", superstructure.intake());
         NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
         NamedCommands.registerCommand("Stow", superstructure.stow());
-        NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(null));
-        NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(null));
+        NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+        NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);
