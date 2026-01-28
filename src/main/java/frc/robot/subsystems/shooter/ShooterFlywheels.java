@@ -55,7 +55,7 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getConfigurator().apply(config);
     }
 
-    public Command startAtVelocity(double targetVel) {
+    public static Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
             motor.setControl(motionMagic.withVelocity(targetVel).withAcceleration(targetAccel.get()));
         });

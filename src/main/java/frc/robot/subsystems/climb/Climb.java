@@ -17,6 +17,7 @@ public class Climb extends SubsystemBase {
     private final TalonFX m_Right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
     private final MotionMagicVoltage m_mmReq = new MotionMagicVoltage(0);
 
+
     public Climb() {
         // Left motor config
         MotorOutputConfigs LeftMotorConfigs = new MotorOutputConfigs();

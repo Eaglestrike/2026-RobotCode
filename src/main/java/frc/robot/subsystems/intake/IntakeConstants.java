@@ -33,5 +33,6 @@ public final class IntakeConstants {
 		public static final double kS = 0.25;
 		public static final int STALL_LIMIT = 0;
 		public static final double OFFSET = 0;
+        public static final double STOW_POSITION = 0;
 	}
 }
