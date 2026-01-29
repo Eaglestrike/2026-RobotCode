@@ -61,12 +61,12 @@ public class Climb extends SubsystemBase {
 
     public Climb() {
         // left motor config
-        MotorOutputConfigs leftMotorConfigs = new MotorOutputConfigs();
+        MotorOutputConfigs leftMotorConfigs = cfg.MotorOutput;
         leftMotorConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
         leftMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
         // right motor config
-        MotorOutputConfigs rightMotorConfigs = new MotorOutputConfigs();
+        MotorOutputConfigs rightMotorConfigs = cfg.MotorOutput;
         rightMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
         rightMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
@@ -88,7 +88,7 @@ public class Climb extends SubsystemBase {
         left.getConfigurator().apply(voltages);
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
-        left.getConfigurator().apply(voltages);
+        right.getConfigurator().apply(voltages);
 
         right.setControl(new Follower(ClimbConstants.LEFT_CLIMB_MOTOR_ID, MotorAlignmentValue.Opposed));
     }
