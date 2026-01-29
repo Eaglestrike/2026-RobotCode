@@ -33,7 +33,8 @@ public class ClimbConstants {
     public final static double kA = 0.0;
     public final static double kS = 0.0;
     public final static double kG = 0.0;
-    public final static double OFFSET = 0.0;
+    public final static double LEFT_OFFSET = 0.0;
+    public final static double RIGHT_OFFSET = 0.0;
     public final static double MAX_VOLTS = 4.0;
     public final static double MANUAL_RATIO = 1.0;
 

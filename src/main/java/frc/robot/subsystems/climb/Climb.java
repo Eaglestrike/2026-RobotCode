@@ -107,8 +107,8 @@ public class Climb extends SubsystemBase {
         return runOnce(
                 () -> {
                     System.out.println("Zeroing Climb");
-                    left.setPosition(ClimbConstants.OFFSET);
-                    right.setPosition(ClimbConstants.OFFSET);
+                    left.setPosition(ClimbConstants.LEFT_OFFSET);
+                    right.setPosition(ClimbConstants.RIGHT_OFFSET);
                 });
     }
 
@@ -125,6 +125,8 @@ public class Climb extends SubsystemBase {
         return run(
                 () -> {
                     left.setVoltage(
+                            joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                    right.setVoltage(
                             joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }
