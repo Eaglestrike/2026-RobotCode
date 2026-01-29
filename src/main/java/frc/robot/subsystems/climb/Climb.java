@@ -18,57 +18,57 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 // These comments will give you a peek into my sanity as it goes down the drain.
 public class Climb extends SubsystemBase {
-    private final TalonFX master = new TalonFX(ClimbConstants.MASTER_CLIMB_MOTOR_ID, "rio");
-    private final TalonFX follower = new TalonFX(ClimbConstants.FOLLOWER_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
     private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
     private final TalonFXConfiguration cfg = new TalonFXConfiguration();
     private final Slot0Configs slot0Configs = cfg.Slot0;
-    private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", 0.0, newKS -> {
+    private final DoubleSubscriber kS = DogLog.tunable("Climb/kS", 0.0, newKS -> {
         slot0Configs.kS = newKS;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kG = DogLog.tunable("ShooterFlywheels/kG", 0.0, newKG -> {
+    private final DoubleSubscriber kG = DogLog.tunable("Climb/kG", 0.0, newKG -> {
         slot0Configs.kG = newKG;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kV = DogLog.tunable("ShooterFlywheels/kV", 0.0, newKV -> {
+    private final DoubleSubscriber kV = DogLog.tunable("Climb/kV", 0.0, newKV -> {
         slot0Configs.kV = newKV;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kA = DogLog.tunable("ShooterFlywheels/kA", 0.0, newKA -> {
+    private final DoubleSubscriber kA = DogLog.tunable("Climb/kA", 0.0, newKA -> {
         slot0Configs.kA = newKA;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kP = DogLog.tunable("ShooterFlywheels/kP", 0.0, newKP -> {
+    private final DoubleSubscriber kP = DogLog.tunable("Climb/kP", 0.0, newKP -> {
         slot0Configs.kP = newKP;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kI = DogLog.tunable("ShooterFlywheels/kI", 0.0, newKI -> {
+    private final DoubleSubscriber kI = DogLog.tunable("Climb/kI", 0.0, newKI -> {
         slot0Configs.kI = newKI;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kD = DogLog.tunable("ShooterFlywheels/kD", 0.0, newKD -> {
+    private final DoubleSubscriber kD = DogLog.tunable("Climb/kD", 0.0, newKD -> {
         slot0Configs.kD = newKD;
-        master.getConfigurator().apply(slot0Configs);
-        follower.getConfigurator().apply(slot0Configs);
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
 
     public Climb() {
-        // master motor config
-        MotorOutputConfigs masterMotorConfigs = new MotorOutputConfigs();
-        masterMotorConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
-        masterMotorConfigs.NeutralMode = NeutralModeValue.Brake;
+        // left motor config
+        MotorOutputConfigs leftMotorConfigs = new MotorOutputConfigs();
+        leftMotorConfigs.Inverted = InvertedValue.CounterClockwise_Positive;
+        leftMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
-        // follower motor config
-        MotorOutputConfigs followerMotorConfigs = new MotorOutputConfigs();
-        followerMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
-        followerMotorConfigs.NeutralMode = NeutralModeValue.Brake;
+        // right motor config
+        MotorOutputConfigs rightMotorConfigs = new MotorOutputConfigs();
+        rightMotorConfigs.Inverted = InvertedValue.Clockwise_Positive;
+        rightMotorConfigs.NeutralMode = NeutralModeValue.Brake;
 
         slot0Configs.kS = ClimbConstants.kS;
         slot0Configs.kG = ClimbConstants.kG;
@@ -83,21 +83,22 @@ public class Climb extends SubsystemBase {
         voltages.PeakReverseVoltage = -ClimbConstants.MAX_VOLTS;
 
         // Apply configurations
-        master.getConfigurator().apply(cfg);
-        master.getConfigurator().apply(masterMotorConfigs);
-        master.getConfigurator().apply(voltages);
-        follower.getConfigurator().apply(cfg);
-        follower.getConfigurator().apply(followerMotorConfigs);
-        master.getConfigurator().apply(voltages);
+        left.getConfigurator().apply(cfg);
+        left.getConfigurator().apply(leftMotorConfigs);
+        left.getConfigurator().apply(voltages);
+        right.getConfigurator().apply(cfg);
+        right.getConfigurator().apply(rightMotorConfigs);
+        left.getConfigurator().apply(voltages);
 
-        follower.setControl(new Follower(ClimbConstants.MASTER_CLIMB_MOTOR_ID, MotorAlignmentValue.Opposed));
+        right.setControl(new Follower(ClimbConstants.LEFT_CLIMB_MOTOR_ID, MotorAlignmentValue.Opposed));
     }
 
     // Move both motors to a specified position
     public Command moveTo(double position) {
         return runOnce(
                 () -> {
-                    master.setControl(mmReq.withPosition(position).withSlot(0));
+                    left.setControl(mmReq.withPosition(position).withSlot(0));
+                    right.setControl(mmReq.withPosition(position).withSlot(0));
                 });
     }
 
@@ -106,8 +107,8 @@ public class Climb extends SubsystemBase {
         return runOnce(
                 () -> {
                     System.out.println("Zeroing Climb");
-                    master.setPosition(ClimbConstants.OFFSET);
-                    follower.setPosition(ClimbConstants.OFFSET);
+                    left.setPosition(ClimbConstants.OFFSET);
+                    right.setPosition(ClimbConstants.OFFSET);
                 });
     }
 
@@ -115,15 +116,15 @@ public class Climb extends SubsystemBase {
     public Command kill() {
         return runOnce(
                 () -> {
-                    master.disable();
-                    follower.disable();
+                    left.disable();
+                    right.disable();
                 });
     }
 
     public Command setManualVoltage(double joystickPosition) {
         return run(
                 () -> {
-                    master.setVoltage(
+                    left.setVoltage(
                             joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }

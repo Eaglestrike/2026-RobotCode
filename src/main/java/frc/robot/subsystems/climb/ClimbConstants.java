@@ -2,9 +2,28 @@ package frc.robot.subsystems.climb;
 
 public class ClimbConstants {
 
+    // State definitions for the climb subsystem
+    public enum ClimbState {
+        STOWED(0),
+        L1(0),
+        L2(0),
+        L3(0),
+        MANUAL(0);
+
+        private final double position;
+
+        ClimbState(double position) {
+            this.position = position;
+        }
+
+        public double getPosition() {
+            return position;
+        }
+    };
+
     // Add motor IDs later
-    public static final int MASTER_CLIMB_MOTOR_ID = 0;
-    public static final int FOLLOWER_CLIMB_MOTOR_ID = 0;
+    public static final int LEFT_CLIMB_MOTOR_ID = 0;
+    public static final int RIGHT_CLIMB_MOTOR_ID = 0;
 
     // You... probably already know what these are
     public final static double kP = 0.0;
