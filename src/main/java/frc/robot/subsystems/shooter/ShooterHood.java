@@ -19,13 +19,14 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
     private final MotionMagicVoltage request = new MotionMagicVoltage(0).withEnableFOC(true);
 
     public ShooterHood() {
-        motor = new TalonFX(20);
+        motor = new TalonFX(ShooterConstants.HOOD_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
         cfg.Feedback.SensorToMechanismRatio = 362.0 / 32.0;
         cfg.MotionMagic.MotionMagicCruiseVelocity = 1.0;

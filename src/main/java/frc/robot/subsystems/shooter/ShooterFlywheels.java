@@ -11,6 +11,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.*;
+import frc.robot.RobotContainer;
 
 public class ShooterFlywheels extends SubsystemBase {
     private TalonFX motor;
@@ -51,7 +52,7 @@ public class ShooterFlywheels extends SubsystemBase {
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.Voltage = voltages;
-        motor = new TalonFX(0, "rio");
+        motor = new TalonFX(ShooterConstants.FLYWHEEL_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         motor.getConfigurator().apply(config);
     }
 

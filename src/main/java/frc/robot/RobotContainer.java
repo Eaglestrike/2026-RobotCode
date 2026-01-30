@@ -6,6 +6,7 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -40,7 +41,7 @@ import frc.robot.subsystems.vision.Vision;
 
 
 public class RobotContainer {
-    
+    public static final CANBus MECHANISM_CANBUS = new CANBus("mechanisms");
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 

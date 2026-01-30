@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 
 public class ShooterTurret extends SubsystemBase {
@@ -35,7 +36,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
-        this.motor = new TalonFX(0);
+        this.motor = new TalonFX(ShooterConstants.TURRET_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);

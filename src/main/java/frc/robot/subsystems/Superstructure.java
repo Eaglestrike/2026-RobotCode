@@ -57,8 +57,8 @@ public class Superstructure extends SubsystemBase {
     public Command intake() {
         return Commands.sequence(
                 intakeRollers.start(),
-                intakeWrist.moveTo(IntakeConstants.Wrist.MAX_ANGLE_RAD
-        ));
+                intakeWrist.moveTo(IntakeConstants.Wrist.MAX_ANGLE_RAD)
+        );
     }
 
     /**
@@ -67,7 +67,8 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION));
+                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION)
+            );
     }
 
     /**
