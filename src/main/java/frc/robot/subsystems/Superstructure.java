@@ -23,17 +23,14 @@ public class Superstructure extends SubsystemBase {
     private ShootMode currentMode;
     private boolean isShooting;
 
-    // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
-
     private final Climb climb;
     private final Shooter shooter;
     private final IntakeRollers intakeRollers;
-    private IntakeWrist intakeWrist;
+    private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
 
     
-    // probably should have init mechanism that starts ythe hoppper and flywheels
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
         currentMode = ShootMode.SHOOT;
@@ -46,11 +43,13 @@ public class Superstructure extends SubsystemBase {
         this.hopper = hopper;
     }
 
-    public void initialize() {
-        // TODO Auto-generated method stub
-        hopper.startMotor();
-        shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+    public Command initialize() {
+        return Commands.parallel(
+            hopper.startMotor(),
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)
+        );
     }
+    
     /**
      * @return runOnce command that schedules the intake to drop
      */
