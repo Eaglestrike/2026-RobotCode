@@ -159,13 +159,13 @@ public class Climb extends SubsystemBase {
                 });
     }
 
-    public Command setManualVoltage(double joystickPosition) {
+    public Command setManualVoltage(double xjoystickPosition, double yjoystickPosition) {
         return run(
                 () -> {
                     left.setVoltage(
-                            joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            xjoystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                     right.setVoltage(
-                            joystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            yjoystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }
 }
