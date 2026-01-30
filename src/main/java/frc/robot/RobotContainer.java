@@ -122,11 +122,11 @@ public class RobotContainer {
     }
 
     public Command getOffTower() {
-        if (superstructure.getClimbState() == null) {
+        if (superstructure.getClimbState() == null || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
             return Commands.print("Not currently climbing, cannot get off tower");
         }
 
-        int direction = drivetrain.getState().Pose.getY() > 4 ? 1 : -1; // Replace 4 with 1/2 field width
+        int direction = drivetrain.getState().Pose.getY() > FieldConstants.getYMiddle() ? 1 : -1; // Replace 4 with 1/2 field width
         return Commands.sequence(
                 superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(

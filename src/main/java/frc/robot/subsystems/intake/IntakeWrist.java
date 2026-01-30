@@ -79,9 +79,7 @@ public class IntakeWrist extends SubsystemBase {
                 .kV(IntakeConstants.Wrist.kV)
                 .kA(IntakeConstants.Wrist.kA)
                 .kCosRatio(IntakeConstants.Wrist.GEAR_RATIO)
-                .kCos(IntakeConstants.Wrist.kG); // cosine translates gravity to velocity to apply to the robot,
-        // cosine is multiplied so at 0 degrees (horizontal) there is no gravity effect,
-        // at 90 degrees (vertical) full gravity effect
+                .kCos(IntakeConstants.Wrist.kG);
 
         config.closedLoop.pid(kP.get(), kI.get(), kD.get());
         config.idleMode(IdleMode.kBrake);

@@ -51,4 +51,11 @@ public enum FieldConstants {
     public static final Pose3d getAllianceTowerPosition(boolean left) {
         return getAlliance() == DriverStation.Alliance.Red ? RED_TOWER.value : BLUE_TOWER.value; // Placeholder - update logic
     }
+
+    /**
+     * @return the middle Y coordinate of the field in meters
+     */
+    public static final double getYMiddle() {
+        return 4.034;
+    }
 }

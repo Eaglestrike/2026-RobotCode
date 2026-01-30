@@ -49,7 +49,7 @@ public class Superstructure extends SubsystemBase {
     public void initialize() {
         // TODO Auto-generated method stub
         hopper.startMotor();
-        shooter.getFlywheels().startAtVelocity(ShooterConstants.IDLE_VELOCITY);
+        shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
     }
     /**
      * @return runOnce command that schedules the intake to drop
@@ -121,7 +121,7 @@ public class Superstructure extends SubsystemBase {
             }
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
             //TODO: set flywheel speeds based on distance to target
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.MAX_VELOCITY);
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
 
             if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
                 feeder.startMotor();
@@ -130,7 +130,7 @@ public class Superstructure extends SubsystemBase {
             }
         }
         else {
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.IDLE_VELOCITY);
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
         }

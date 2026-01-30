@@ -25,30 +25,39 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
     private MotionMagicVoltage position = new MotionMagicVoltage(0).withEnableFOC(true);
     private EagleSwerveDrivetrain drive;
+    private TalonFXConfiguration cfg = new TalonFXConfiguration();
 
     private final Angle minRotation = Degrees.of(-180);
     private final Angle maxRotation = Degrees.of(180);
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
-        this.motor = new TalonFX(ShooterConstants.TURRET_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-        var cfg = new TalonFXConfiguration();
+        this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = this.minRotation.in(Rotations);
-        cfg.Feedback.SensorToMechanismRatio = 135.0 / 15.0;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = 20.0;
-        cfg.MotionMagic.MotionMagicAcceleration = 20.0;
-        cfg.Slot0.kP = 100.0;
-        cfg.Slot0.kD = 5.0;
-        cfg.Slot0.kV = 1.2;
-        cfg.Slot0.kS = 0.0;
+
+        cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
+        cfg.MotionMagic.MotionMagicCruiseVelocity = TurretConstants.MAX_VELOCITY;
+        cfg.MotionMagic.MotionMagicAcceleration = TurretConstants.MAX_ACCEL;
+
+        cfg.Slot0.kP = TurretConstants.kP;
+        cfg.Slot0.kI = TurretConstants.kI;
+        cfg.Slot0.kD = TurretConstants.kD;
+        cfg.Slot0.kV = TurretConstants.kV;
+        cfg.Slot0.kS = TurretConstants.kS;
+        cfg.Slot0.kA = TurretConstants.kA;
+
+        cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
+        cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
         this.motor.getConfigurator().apply(cfg);
 
         DogLog.tunable("ShooterTurret/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
@@ -99,7 +108,7 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setFacing(Pose2d to) {
-        var pose = drive.getState().Pose.plus(new Transform2d(ShooterConstants.OFFSET, new Rotation2d()));
+        var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));
         var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
                 .minus(pose.getRotation());
 
@@ -119,7 +128,7 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     /* sim */
-    private static final double gearRatio = 135.0 / 15.0;
+    private static final double gearRatio = TurretConstants.GEAR_RATIO;
     private final DCMotor gearbox = DCMotor.getKrakenX60(1);
     private final DCMotorSim sim = new DCMotorSim(
             LinearSystemId.createDCMotorSystem(
