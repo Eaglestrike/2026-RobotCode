@@ -78,26 +78,25 @@ public class Superstructure extends SubsystemBase {
                 intakeRollers.stop(),
                 intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION),
                 shooter.stowShooter(),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED.getPosition())
+                climb.moveTo(ClimbConstants.ClimbState.STOWED)
         );
     }
 
     /**
      * Command to climb to a specified level
      * 
-     * @param level The level to climb to (REPLACE OBJECT WITH ACTUAL TYPE -
-     *              PROBABLY INT OR ENUM)
+     * @param level The level to climb to
      * @return SequenceCommand that performs the climbing action
      */
     public Command climb(ClimbConstants.ClimbState level) {
         return Commands.sequence(
                 stow(),
-                climb.moveTo(level.getPosition()
-        ));
+                climb.moveTo(level)
+        );
     }
 
-    public Object getClimbState() {
-        return climb;
+    public ClimbConstants.ClimbState getClimbState() {
+        return climb.getState();
     }
 
     public void setMode(ShootMode mode) {
