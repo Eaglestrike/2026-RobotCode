@@ -51,10 +51,8 @@ public class RobotContainer {
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
     private final CommandJoystick rightJoystick = new CommandJoystick(1);
-    // private final CommandXboxController operatorController = new
-    // CommandXboxController(2);
-    // private final CommandXboxController buttonBoard = new
-    // CommandXboxController(3);
+    private final CommandXboxController operatorController = new CommandXboxController(2);
+    private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
     // auto
     private final SendableChooser<Command> autoChooser;
@@ -104,6 +102,10 @@ public class RobotContainer {
         }).ignoringDisable(true));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        operatorController.button(7).and(operatorController.x())
+                .onTrue(superstructure.getIntakeWrist().zero().ignoringDisable(true));
+
     }
 
     public Command getOffTower() {

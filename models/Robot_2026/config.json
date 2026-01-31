@@ -84,6 +84,48 @@
                 -0.012,
                 0.02
             ]
+        },
+        {
+            "zeroedRotations": [
+                {
+                    "axis": "x",
+                    "degrees": 90.0
+                },
+                {
+                    "axis": "y",
+                    "degrees": 0.0
+                },
+                {
+                    "axis": "z",
+                    "degrees": 0.0
+                }
+            ],
+            "zeroedPosition": [
+                -0.347899,
+                0.091066,
+                0.41822
+            ]
+        },
+        {
+            "zeroedRotations": [
+                {
+                    "axis": "x",
+                    "degrees": 90.0
+                },
+                {
+                    "axis": "y",
+                    "degrees": 0.0
+                },
+                {
+                    "axis": "z",
+                    "degrees": 0.0
+                }
+            ],
+            "zeroedPosition": [
+                0.068355,
+                -0.261545,
+                0.219770
+            ]
         }
     ]
 }

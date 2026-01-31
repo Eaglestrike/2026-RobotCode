@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.shooter.ShooterHood;
 import frc.robot.subsystems.shooter.ShooterTurret;
 
@@ -25,6 +26,7 @@ public class Superstructure extends SubsystemBase {
     // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
     private ShooterTurret turret;
     private ShooterHood hood;
+    private IntakeWrist intakeWrist;
 
     /**
      * TODO: Modify the constructor to initialize using all the other subsystems
@@ -36,6 +38,7 @@ public class Superstructure extends SubsystemBase {
         this.drive = drive;
         this.turret = new ShooterTurret(drive);
         this.hood = new ShooterHood();
+        this.intakeWrist = new IntakeWrist();
     }
 
     /**
@@ -94,6 +97,12 @@ public class Superstructure extends SubsystemBase {
                 new Pose3d(0, 0, 0, new Rotation3d()),
                 this.turret.getComponentPose3d(),
                 this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                this.intakeWrist.getComponentPose3d(),
         });
+    }
+
+    public IntakeWrist getIntakeWrist() {
+        return intakeWrist;
     }
 }

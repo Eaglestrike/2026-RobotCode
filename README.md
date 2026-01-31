@@ -10,3 +10,18 @@
 
   IZONE_DEG = 0.2 (or 0.1)          degree <br>
   I_MAX_VOLTS = 1.0 (or whatever)   V <br>
+
+
+kP 40
+kI 100
+kD 0.7
+izone_deg 0.2
+i_max_volts 1
+
+kS 0.19
+kV 3
+kA 0.01
+kGCos 0.05
+
+max vel 6
+max acc 12
