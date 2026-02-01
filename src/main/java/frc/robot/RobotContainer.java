@@ -32,7 +32,7 @@ import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-    
+
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
@@ -106,6 +106,7 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x())
                 .onTrue(superstructure.getIntakeWrist().zero().ignoringDisable(true));
 
+        rightJoystick.trigger().onTrue(superstructure.intake()).onFalse(superstructure.stowIntake());
     }
 
     public Command getOffTower() {

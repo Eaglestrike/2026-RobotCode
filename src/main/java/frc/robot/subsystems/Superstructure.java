@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -9,6 +11,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.intake.IntakeConstants;
+import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.shooter.ShooterHood;
 import frc.robot.subsystems.shooter.ShooterTurret;
@@ -24,9 +28,10 @@ public class Superstructure extends SubsystemBase {
     private EagleSwerveDrivetrain drive;
 
     // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
-    private ShooterTurret turret;
-    private ShooterHood hood;
+    // private ShooterTurret turret;
+    // private ShooterHood hood;
     private IntakeWrist intakeWrist;
+    private IntakeRollers intakeRollers;
 
     /**
      * TODO: Modify the constructor to initialize using all the other subsystems
@@ -36,23 +41,28 @@ public class Superstructure extends SubsystemBase {
         isShooting = false;
 
         this.drive = drive;
-        this.turret = new ShooterTurret(drive);
-        this.hood = new ShooterHood();
+        // this.turret = new ShooterTurret(drive);
+        // this.hood = new ShooterHood();
         this.intakeWrist = new IntakeWrist();
+        this.intakeRollers = new IntakeRollers();
     }
 
     /**
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
-        return Commands.none();
+        return Commands.sequence(
+                intakeRollers.start(),
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
     }
 
     /**
      * @return runOnce command that schedules the intake to stow
      */
     public Command stowIntake() {
-        return Commands.none();
+        return Commands.sequence(
+                intakeRollers.stop(),
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
     }
 
     /**
@@ -92,14 +102,16 @@ public class Superstructure extends SubsystemBase {
     public void periodic() {
         // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
         // speeds)
-        turret.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
-                new Pose3d(0, 0, 0, new Rotation3d()),
-                this.turret.getComponentPose3d(),
-                this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
-                new Pose3d(0, 0, 0, new Rotation3d()),
-                this.intakeWrist.getComponentPose3d(),
-        });
+        // turret.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+        // DogLog.log("Sim/ComponentPoses", new Pose3d[] {
+        // new Pose3d(0, 0, 0, new Rotation3d()),
+        // this.turret.getComponentPose3d(),
+        // this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
+        // new Pose3d(0, 0, 0, new Rotation3d()),
+        // new Pose3d(0, 0, 0, new Rotation3d()),
+        // this.intakeWrist.getComponentPose3d(),
+        // });
+
     }
 
     public IntakeWrist getIntakeWrist() {

@@ -1,13 +1,10 @@
 package frc.robot.subsystems.intake;
 
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Degrees;
 
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
-import com.revrobotics.sim.SparkMaxSim;
-import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
@@ -16,83 +13,81 @@ import dev.doglog.DogLog;
 
 import com.revrobotics.spark.SparkMax;
 
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.simulation.RoboRioSim;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 
 public class IntakeWrist extends SubsystemBase {
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
-    private final SparkClosedLoopController controller = motor.getClosedLoopController();
+
+    private final RelativeEncoder enc;
+    private final ProfiledPIDController pid;
+    private final double baseMinDeg;
+    private final double baseMaxDeg;
+
+    private double prevSpVel = 0.0;
+    private double lastOutVolts = 0.0;
+    private double lastDir = 0.0;
+    private final double accelLimitRadPerS2;
+    private boolean isEnabled = false;
+
+    private double goalDeg = 0.0;
 
     public IntakeWrist() {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.encoder.positionConversionFactor(2 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO);
-        config.closedLoop
-                .iZone(0.2)
-                .iMaxAccum(1)
-                .pid(IntakeConstants.Wrist.kP, IntakeConstants.Wrist.kI, IntakeConstants.Wrist.kD).feedForward
-                .kS(IntakeConstants.Wrist.kS)
-                .kV(IntakeConstants.Wrist.kV)
-                .kA(IntakeConstants.Wrist.kA)
-                // .kCosRatio(IntakeConstants.Wrist.GEAR_RATIO)
-                .kCos(IntakeConstants.Wrist.kG);
-        config.closedLoop.maxMotion
-                .cruiseVelocity(IntakeConstants.Wrist.MAX_VEL_RAD_PER_S)
-                .maxAcceleration(IntakeConstants.Wrist.MAX_ACC_RAD_PER_S2);
+        this.baseMinDeg = IntakeConstants.Wrist.MIN_ANGLE;
+        this.baseMaxDeg = IntakeConstants.Wrist.MAX_ANGLE;
+        this.accelLimitRadPerS2 = Math.max(0.0, IntakeConstants.Wrist.MAX_ACC);
+        enc = motor.getEncoder();
 
-        config.idleMode(IdleMode.kBrake);
-        config.smartCurrentLimit(IntakeConstants.Wrist.STALL_LIMIT);
+        SparkMaxConfig cfg = new SparkMaxConfig();
+        cfg.idleMode(IdleMode.kBrake).voltageCompensation(12.0);
+        cfg.encoder.positionConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO);
+        cfg.encoder.velocityConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO / 60.0);
+        motor.configure(cfg, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
 
-        motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        pid = new ProfiledPIDController(
+                IntakeConstants.Wrist.kP,
+                IntakeConstants.Wrist.kI,
+                IntakeConstants.Wrist.kD,
+                new TrapezoidProfile.Constraints(
+                        IntakeConstants.Wrist.MAX_VEL,
+                        IntakeConstants.Wrist.MAX_ACC));
+        pid.setTolerance(Math.toRadians(1.0));
+        pid.reset(getAngleRad());
 
-        DogLog.tunable("IntakeWrist/kP", IntakeConstants.Wrist.kP, newkP -> {
-            config.closedLoop.p(newkP);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-        DogLog.tunable("IntakeWrist/kI", IntakeConstants.Wrist.kI, newkI -> {
-            config.closedLoop.i(newkI);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-        DogLog.tunable("IntakeWrist/kD", IntakeConstants.Wrist.kD, newkD -> {
-            config.closedLoop.d(newkD);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-
-        DogLog.tunable("IntakeWrist/kS", IntakeConstants.Wrist.kS, newkS -> {
-            config.closedLoop.feedForward.kS(newkS);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-        DogLog.tunable("IntakeWrist/kV", IntakeConstants.Wrist.kV, newkV -> {
-            config.closedLoop.feedForward.kV(newkV);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-        DogLog.tunable("IntakeWrist/kA", IntakeConstants.Wrist.kA, newkA -> {
-            config.closedLoop.feedForward.kA(newkA);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
-        DogLog.tunable("IntakeWrist/kG", IntakeConstants.Wrist.kG, newkG -> {
-            config.closedLoop.feedForward.kG(newkG);
-            motor.configure(config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        });
+        pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
+        pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
 
         DogLog.tunable("IntakeWristRequest", 0.0, x -> {
-            moveTo(Radians.of(x)).schedule();
+            moveTo(Degrees.of(x)).schedule();
         });
+
+        RobotModeTriggers.teleop().onTrue(runOnce(() -> {
+            System.out.println("enabled");
+            isEnabled = true;
+        }).ignoringDisable(true));
+        RobotModeTriggers.disabled().onTrue(runOnce(() -> {
+            System.out.println("disabled");
+            isEnabled = false;
+        }).ignoringDisable(true));
+    }
+
+    public double getAngleRad() {
+        return enc.getPosition();
+    }
+
+    public double getAngleDeg() {
+        return Math.toDegrees(getAngleRad());
     }
 
     public Command moveTo(Angle position) {
         return runOnce(() -> {
-            DogLog.log("IntakeWrist/RequestedPosition", position.in(Radians), "Radians");
-            controller.setSetpoint(position.in(Radians), ControlType.kMAXMotionPositionControl);
+            DogLog.log("IntakeWrist/RequestedPositionDeg", position.in(Degrees), "Radians");
+            goalDeg = position.in(Degrees);
         });
     }
 
@@ -114,50 +109,70 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    /* sim */
-    private static final double gearRatio = 100.0;
-    private final DCMotor gearbox = DCMotor.getNEO(1);
-    // 90 deg to -36 deg
-    private final SingleJointedArmSim sim = new SingleJointedArmSim(
-            LinearSystemId.createSingleJointedArmSystem(
-                    gearbox,
-                    0.0004086057,
-                    gearRatio),
-            gearbox,
-            gearRatio,
-            0.378839,
-            -2.2,
-            0,
-            true,
-            -2.2);
-
-    private final SparkMaxSim sparkSim = new SparkMaxSim(motor, gearbox);
-
     @Override
-    public void simulationPeriodic() {
-        sparkSim.setBusVoltage(RobotController.getBatteryVoltage());
-        double motorVoltage = sparkSim.getAppliedOutput() * RoboRioSim.getVInVoltage();
-        DogLog.log("IntakeWrist/MotorVoltage", motorVoltage, "Volts");
+    public void periodic() {
+        // Apply joint angle limits
+        DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
+        DogLog.log("IntakeWrist/Enabled", isEnabled);
+        double localGoalDeg = goalDeg;
+        localGoalDeg = MathUtil.clamp(localGoalDeg, baseMinDeg, baseMaxDeg);
+        pid.setGoal(Math.toRadians(localGoalDeg));
 
-        sim.setInputVoltage(motorVoltage);
-        sim.update(0.020);
+        // Setpoint telemetry (50Hz)
+        TrapezoidProfile.State sp = pid.getSetpoint();
 
-        sparkSim.iterate(
-                Units.radiansPerSecondToRotationsPerMinute(
-                        sim.getVelocityRadPerSec()),
-                RoboRioSim.getVInVoltage(),
-                0.02);
-        DogLog.log("IntakeWrist/SimPosition", sparkSim.getPosition() * gearRatio, "Radians");
-    }
+        if (!isEnabled) {
+            motor.setVoltage(0.0);
+            return;
+        }
 
-    private final DoubleSubscriber intakeang = DogLog.tunable("intakeang", 0.0);
+        // Control (reuse sp from telemetry above)
+        double accel = (sp.velocity - prevSpVel) / 0.02;
+        if (accelLimitRadPerS2 > 0.0) {
+            // Finite-difference accel is noisy; clamp to something sane (profile
+            // constraint).
+            accel = MathUtil.clamp(accel, -accelLimitRadPerS2, accelLimitRadPerS2);
+        }
+        prevSpVel = sp.velocity;
+        double vel = sp.velocity;
+        // Robust direction for Ks/Ka near stop:
+        // - Prefer desired velocity sign when moving
+        // - Otherwise use goal - setpoint position, but with a small deadband to avoid
+        // sign flapping
+        // - Otherwise hold last non-zero direction (prevents +/-Ks jitter around 0)
+        double posErr = pid.getGoal().position - sp.position;
+        double sign;
+        if (Math.abs(vel) > 1e-4) {
+            sign = Math.signum(vel);
+        } else if (Math.abs(posErr) > Math.toRadians(0.25)) {
+            sign = Math.signum(posErr);
+        } else {
+            sign = lastDir;
+        }
+        if (sign != 0.0)
+            lastDir = sign;
 
-    public Pose3d getComponentPose3d() {
-        /* Rotations.of(this.motor.getEncoder().getPosition()).in(Radians) */
-        DogLog.log("IntakeWrist/AngleRad", Rotations.of(this.motor.getEncoder().getPosition()).in(Radians), "Radians");
-        DogLog.log("IntakeWrist/AngleRot", this.motor.getEncoder().getPosition());
-        return new Pose3d(
-                -0.311259, 0.303973, 0.203525 + 0.039846,
-                new Rotation3d(0, Rotations.of(this.motor.getEncoder().getPosition()).in(Radians), 0));
+        // Gravity feedforward for arm-like joints.
+        // IMPORTANT: Gravity depends on *actual* angle, not setpoint. Using setpoint
+        // can cause brief pulses when
+        // the setpoint jumps (e.g., target=90deg => cos=0) even if the arm hasn't moved
+        // yet.
+        double selfAngleRad = getAngleRad();
+        DogLog.log("IntakeWrist/CurrAng", selfAngleRad);
+        double gravAngleRad = selfAngleRad;
+        double gVolts = IntakeConstants.Wrist.kG * Math.cos(gravAngleRad);
+
+        double ffVolts = IntakeConstants.Wrist.kS * sign
+                + gVolts
+                + IntakeConstants.Wrist.kV * vel
+                + IntakeConstants.Wrist.kA * Math.abs(accel) * sign;
+        DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
+        double pidVolts = pid.calculate(getAngleRad());
+        DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
+        double volts = pidVolts + ffVolts;
+        DogLog.log("IntakeWrist/TotalVolts", volts, "Volts");
+        lastOutVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
+        motor.setVoltage(lastOutVolts);
+        DogLog.log("IntakeWrist/OutputVolts", lastOutVolts, "Volts");
     }
 }
