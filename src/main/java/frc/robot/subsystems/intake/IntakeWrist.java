@@ -14,33 +14,24 @@ import dev.doglog.DogLog;
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 
 public class IntakeWrist extends SubsystemBase {
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
 
     private final RelativeEncoder enc;
     private final ProfiledPIDController pid;
-    private final double baseMinDeg;
-    private final double baseMaxDeg;
-
-    private double prevSpVel = 0.0;
-    private double lastOutVolts = 0.0;
-    private double lastDir = 0.0;
-    private final double accelLimitRadPerS2;
-    private boolean isEnabled = false;
+    private final ArmFeedforward ff;
 
     private double goalDeg = 0.0;
 
     public IntakeWrist() {
-        this.baseMinDeg = IntakeConstants.Wrist.MIN_ANGLE;
-        this.baseMaxDeg = IntakeConstants.Wrist.MAX_ANGLE;
-        this.accelLimitRadPerS2 = Math.max(0.0, IntakeConstants.Wrist.MAX_ACC);
         enc = motor.getEncoder();
 
         SparkMaxConfig cfg = new SparkMaxConfig();
@@ -62,18 +53,20 @@ public class IntakeWrist extends SubsystemBase {
         pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
         pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
 
-        DogLog.tunable("IntakeWristRequest", 0.0, x -> {
+        ff = new ArmFeedforward(
+                IntakeConstants.Wrist.kS,
+                IntakeConstants.Wrist.kG,
+                IntakeConstants.Wrist.kV,
+                IntakeConstants.Wrist.kA);
+
+        DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
             moveTo(Degrees.of(x)).schedule();
         });
-
-        RobotModeTriggers.teleop().onTrue(runOnce(() -> {
-            System.out.println("enabled");
-            isEnabled = true;
-        }).ignoringDisable(true));
-        RobotModeTriggers.disabled().onTrue(runOnce(() -> {
-            System.out.println("disabled");
-            isEnabled = false;
-        }).ignoringDisable(true));
+        DogLog.tunable("IntakeWrist/Zero", false, x -> {
+            if (x) {
+                zero().schedule();
+            }
+        });
     }
 
     public double getAngleRad() {
@@ -86,7 +79,6 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command moveTo(Angle position) {
         return runOnce(() -> {
-            DogLog.log("IntakeWrist/RequestedPositionDeg", position.in(Degrees), "Radians");
             goalDeg = position.in(Degrees);
         });
     }
@@ -111,68 +103,25 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Apply joint angle limits
-        DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
-        DogLog.log("IntakeWrist/Enabled", isEnabled);
-        double localGoalDeg = goalDeg;
-        localGoalDeg = MathUtil.clamp(localGoalDeg, baseMinDeg, baseMaxDeg);
-        pid.setGoal(Math.toRadians(localGoalDeg));
-
-        // Setpoint telemetry (50Hz)
-        TrapezoidProfile.State sp = pid.getSetpoint();
-
-        if (!isEnabled) {
+        if (!DriverStation.isEnabled()) {
             motor.setVoltage(0.0);
             return;
         }
 
-        // Control (reuse sp from telemetry above)
-        double accel = (sp.velocity - prevSpVel) / 0.02;
-        if (accelLimitRadPerS2 > 0.0) {
-            // Finite-difference accel is noisy; clamp to something sane (profile
-            // constraint).
-            accel = MathUtil.clamp(accel, -accelLimitRadPerS2, accelLimitRadPerS2);
-        }
-        prevSpVel = sp.velocity;
-        double vel = sp.velocity;
-        // Robust direction for Ks/Ka near stop:
-        // - Prefer desired velocity sign when moving
-        // - Otherwise use goal - setpoint position, but with a small deadband to avoid
-        // sign flapping
-        // - Otherwise hold last non-zero direction (prevents +/-Ks jitter around 0)
-        double posErr = pid.getGoal().position - sp.position;
-        double sign;
-        if (Math.abs(vel) > 1e-4) {
-            sign = Math.signum(vel);
-        } else if (Math.abs(posErr) > Math.toRadians(0.25)) {
-            sign = Math.signum(posErr);
-        } else {
-            sign = lastDir;
-        }
-        if (sign != 0.0)
-            lastDir = sign;
+        goalDeg = MathUtil.clamp(goalDeg, IntakeConstants.Wrist.MIN_ANGLE, IntakeConstants.Wrist.MAX_ANGLE);
+        DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
+        pid.setGoal(Math.toRadians(goalDeg));
 
-        // Gravity feedforward for arm-like joints.
-        // IMPORTANT: Gravity depends on *actual* angle, not setpoint. Using setpoint
-        // can cause brief pulses when
-        // the setpoint jumps (e.g., target=90deg => cos=0) even if the arm hasn't moved
-        // yet.
-        double selfAngleRad = getAngleRad();
-        DogLog.log("IntakeWrist/CurrAng", selfAngleRad);
-        double gravAngleRad = selfAngleRad;
-        double gVolts = IntakeConstants.Wrist.kG * Math.cos(gravAngleRad);
+        DogLog.log("IntakeWrist/CurrAng", getAngleRad());
 
-        double ffVolts = IntakeConstants.Wrist.kS * sign
-                + gVolts
-                + IntakeConstants.Wrist.kV * vel
-                + IntakeConstants.Wrist.kA * Math.abs(accel) * sign;
-        DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
         double pidVolts = pid.calculate(getAngleRad());
         DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
+        double ffVolts = ff.calculate(getAngleRad(), pid.getSetpoint().velocity);
+        DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
         double volts = pidVolts + ffVolts;
-        DogLog.log("IntakeWrist/TotalVolts", volts, "Volts");
-        lastOutVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
-        motor.setVoltage(lastOutVolts);
-        DogLog.log("IntakeWrist/OutputVolts", lastOutVolts, "Volts");
+        DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
+        double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
+        motor.setVoltage(outputVolts);
+        DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
     }
 }
