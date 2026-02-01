@@ -3,7 +3,7 @@ package frc.robot.subsystems.shooter;
 import edu.wpi.first.math.geometry.Translation2d;
 
 public final class ShooterConstants {
-    
+
     public final class FlywheelConstants {
         public static final int MOTOR_ID = 0;
         public static final double MAX_VOLTS = 8.0;
@@ -30,7 +30,7 @@ public final class ShooterConstants {
          * Offset of the turret center, relative to the robot's center point
          */
         public static final Translation2d OFFSET = new Translation2d();
-        
+
         public static final double GEAR_RATIO = 135.0 / 15.0;
 
         public static final double MAX_VOLTS = 8.0;

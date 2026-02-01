@@ -45,11 +45,14 @@ public enum FieldConstants {
 
     /**
      * Get the alliance tower align position to climb (for L1)
-     * @param left <code>true</code> for left tower, <code>false</code> for right tower
+     * 
+     * @param left <code>true</code> for left tower, <code>false</code> for right
+     *             tower
      * @return
      */
     public static final Pose3d getAllianceTowerPosition(boolean left) {
-        return getAlliance() == DriverStation.Alliance.Red ? RED_TOWER.value : BLUE_TOWER.value; // Placeholder - update logic
+        return getAlliance() == DriverStation.Alliance.Red ? RED_TOWER.value : BLUE_TOWER.value; // Placeholder - update
+                                                                                                 // logic
     }
 
     /**

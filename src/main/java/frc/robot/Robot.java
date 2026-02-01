@@ -63,8 +63,7 @@ public class Robot extends TimedRobot {
     }
 
     CommandScheduler.getInstance().schedule(
-        m_robotContainer.getTeleopCommand()
-    );
+        m_robotContainer.getTeleopCommand());
   }
 
   @Override

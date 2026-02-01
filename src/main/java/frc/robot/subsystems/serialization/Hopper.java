@@ -12,7 +12,8 @@ import frc.robot.RobotContainer;
 public class Hopper extends SubsystemBase {
     private TalonFX motor;
     private VoltageOut voltageOutReq = new VoltageOut(0);
-    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", SerializationConstants.HOPPER_MAX_VOLTS, "V");
+    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", SerializationConstants.HOPPER_MAX_VOLTS,
+            "V");
 
     public Hopper() {
         motor = new TalonFX(SerializationConstants.HOPPER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);

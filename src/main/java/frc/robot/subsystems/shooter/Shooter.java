@@ -31,12 +31,6 @@ public class Shooter extends SubsystemBase {
         turret.setFacing(targetPose);
         // TODO: Calculate hood angle based on distance to targetPose
         hood.goToPos(Angle.ofBaseUnits(0, Radians));
-
-        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
-            new Pose3d(0, 0, 0, new Rotation3d()),
-            this.turret.getComponentPose3d(),
-            this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
-        });
     }
 
     public boolean isAtVelocity() {
@@ -49,9 +43,15 @@ public class Shooter extends SubsystemBase {
         return true;
     }
 
-    
-
     public ShooterFlywheels getFlywheels() {
         return flywheel;
+    }
+
+    public ShooterTurret getTurret() {
+        return turret;
+    }
+
+    public ShooterHood getHood() {
+        return hood;
     }
 }

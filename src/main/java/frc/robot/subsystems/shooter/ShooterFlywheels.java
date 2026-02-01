@@ -50,10 +50,11 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getConfigurator().apply(slot0Configs);
     });
 
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel", FlywheelConstants.TARGET_ACCEL, newTargetAccel -> {
-        slot0Configs.kD = newTargetAccel;
-        motor.getConfigurator().apply(slot0Configs);
-    });
+    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
+            FlywheelConstants.TARGET_ACCEL, newTargetAccel -> {
+                slot0Configs.kD = newTargetAccel;
+                motor.getConfigurator().apply(slot0Configs);
+            });
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;
@@ -69,7 +70,7 @@ public class ShooterFlywheels extends SubsystemBase {
         slot0Configs.kP = FlywheelConstants.kP;
         slot0Configs.kI = FlywheelConstants.kI;
         slot0Configs.kD = FlywheelConstants.kD;
-        
+
         motor = new TalonFX(FlywheelConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         motor.getConfigurator().apply(config);
     }

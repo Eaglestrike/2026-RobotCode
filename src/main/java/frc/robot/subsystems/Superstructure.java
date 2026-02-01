@@ -2,6 +2,9 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Degrees;
 
+import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -129,5 +132,16 @@ public class Superstructure extends SubsystemBase {
             feeder.stopMotor();
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
         }
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                shooter.getTurret().getComponentPose3d(),
+                shooter.getHood().getComponentPose3d(shooter.getTurret().getComponentPose3d()),
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                new Pose3d(0, 0, 0, new Rotation3d()),
+        });
     }
 }

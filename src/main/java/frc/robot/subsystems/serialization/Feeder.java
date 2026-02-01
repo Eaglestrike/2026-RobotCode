@@ -12,7 +12,8 @@ import frc.robot.RobotContainer;
 public class Feeder extends SubsystemBase {
     private TalonFX motor;
     private VoltageOut voltageOutReq = new VoltageOut(0);
-    private final DoubleSubscriber voltage = DogLog.tunable("Feeder/Voltage", SerializationConstants.FEEDER_MAX_VOLTS, "V");
+    private final DoubleSubscriber voltage = DogLog.tunable("Feeder/Voltage", SerializationConstants.FEEDER_MAX_VOLTS,
+            "V");
 
     public Feeder() {
         motor = new TalonFX(SerializationConstants.FEEDER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -29,6 +30,5 @@ public class Feeder extends SubsystemBase {
             motor.setControl(voltageOutReq.withOutput(0));
         });
     }
-    
 
 }
