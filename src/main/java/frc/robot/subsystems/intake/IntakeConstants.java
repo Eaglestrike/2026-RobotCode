@@ -5,7 +5,7 @@ public final class IntakeConstants {
 		public static final int MOTOR_ID = 14;
 		public static final boolean INVERTED = false;
 
-		public static final double MAX_VOLTS = 3.0;
+		public static final double VOLTS = 3.0;
 	}
 
 	public static final class Wrist {
