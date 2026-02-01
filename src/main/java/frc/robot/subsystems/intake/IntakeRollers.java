@@ -7,6 +7,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 
 public class IntakeRollers extends SubsystemBase {
     private TalonFX motor;
@@ -14,7 +15,7 @@ public class IntakeRollers extends SubsystemBase {
     private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", IntakeConstants.Rollers.VOLTS);
 
     public IntakeRollers() {
-        motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, "Mechanisms");
+        motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
     }
 
     public Command start() {

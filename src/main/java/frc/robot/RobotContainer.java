@@ -6,6 +6,7 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
@@ -29,10 +30,17 @@ import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
+import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.climb.ClimbConstants;
+import frc.robot.subsystems.intake.IntakeRollers;
+import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.serialization.Feeder;
+import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-
+    public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
@@ -58,12 +66,19 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
 
     // subsystems
-    private final Superstructure superstructure = new Superstructure(drivetrain);
+    private final Shooter shooter = new Shooter(drivetrain);
+    private final IntakeRollers intakeRollers = new IntakeRollers();
+    private final IntakeWrist intakeWrist = new IntakeWrist();
+    private final Feeder feeder = new Feeder();
+    private final Hopper hopper = new Hopper();
+    private final Climb climb = new Climb();
+    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder,
+            hopper);
 
     public RobotContainer() {
         configureBindings();
 
-        NamedCommands.registerCommand("ClimbL1", superstructure.climb(1));
+        NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
         NamedCommands.registerCommand("SetModeFerry", Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
         NamedCommands.registerCommand("SetModeShoot", Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
         NamedCommands.registerCommand("StartShooting", Commands.runOnce(() -> superstructure.setShooting(true)));
@@ -71,8 +86,10 @@ public class RobotContainer {
         NamedCommands.registerCommand("Intake", superstructure.intake());
         NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
         NamedCommands.registerCommand("Stow", superstructure.stow());
-        NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(null));
-        NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(null));
+        NamedCommands.registerCommand("AlignLeftTower",
+                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+        NamedCommands.registerCommand("AlignRightTower",
+                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -104,19 +121,20 @@ public class RobotContainer {
         drivetrain.registerTelemetry(logger::telemeterize);
 
         operatorController.button(7).and(operatorController.x())
-                .onTrue(superstructure.getIntakeWrist().zero().ignoringDisable(true));
+                .onTrue(intakeWrist.zero().ignoringDisable(true));
 
         rightJoystick.trigger().onTrue(superstructure.intake()).onFalse(superstructure.stowIntake());
     }
 
     public Command getOffTower() {
-        if (superstructure.getClimbState() == null) {
+        if (superstructure.getClimbState() == null
+                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
             return Commands.print("Not currently climbing, cannot get off tower");
         }
 
-        int direction = drivetrain.getState().Pose.getY() > 4 ? 1 : -1; // Replace 4 with 1/2 field width
+        int direction = drivetrain.getState().Pose.getY() > FieldConstants.getYMiddle() ? 1 : -1;
         return Commands.sequence(
-                superstructure.climb(0),
+                superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(
                         drive.withVelocityY(MaxSpeed * direction * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
                 Commands.waitSeconds(0.5),
@@ -124,7 +142,13 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return autoChooser.getSelected();
+        return Commands.sequence(
+                superstructure.initialize(),
+                autoChooser.getSelected());
+    }
+
+    public Command getTeleopCommand() {
+        return superstructure.initialize();
     }
 
     public EagleSwerveDrivetrain getDrivetrain() {

@@ -19,24 +19,30 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
+import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
     private final MotionMagicVoltage request = new MotionMagicVoltage(0).withEnableFOC(true);
+    private TalonFXConfiguration cfg = new TalonFXConfiguration();
 
     public ShooterHood() {
-        motor = new TalonFX(20);
-        var cfg = new TalonFXConfiguration();
-        cfg.Feedback.SensorToMechanismRatio = 362.0 / 32.0;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = 1.0;
-        cfg.MotionMagic.MotionMagicAcceleration = 1.0;
-        cfg.Slot0.kP = 8.0;
-        cfg.Slot0.kD = 0.2;
-        cfg.Slot0.kS = 0.0;
-        cfg.Slot0.kV = 1.11;
-        cfg.Slot0.kA = 0.04;
-        cfg.Slot0.kG = 0.26;
+        motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
+        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VELOCITY;
+        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACCEL;
+        cfg.Slot0.kP = HoodConstants.kP;
+        cfg.Slot0.kD = HoodConstants.kD;
+        cfg.Slot0.kS = HoodConstants.kS;
+        cfg.Slot0.kV = HoodConstants.kV;
+        cfg.Slot0.kA = HoodConstants.kA;
+        cfg.Slot0.kG = HoodConstants.kG;
         cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
+
+        cfg.Voltage.PeakForwardVoltage = HoodConstants.MAX_VOLTS;
+        cfg.Voltage.PeakReverseVoltage = -HoodConstants.MAX_VOLTS;
+
         this.motor.getConfigurator().apply(cfg);
 
         DogLog.tunable("ShooterHood/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
@@ -103,12 +109,12 @@ public class ShooterHood extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(Radians.of(-1.36));
+            motor.setPosition(Radians.of(HoodConstants.OFFSET));
         });
     }
 
     /* sim */
-    private static final double gearRatio = 362.0 / 32.0;
+    private static final double gearRatio = HoodConstants.GEAR_RATIO;
     private final DCMotor gearbox = DCMotor.getKrakenX44Foc(1);
     private final SingleJointedArmSim sim = new SingleJointedArmSim(
             LinearSystemId.createSingleJointedArmSystem(

@@ -5,17 +5,19 @@ import static edu.wpi.first.units.Units.Degrees;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
-import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.climb.Climb;
+import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
-import frc.robot.subsystems.shooter.ShooterHood;
-import frc.robot.subsystems.shooter.ShooterTurret;
+import frc.robot.subsystems.serialization.Feeder;
+import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -25,26 +27,30 @@ public class Superstructure extends SubsystemBase {
 
     private ShootMode currentMode;
     private boolean isShooting;
-    private EagleSwerveDrivetrain drive;
 
-    // private DoubleSubscriber turretang = DogLog.tunable("TurretAng", 0.0);
-    // private ShooterTurret turret;
-    // private ShooterHood hood;
-    private IntakeWrist intakeWrist;
-    private IntakeRollers intakeRollers;
+    private final Climb climb;
+    private final Shooter shooter;
+    private final IntakeRollers intakeRollers;
+    private final IntakeWrist intakeWrist;
+    private final Feeder feeder;
+    private final Hopper hopper;
 
-    /**
-     * TODO: Modify the constructor to initialize using all the other subsystems
-     */
-    public Superstructure(EagleSwerveDrivetrain drive) {
+    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
+        this.climb = climb;
+        this.shooter = shooter;
+        this.intakeRollers = intakeRollers;
+        this.intakeWrist = intakeWrist;
+        this.feeder = feeder;
+        this.hopper = hopper;
+    }
 
-        this.drive = drive;
-        // this.turret = new ShooterTurret(drive);
-        // this.hood = new ShooterHood();
-        this.intakeWrist = new IntakeWrist();
-        this.intakeRollers = new IntakeRollers();
+    public Command initialize() {
+        return Commands.parallel(
+                hopper.startMotor(),
+                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
     /**
@@ -69,22 +75,28 @@ public class Superstructure extends SubsystemBase {
      * Stows everything, including turret, hood, intake, and climber
      */
     public Command stow() {
-        return Commands.none();
+        return Commands.parallel(
+                intakeRollers.stop(),
+                intakeWrist.moveTo(Degrees.of(
+                        IntakeConstants.Wrist.STOW_ANGLE)),
+                shooter.stowShooter(),
+                climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
     /**
      * Command to climb to a specified level
      * 
-     * @param level The level to climb to (REPLACE OBJECT WITH ACTUAL TYPE -
-     *              PROBABLY INT OR ENUM)
+     * @param level The level to climb to
      * @return SequenceCommand that performs the climbing action
      */
-    public Command climb(Object level) {
-        return Commands.none();
+    public Command climb(ClimbConstants.ClimbState level) {
+        return Commands.sequence(
+                stow(),
+                climb.moveTo(level));
     }
 
-    public Object getClimbState() {
-        return null;
+    public ClimbConstants.ClimbState getClimbState() {
+        return climb.getState();
     }
 
     public void setMode(ShootMode mode) {
@@ -100,21 +112,36 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // If shooting, then periodically recalibrate shooter (turret, hood and flywheel
-        // speeds)
-        // turret.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-        // DogLog.log("Sim/ComponentPoses", new Pose3d[] {
-        // new Pose3d(0, 0, 0, new Rotation3d()),
-        // this.turret.getComponentPose3d(),
-        // this.hood.getComponentPose3d(this.turret.getComponentPose3d()),
-        // new Pose3d(0, 0, 0, new Rotation3d()),
-        // new Pose3d(0, 0, 0, new Rotation3d()),
-        // this.intakeWrist.getComponentPose3d(),
-        // });
+        if (isShooting) {
+            if (currentMode == ShootMode.FERRY) {
+                shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
+            } else if (currentMode == ShootMode.SHOOT) {
+                shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+            }
+            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+            // TODO: set flywheel speeds based on distance to target
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
 
+            if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
+                feeder.startMotor();
+            } else {
+                feeder.stopMotor();
+            }
+        } else {
+            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            feeder.stopMotor();
+            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+        }
     }
 
-    public IntakeWrist getIntakeWrist() {
-        return intakeWrist;
+    @Override
+    public void simulationPeriodic() {
+        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                shooter.getTurret().getComponentPose3d(),
+                shooter.getHood().getComponentPose3d(shooter.getTurret().getComponentPose3d()),
+                new Pose3d(0, 0, 0, new Rotation3d()),
+                new Pose3d(0, 0, 0, new Rotation3d()),
+        });
     }
 }

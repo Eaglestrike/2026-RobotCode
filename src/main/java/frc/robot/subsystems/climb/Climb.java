@@ -8,6 +8,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -17,11 +18,12 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SelectCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 
 // These comments will give you a peek into my sanity as it goes down the drain.
 public class Climb extends SubsystemBase {
-    private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, "rio");
-    private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, "rio");
+    private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+    private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
     private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
     private final TalonFXConfiguration cfg = new TalonFXConfiguration();
     private final Slot0Configs slot0Configs = cfg.Slot0;
@@ -61,6 +63,9 @@ public class Climb extends SubsystemBase {
         right.getConfigurator().apply(slot0Configs);
     });
 
+    private ClimbConstants.ClimbState currentState = ClimbConstants.ClimbState.STOWED;
+
+
     public Climb() {
         // left motor config
         MotorOutputConfigs leftMotorConfigs = new MotorOutputConfigs();
@@ -79,6 +84,7 @@ public class Climb extends SubsystemBase {
         slot0Configs.kP = ClimbConstants.kP;
         slot0Configs.kI = ClimbConstants.kI;
         slot0Configs.kD = ClimbConstants.kD;
+        slot0Configs.GravityType = GravityTypeValue.Elevator_Static;
 
         VoltageConfigs voltages = cfg.Voltage;
         voltages.PeakForwardVoltage = ClimbConstants.MAX_VOLTS;
@@ -92,6 +98,7 @@ public class Climb extends SubsystemBase {
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
+        currentState = state;
         return new SelectCommand<ClimbConstants.ClimbState>(
                 Map.ofEntries(
                         Map.entry(ClimbConstants.ClimbState.STOWED, stow()),
@@ -110,6 +117,7 @@ public class Climb extends SubsystemBase {
     }
 
     private Command climbL2() {
+
         return Commands.sequence(
             climbL1(),
             moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
@@ -167,5 +175,9 @@ public class Climb extends SubsystemBase {
                     right.setVoltage(
                             yjoystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
+    }
+
+    public ClimbConstants.ClimbState getState() {
+        return currentState;
     }
 }

@@ -10,11 +10,15 @@ public enum FieldConstants {
             new Rotation3d(0, 0, 0))),
     RED_OUTPOST(new Pose3d(15.75, 7.25, 0, new Rotation3d(0, 0, 0))),
     RED_FAR_SIDE(new Pose3d(15.75, 0.75, 0, new Rotation3d(0, 0, 0))),
+    RED_TOWER(new Pose3d(0, 0, 0,
+            new Rotation3d(0, 0, 0))), // Placeholder
 
     BLUE_HUB(new Pose3d(4.5974, 4.034536, 1.5748,
             new Rotation3d(0, 0, 0))),
     BLUE_OUTPOST(new Pose3d(0.75, 0.75, 0, new Rotation3d(0, 0, 0))),
-    BLUE_FAR_SIDE(new Pose3d(0.75, 7.25, 0, new Rotation3d(0, 0, 0)));
+    BLUE_FAR_SIDE(new Pose3d(0.75, 7.25, 0, new Rotation3d(0, 0, 0))),
+    BLUE_TOWER(new Pose3d(0, 0, 0,
+            new Rotation3d(0, 0, 0))); // Placeholder
 
     public final Pose3d value;
 
@@ -37,5 +41,24 @@ public enum FieldConstants {
     public static final Pose3d getAllianceFarSidePosition() {
         return getAlliance() == DriverStation.Alliance.Red ? RED_FAR_SIDE.value
                 : BLUE_FAR_SIDE.value;
+    }
+
+    /**
+     * Get the alliance tower align position to climb (for L1)
+     * 
+     * @param left <code>true</code> for left tower, <code>false</code> for right
+     *             tower
+     * @return
+     */
+    public static final Pose3d getAllianceTowerPosition(boolean left) {
+        return getAlliance() == DriverStation.Alliance.Red ? RED_TOWER.value : BLUE_TOWER.value; // Placeholder - update
+                                                                                                 // logic
+    }
+
+    /**
+     * @return the middle Y coordinate of the field in meters
+     */
+    public static final double getYMiddle() {
+        return 4.034;
     }
 }
