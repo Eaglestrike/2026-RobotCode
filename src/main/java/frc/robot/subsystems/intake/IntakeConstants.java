@@ -15,7 +15,7 @@ public final class IntakeConstants {
 		public static final double MAX_ACC = 20;
 
 		public static final double GEAR_RATIO = 100.0;
-		public static final double ENCODER_OFFSET = -0.304283; // rotations
+		public static final double ENCODER_OFFSET = -0.304283; // rotations? todo - check this unit
 
 		public static final double MIN_ANGLE = -17.50; // degrees
 		public static final double MAX_ANGLE = 114.0; // degrees

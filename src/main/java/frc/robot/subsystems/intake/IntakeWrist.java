@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 
 import com.revrobotics.PersistMode;
@@ -30,7 +31,7 @@ public class IntakeWrist extends SubsystemBase {
     private final ProfiledPIDController pid;
     private final ArmFeedforward ff;
 
-    private double goalDeg = 0.0;
+    private Angle goal = Radians.of(0.0);
 
     public IntakeWrist() {
         enc = motor.getEncoder();
@@ -65,13 +66,14 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
+    // encoder gives value in radians
     public Angle getAngle() {
-        return Rotations.of(enc.getPosition());
+        return Radians.of(enc.getPosition());
     }
 
     public Command moveTo(Angle position) {
         return runOnce(() -> {
-            goalDeg = position.in(Degrees);
+            goal = position;
         });
     }
 
@@ -101,9 +103,10 @@ public class IntakeWrist extends SubsystemBase {
             return;
         }
 
-        goalDeg = MathUtil.clamp(goalDeg, IntakeConstants.Wrist.MIN_ANGLE, IntakeConstants.Wrist.MAX_ANGLE);
-        DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
-        pid.setGoal(Math.toRadians(goalDeg));
+        goal = Radians.of(MathUtil.clamp(goal.magnitude(), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
+                Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
+        DogLog.log("IntakeWrist/GoalRad", goal);
+        pid.setGoal(goal.magnitude());
 
         DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
 
