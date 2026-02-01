@@ -39,9 +39,8 @@ import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.vision.Vision;
 
-
 public class RobotContainer {
-    public static final CANBus MECHANISM_CANBUS = new CANBus("mechanisms");
+    public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
     private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
     private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
@@ -60,10 +59,8 @@ public class RobotContainer {
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
     private final CommandJoystick rightJoystick = new CommandJoystick(1);
-    // private final CommandXboxController operatorController = new
-    // CommandXboxController(2);
-    // private final CommandXboxController buttonBoard = new
-    // CommandXboxController(3);
+    private final CommandXboxController operatorController = new CommandXboxController(2);
+    private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
     // auto
     private final SendableChooser<Command> autoChooser;
@@ -75,7 +72,8 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
-    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder, hopper);
+    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder,
+            hopper);
 
     public RobotContainer() {
         configureBindings();
@@ -88,8 +86,10 @@ public class RobotContainer {
         NamedCommands.registerCommand("Intake", superstructure.intake());
         NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
         NamedCommands.registerCommand("Stow", superstructure.stow());
-        NamedCommands.registerCommand("AlignLeftTower", drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
-        NamedCommands.registerCommand("AlignRightTower", drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
+        NamedCommands.registerCommand("AlignLeftTower",
+                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+        NamedCommands.registerCommand("AlignRightTower",
+                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -119,10 +119,16 @@ public class RobotContainer {
         }).ignoringDisable(true));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+
+        operatorController.button(7).and(operatorController.x())
+                .onTrue(intakeWrist.zero().ignoringDisable(true));
+
+        rightJoystick.trigger().onTrue(superstructure.intake()).onFalse(superstructure.stowIntake());
     }
 
     public Command getOffTower() {
-        if (superstructure.getClimbState() == null || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
+        if (superstructure.getClimbState() == null
+                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
             return Commands.print("Not currently climbing, cannot get off tower");
         }
 
@@ -137,9 +143,8 @@ public class RobotContainer {
 
     public Command getAutonomousCommand() {
         return Commands.sequence(
-            superstructure.initialize(), 
-            autoChooser.getSelected()
-        );
+                superstructure.initialize(),
+                autoChooser.getSelected());
     }
 
     public Command getTeleopCommand() {

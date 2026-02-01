@@ -12,7 +12,7 @@ import frc.robot.RobotContainer;
 public class IntakeRollers extends SubsystemBase {
     private TalonFX motor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
-    private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", 1.0);
+    private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", IntakeConstants.Rollers.VOLTS);
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -20,13 +20,7 @@ public class IntakeRollers extends SubsystemBase {
 
     public Command start() {
         return runOnce(() -> {
-            double volts = voltage.get();
-            if(volts > IntakeConstants.Rollers.MAX_VOLTS) {
-                volts = IntakeConstants.Rollers.MAX_VOLTS;
-            } else if (volts < -IntakeConstants.Rollers.MAX_VOLTS) {
-                volts = -IntakeConstants.Rollers.MAX_VOLTS;
-            }
-            motor.setControl(voltageRequest.withOutput(volts));
+            motor.setControl(voltageRequest.withOutput(voltage.get()));
         });
     }
 

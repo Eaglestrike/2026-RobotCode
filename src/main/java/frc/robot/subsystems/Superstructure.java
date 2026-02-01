@@ -1,5 +1,7 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -30,7 +32,6 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
 
-    
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
         currentMode = ShootMode.SHOOT;
@@ -45,19 +46,17 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.parallel(
-            hopper.startMotor(),
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)
-        );
+                hopper.startMotor(),
+                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
-    
+
     /**
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
         return Commands.sequence(
                 intakeRollers.start(),
-                intakeWrist.moveTo(IntakeConstants.Wrist.MAX_ANGLE_RAD)
-        );
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
     }
 
     /**
@@ -66,8 +65,7 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION)
-            );
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
     }
 
     /**
@@ -76,10 +74,10 @@ public class Superstructure extends SubsystemBase {
     public Command stow() {
         return Commands.parallel(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(IntakeConstants.Wrist.STOW_POSITION),
+                intakeWrist.moveTo(Degrees.of(
+                        IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED)
-        );
+                climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
     /**
@@ -91,8 +89,7 @@ public class Superstructure extends SubsystemBase {
     public Command climb(ClimbConstants.ClimbState level) {
         return Commands.sequence(
                 stow(),
-                climb.moveTo(level)
-        );
+                climb.moveTo(level));
     }
 
     public ClimbConstants.ClimbState getClimbState() {
@@ -112,14 +109,14 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if(isShooting) {
+        if (isShooting) {
             if (currentMode == ShootMode.FERRY) {
                 shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
             } else if (currentMode == ShootMode.SHOOT) {
                 shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
             }
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            //TODO: set flywheel speeds based on distance to target
+            // TODO: set flywheel speeds based on distance to target
             shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
 
             if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
@@ -127,8 +124,7 @@ public class Superstructure extends SubsystemBase {
             } else {
                 feeder.stopMotor();
             }
-        }
-        else {
+        } else {
             shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
             shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());

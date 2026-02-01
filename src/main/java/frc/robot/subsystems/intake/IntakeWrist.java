@@ -1,12 +1,12 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
+
 import com.revrobotics.PersistMode;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
-import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.FeedForwardConfig;
-import com.revrobotics.spark.config.MAXMotionConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
@@ -14,93 +14,71 @@ import dev.doglog.DogLog;
 
 import com.revrobotics.spark.SparkMax;
 
-import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeWrist extends SubsystemBase {
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
-    private final SparkClosedLoopController controller = motor.getClosedLoopController();
 
-    private final DoubleSubscriber kP = DogLog.tunable("Intake/Wrist/kP", IntakeConstants.Wrist.kP, newkP -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.p(newkP);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
+    private final RelativeEncoder enc;
+    private final ProfiledPIDController pid;
+    private final ArmFeedforward ff;
 
-    private final DoubleSubscriber kI = DogLog.tunable("Intake/Wrist/kI", IntakeConstants.Wrist.kI, newkI -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.i(newkI);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    private final DoubleSubscriber kD = DogLog.tunable("Intake/Wrist/kD", IntakeConstants.Wrist.kD, newkD -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.d(newkD);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    // alan can remove the stuff below needed, js for feed forward tuning
-    private final DoubleSubscriber kS = DogLog.tunable("Intake/Wrist/kS", IntakeConstants.Wrist.kS, newkS -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.feedForward.kS(newkS);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    private final DoubleSubscriber kV = DogLog.tunable("Intake/Wrist/kV", IntakeConstants.Wrist.kV, newkV -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.feedForward.kV(newkV);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    private final DoubleSubscriber kA = DogLog.tunable("Intake/Wrist/kA", IntakeConstants.Wrist.kA, newkA -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.feedForward.kA(newkA);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    private final DoubleSubscriber kG = DogLog.tunable("Intake/Wrist/kG", IntakeConstants.Wrist.kG, newkG -> {
-        SparkMaxConfig config = new SparkMaxConfig();
-        config.closedLoop.feedForward.kG(newkG);
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-    });
-
-    // -------------------------------------------------------------------------------------------------
+    private double goalDeg = 0.0;
 
     public IntakeWrist() {
-        SparkMaxConfig config = new SparkMaxConfig();
+        enc = motor.getEncoder();
 
-        MAXMotionConfig motion = new MAXMotionConfig()
-                .cruiseVelocity(IntakeConstants.Wrist.MAX_VEL_RAD_PER_S)
-                .maxAcceleration(IntakeConstants.Wrist.MAX_ACC_RAD_PER_S2);
+        SparkMaxConfig cfg = new SparkMaxConfig();
+        cfg.idleMode(IdleMode.kBrake).voltageCompensation(12.0);
+        cfg.encoder.positionConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO);
+        cfg.encoder.velocityConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO / 60.0);
+        motor.configure(cfg, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
 
-        FeedForwardConfig ff = new FeedForwardConfig()
-                .kS(IntakeConstants.Wrist.kS)
-                .kV(IntakeConstants.Wrist.kV)
-                .kA(IntakeConstants.Wrist.kA)
-                .kCosRatio(IntakeConstants.Wrist.GEAR_RATIO)
-                .kCos(IntakeConstants.Wrist.kG);
+        pid = new ProfiledPIDController(
+                IntakeConstants.Wrist.kP,
+                IntakeConstants.Wrist.kI,
+                IntakeConstants.Wrist.kD,
+                new TrapezoidProfile.Constraints(
+                        IntakeConstants.Wrist.MAX_VEL,
+                        IntakeConstants.Wrist.MAX_ACC));
+        pid.setTolerance(Math.toRadians(1.0));
+        pid.reset(getAngle().magnitude());
 
-        config.closedLoop.pid(kP.get(), kI.get(), kD.get());
-        config.idleMode(IdleMode.kBrake);
-        config.closedLoop.apply(motion);
-        config.closedLoop.apply(ff);
-        config.smartCurrentLimit(IntakeConstants.Wrist.STALL_LIMIT);
+        pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
+        pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
 
-        motor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+        ff = new ArmFeedforward(
+                IntakeConstants.Wrist.kS,
+                IntakeConstants.Wrist.kG,
+                IntakeConstants.Wrist.kV,
+                IntakeConstants.Wrist.kA);
+
+        DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
+            moveTo(Degrees.of(x)).schedule();
+        });
     }
 
-    // -------------------------------------------------------------------------------------------------
+    public Angle getAngle() {
+        return Rotations.of(enc.getPosition());
+    }
 
-    public Command moveTo(double position) {
+    public Command moveTo(Angle position) {
         return runOnce(() -> {
-            controller.setSetpoint(position, ControlType.kMAXMotionPositionControl);
+            goalDeg = position.in(Degrees);
         });
     }
 
     public Command zero() {
         return runOnce(() -> {
-            motor.getEncoder().setPosition(IntakeConstants.Wrist.OFFSET);
+            System.out.println("Zeroing Intake Wrist");
+            motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
         });
     }
 
@@ -116,4 +94,27 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
+    @Override
+    public void periodic() {
+        if (!DriverStation.isEnabled()) {
+            motor.setVoltage(0.0);
+            return;
+        }
+
+        goalDeg = MathUtil.clamp(goalDeg, IntakeConstants.Wrist.MIN_ANGLE, IntakeConstants.Wrist.MAX_ANGLE);
+        DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
+        pid.setGoal(Math.toRadians(goalDeg));
+
+        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
+
+        double pidVolts = pid.calculate(getAngle().in(Rotations));
+        DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
+        double ffVolts = ff.calculate(getAngle().in(Rotations), pid.getSetpoint().velocity);
+        DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
+        double volts = pidVolts + ffVolts;
+        DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
+        double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
+        motor.setVoltage(outputVolts);
+        DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
+    }
 }
