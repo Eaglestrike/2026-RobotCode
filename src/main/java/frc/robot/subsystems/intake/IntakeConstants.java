@@ -15,11 +15,13 @@ public final class IntakeConstants {
 		public static final double MAX_ACC = 20;
 
 		public static final double GEAR_RATIO = 100.0;
-		public static final double ENCODER_OFFSET_RAD = -0.304283;
+		public static final double ENCODER_OFFSET = -0.304283; // rotations
 
-		public static final double MIN_ANGLE = -17.50;
-		public static final double MAX_ANGLE = 114.0;
-		public static final double STOW_ANGLE = 0;
+		public static final double MIN_ANGLE = -17.50; // degrees
+		public static final double MAX_ANGLE = 114.0; // degrees
+		public static final double STOW_ANGLE = 0; // degrees
+
+		public static final double MAX_VOLTS = 12.0;
 
 		public static final double kP = 40;
 		public static final double kI = 100;
@@ -29,7 +31,6 @@ public final class IntakeConstants {
 		public static final double kA = 0.01;
 		public static final double kV = 3.0;
 		public static final double kS = 0.19;
-		public static final double MAX_VOLTS = 12.0;
 		public static final double IZONE_DEG = 0.5;
 		public static final double IMAX_VOLTS = 1.0;
 	}

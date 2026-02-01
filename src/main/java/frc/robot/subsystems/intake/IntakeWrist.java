@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Rotations;
 
 import com.revrobotics.PersistMode;
 import com.revrobotics.RelativeEncoder;
@@ -48,7 +49,7 @@ public class IntakeWrist extends SubsystemBase {
                         IntakeConstants.Wrist.MAX_VEL,
                         IntakeConstants.Wrist.MAX_ACC));
         pid.setTolerance(Math.toRadians(1.0));
-        pid.reset(getAngleRad());
+        pid.reset(getAngle().magnitude());
 
         pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
         pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
@@ -62,19 +63,10 @@ public class IntakeWrist extends SubsystemBase {
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
             moveTo(Degrees.of(x)).schedule();
         });
-        DogLog.tunable("IntakeWrist/Zero", false, x -> {
-            if (x) {
-                zero().schedule();
-            }
-        });
     }
 
-    public double getAngleRad() {
-        return enc.getPosition();
-    }
-
-    public double getAngleDeg() {
-        return Math.toDegrees(getAngleRad());
+    public Angle getAngle() {
+        return Rotations.of(enc.getPosition());
     }
 
     public Command moveTo(Angle position) {
@@ -85,7 +77,8 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET_RAD);
+            System.out.println("Zeroing Intake Wrist");
+            motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
         });
     }
 
@@ -112,11 +105,11 @@ public class IntakeWrist extends SubsystemBase {
         DogLog.log("IntakeWrist/GoalDeg", goalDeg, "Degrees");
         pid.setGoal(Math.toRadians(goalDeg));
 
-        DogLog.log("IntakeWrist/CurrAng", getAngleRad());
+        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
 
-        double pidVolts = pid.calculate(getAngleRad());
+        double pidVolts = pid.calculate(getAngle().in(Rotations));
         DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
-        double ffVolts = ff.calculate(getAngleRad(), pid.getSetpoint().velocity);
+        double ffVolts = ff.calculate(getAngle().in(Rotations), pid.getSetpoint().velocity);
         DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
         double volts = pidVolts + ffVolts;
         DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
