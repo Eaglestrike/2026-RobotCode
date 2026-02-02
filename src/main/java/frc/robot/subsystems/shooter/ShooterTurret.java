@@ -11,11 +11,8 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
@@ -24,20 +21,17 @@ import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
-import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
     private MotionMagicVoltage position = new MotionMagicVoltage(0).withEnableFOC(true);
-    private EagleSwerveDrivetrain drive;
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
 
     private final Angle minRotation = Degrees.of(-180);
     private final Angle maxRotation = Degrees.of(180);
 
-    public ShooterTurret(EagleSwerveDrivetrain drive) {
-        this.drive = drive;
+    public ShooterTurret() {
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
@@ -102,17 +96,16 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
-            DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
-            this.motor.setControl(this.position.withPosition(pos));
+            setPosition(pos);
         });
     }
 
-    public void setFacing(Pose2d to) {
-        var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));
-        var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
-                .minus(pose.getRotation());
-
-        this.motor.setControl(this.position.withPosition(angle.getRotations()));
+    /**
+     * Directly set the turret position (for use by ShooterController)
+     */
+    public void setPosition(Angle pos) {
+        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
+        this.motor.setControl(this.position.withPosition(pos));
     }
 
     public Command stop() {
@@ -125,6 +118,13 @@ public class ShooterTurret extends SubsystemBase {
         return runOnce(() -> {
             this.motor.setPosition(0.0);
         });
+    }
+
+    /**
+     * Get current turret angle in degrees (relative to robot forward)
+     */
+    public double getAngleDegrees() {
+        return this.motor.getPosition().getValue().in(Degrees);
     }
 
     /* sim */

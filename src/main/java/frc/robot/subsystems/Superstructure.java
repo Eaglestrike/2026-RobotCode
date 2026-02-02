@@ -17,7 +17,6 @@ import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -49,8 +48,8 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.parallel(
-                hopper.startMotor(),
-                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
+                hopper.startMotor());
+        // Shooter controller handles idle velocity automatically
     }
 
     /**
@@ -113,24 +112,24 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         if (isShooting) {
+            // Set target based on mode
             if (currentMode == ShootMode.FERRY) {
-                shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
+                shooter.aimAt(FieldConstants.getAllianceOutpostPosition());
             } else if (currentMode == ShootMode.SHOOT) {
-                shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+                shooter.aimAt(FieldConstants.getAllianceHubPosition());
             }
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            // TODO: set flywheel speeds based on distance to target
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
 
-            if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
+            // Feed when ready to shoot
+            if (shooter.isReadyToShoot()) {
                 feeder.startMotor();
             } else {
                 feeder.stopMotor();
             }
         } else {
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            // Idle mode - stop aiming, pre-aim at hub
+            shooter.stopAiming();
+            shooter.getController().setTarget(FieldConstants.getAllianceHubPosition());
             feeder.stopMotor();
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
         }
     }
 

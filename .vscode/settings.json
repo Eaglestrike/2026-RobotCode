@@ -63,4 +63,5 @@
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
   "wpilib.skipSelectSimulateExtension": true,
+  "java.compile.nullAnalysis.mode": "automatic",
 }
