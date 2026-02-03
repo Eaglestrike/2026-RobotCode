@@ -18,6 +18,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -64,6 +65,13 @@ public class RobotContainer {
 
     // auto
     private final SendableChooser<Command> autoChooser;
+
+    // Button Board constants
+    private final int CLIMB_BUTTON = 0;
+    private final int INTAKE_BUTTON = 1;
+    private final int HOOD_BUTTON = 2;
+    private final int TURRET_BUTTON = 3;
+    private final int SERIALIZER_BUTTON = 4;
 
     // subsystems
     private final Shooter shooter = new Shooter(drivetrain);
@@ -112,20 +120,37 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> slowModeOn = true))
                 .onFalse(Commands.runOnce(() -> slowModeOn = false));
 
-        rightJoystick.button(3).onTrue(drivetrain.runOnce(() -> {
+        operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
             System.out.println("Zeroing drive");
             drivetrain.seedFieldCentric();
             drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
         }).ignoringDisable(true));
 
+        
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        operatorController.button(7).and(operatorController.x())
+        operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
+                .onTrue(climb.zero().ignoringDisable(true));
+
+        operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
+                .onTrue(intakeWrist.zero().ignoringDisable(true));
+
+        operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
+                .onTrue(shooter.getHood().zero().ignoringDisable(true));
+        
+        operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
+                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+
+        operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board is assembled
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
         rightJoystick.trigger().onTrue(superstructure.intake());
         leftJoystick.trigger().onTrue(superstructure.stowIntake());
         leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
+
+        // Manual Commands
+        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightX())).onFalse(intakeRollers.setManualVoltage(0));
+        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController.getRightY())).onFalse(intakeWrist.setManualVoltage(0));
     }
 
     public Command getOffTower() {

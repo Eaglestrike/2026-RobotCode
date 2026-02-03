@@ -98,7 +98,7 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command setManualVoltage(double joystickPosition) {
-        return runOnce(() -> {
+        return run(() -> {
             motor.setVoltage(joystickPosition * IntakeConstants.Wrist.MAX_VOLTS);
         });
     }
