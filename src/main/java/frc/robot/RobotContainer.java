@@ -123,7 +123,9 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x())
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
-        rightJoystick.trigger().onTrue(superstructure.intake()).onFalse(superstructure.stowIntake());
+        rightJoystick.trigger().onTrue(superstructure.intake());
+        leftJoystick.trigger().onTrue(superstructure.stowIntake());
+        leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
     }
 
     public Command getOffTower() {

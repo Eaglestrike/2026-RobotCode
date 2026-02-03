@@ -83,6 +83,14 @@ public class Superstructure extends SubsystemBase {
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
+    public Command outtake() {
+        return Commands.sequence(
+                intakeWrist.eject(),
+                Commands.waitSeconds(0.5),
+                intakeRollers.eject()
+        );
+    }
+
     /**
      * Command to climb to a specified level
      * 

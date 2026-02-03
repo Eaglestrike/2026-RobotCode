@@ -91,6 +91,12 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
+    public Command eject(){
+        return runOnce(() -> {
+            this.moveTo(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
+        });
+    }
+
     public Command setManualVoltage(double joystickPosition) {
         return runOnce(() -> {
             motor.setVoltage(joystickPosition * IntakeConstants.Wrist.MAX_VOLTS);
