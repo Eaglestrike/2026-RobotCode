@@ -131,6 +131,8 @@ public class RobotContainer {
 
         operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
                 .onTrue(climb.zero().ignoringDisable(true));
+        
+        operatorController.button(7).onTrue(getDrivetrain().alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
 
         operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
