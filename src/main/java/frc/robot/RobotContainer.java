@@ -145,6 +145,10 @@ public class RobotContainer {
 
         operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board is assembled
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
+        
+        // FOR TESTING ONLY - alignPID left and right
+        rightJoystick.button(3).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+        rightJoystick.button(4).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
         rightJoystick.trigger().onTrue(superstructure.intake());
         leftJoystick.trigger().onTrue(superstructure.stowIntake());
