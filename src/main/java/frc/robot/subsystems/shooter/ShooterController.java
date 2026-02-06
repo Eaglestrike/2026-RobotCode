@@ -6,9 +6,15 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ballistics.BallisticConstants;
+import frc.robot.subsystems.shooter.ballistics.BallisticConstants.SpeedPreset;
+import frc.robot.subsystems.shooter.ballistics.BallisticSolver;
+import frc.robot.subsystems.shooter.ballistics.BallisticSolver.SolverResult;
+import frc.robot.subsystems.shooter.ballistics.BallisticSolver.Vec3;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
@@ -16,10 +22,10 @@ import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 /**
  * ShooterController - Unified aiming controller for Turret + Hood + Flywheel
  * 
- * Calculates and coordinates:
- * - Turret angle (horizontal aiming)
- * - Hood angle (vertical aiming based on distance)
- * - Flywheel speed (based on distance)
+ * Uses BallisticSolver for accurate trajectory calculation with:
+ * - Gravity
+ * - Air drag (quadratic)
+ * - Moving target lead
  */
 public class ShooterController {
     private final EagleSwerveDrivetrain drive;
@@ -31,26 +37,61 @@ public class ShooterController {
     private Pose3d targetPose = null;
     private boolean enabled = false;
 
+    // Tunable target for testing (via NetworkTables)
+    private double tunableTargetX = 5.0;
+    private double tunableTargetY = 0.0;
+    private double tunableTargetZ = 2.0;
+    private boolean useTunableTarget = false;
+
     // Calculated values
     private double targetTurretAngleDeg = 0;
     private double targetHoodAngleDeg = 0;
     private double targetFlywheelRPM = FlywheelConstants.IDLE_VELOCITY;
     private double distanceToTarget = 0;
+    private SpeedPreset currentSpeedPreset = SpeedPreset.MEDIUM;
+    private double currentLaunchVelocity = BallisticConstants.MEDIUM_SPEED_LAUNCH_VEL;
+
+    // Ballistic solver result cache
+    private SolverResult lastSolverResult = null;
 
     // Tolerances
     private static final double TURRET_TOLERANCE_DEG = 2.0;
     private static final double HOOD_TOLERANCE_DEG = 1.0;
 
-    public ShooterController(EagleSwerveDrivetrain drive, ShooterTurret turret, 
-                             ShooterHood hood, ShooterFlywheels flywheels) {
+    // Ballistic solver parameters
+    private final BallisticConstants ballisticParams = new BallisticConstants();
+
+    public ShooterController(EagleSwerveDrivetrain drive, ShooterTurret turret,
+            ShooterHood hood, ShooterFlywheels flywheels) {
         this.drive = drive;
         this.turret = turret;
         this.hood = hood;
         this.flywheels = flywheels;
+
+        // Configure ballistic solver
+        ballisticParams.highArc = true; // use high arc (parabolic) trajectory
+        ballisticParams.g = 9.80665;
+        ballisticParams.dt = 0.005; // 5ms integration step
+        ballisticParams.tMax = 3.0; // max 3 seconds flight time
+        ballisticParams.tolMiss = 0.05; // 5cm tolerance
+        ballisticParams.maxIter = 15;
+
+        // Setup tunable target inputs for testing via NetworkTables
+        DogLog.tunable("ShooterController/TunableTarget/X", tunableTargetX, x -> tunableTargetX = x);
+        DogLog.tunable("ShooterController/TunableTarget/Y", tunableTargetY, y -> tunableTargetY = y);
+        DogLog.tunable("ShooterController/TunableTarget/Z", tunableTargetZ, z -> tunableTargetZ = z);
+        DogLog.tunable("ShooterController/TunableTarget/Enable", false, enable -> {
+            useTunableTarget = enable;
+            if (enable) {
+                setTarget(new Pose3d(tunableTargetX, tunableTargetY, tunableTargetZ, new Rotation3d()));
+                setEnabled(true);
+            }
+        });
     }
 
     /**
      * Set the target to aim at
+     * 
      * @param target The 3D pose of the target (e.g., Hub)
      */
     public void setTarget(Pose3d target) {
@@ -68,30 +109,90 @@ public class ShooterController {
      * Call this periodically to update all aiming calculations and commands
      */
     public void update() {
+        // Update target from tunable inputs if enabled
+        if (useTunableTarget) {
+            targetPose = new Pose3d(tunableTargetX, tunableTargetY, tunableTargetZ, new Rotation3d());
+            enabled = true;
+        }
+
         if (targetPose == null || !enabled) {
             // Idle mode - just maintain idle flywheel speed
             flywheels.setVelocity(FlywheelConstants.IDLE_VELOCITY);
+            lastSolverResult = null;
             return;
         }
 
-        // Get robot and turret position
+        // Get robot pose and velocity
         Pose2d robotPose = drive.getState().Pose;
-        Translation2d turretPosition = robotPose.getTranslation()
+        var chassisSpeeds = drive.getState().Speeds;
+
+        // Calculate shooter position in field coordinates
+        Translation2d shooterPosition2d = robotPose.getTranslation()
                 .plus(TurretConstants.OFFSET.rotateBy(robotPose.getRotation()));
+        Translation3d shooterPosition = new Translation3d(
+                shooterPosition2d.getX(),
+                shooterPosition2d.getY(),
+                BallisticConstants.SHOOTER_HEIGHT);
 
-        // Calculate distance to target (horizontal distance)
-        Translation2d targetXY = targetPose.toPose2d().getTranslation();
-        distanceToTarget = turretPosition.getDistance(targetXY);
+        // Calculate target position relative to shooter (in shooter frame)
+        Translation3d targetPosition = targetPose.getTranslation();
+        Translation3d relativePosition = targetPosition.minus(shooterPosition);
 
-        // Calculate turret angle
-        targetTurretAngleDeg = calculateTurretAngle(robotPose, turretPosition, targetXY);
+        // Convert to shooter-relative coordinates (rotate by robot heading)
+        double robotYaw = robotPose.getRotation().getRadians();
+        double cosYaw = Math.cos(-robotYaw);
+        double sinYaw = Math.sin(-robotYaw);
 
-        // Calculate hood angle based on distance and target height
-        double targetHeight = targetPose.getZ();
-        targetHoodAngleDeg = calculateHoodAngle(distanceToTarget, targetHeight);
+        double relX = relativePosition.getX() * cosYaw - relativePosition.getY() * sinYaw;
+        double relY = relativePosition.getX() * sinYaw + relativePosition.getY() * cosYaw;
+        double relZ = relativePosition.getZ();
 
-        // Calculate flywheel speed based on distance
-        targetFlywheelRPM = calculateFlywheelSpeed(distanceToTarget);
+        // Calculate target velocity relative to robot (for lead calculation)
+        // Assuming target is stationary, robot velocity creates relative motion
+        double robotVelX = chassisSpeeds.vxMetersPerSecond;
+        double robotVelY = chassisSpeeds.vyMetersPerSecond;
+
+        // Rotate robot velocity to robot frame and negate (target appears to move opposite)
+        double relVelX = -(robotVelX * cosYaw - robotVelY * sinYaw);
+        double relVelY = -(robotVelX * sinYaw + robotVelY * cosYaw);
+        double relVelZ = 0;
+
+        // Calculate horizontal distance for logging
+        distanceToTarget = Math.sqrt(relX * relX + relY * relY);
+
+        // Select speed preset based on distance (THREE-SPEED SYSTEM)
+        currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
+        currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
+        targetFlywheelRPM = BallisticConstants.getRPMForPreset(currentSpeedPreset);
+
+        // Use ballistic solver with selected launch velocity
+        Vec3 relPos = new Vec3(relX, relY, relZ);
+        Vec3 relVel = new Vec3(relVelX, relVelY, relVelZ);
+
+        lastSolverResult = BallisticSolver.solve(relPos, relVel, 
+                currentLaunchVelocity, 
+                BallisticConstants.DEFAULT_DRAG_COEFFICIENT, 
+                ballisticParams);
+
+        if (lastSolverResult.success || Double.isFinite(lastSolverResult.theta)) {
+            // theta is pitch (launch angle), phi is yaw (turret angle)
+            double launchAngleDeg = Math.toDegrees(lastSolverResult.theta);
+            targetTurretAngleDeg = Math.toDegrees(lastSolverResult.phi);
+
+            // Convert launch angle to hood angle using calibration offset
+            targetHoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(launchAngleDeg);
+
+            // Clamp to mechanism limits
+            targetHoodAngleDeg = MathUtil.clamp(targetHoodAngleDeg, HoodConstants.MIN_ANGLE, HoodConstants.MAX_ANGLE);
+            targetTurretAngleDeg = MathUtil.inputModulus(targetTurretAngleDeg, -180, 180);
+        } else {
+            // Fallback to simple calculation if solver fails
+            targetTurretAngleDeg = Math.toDegrees(Math.atan2(relY, relX));
+            double fallbackLaunchAngle = calculateFallbackHoodAngle(distanceToTarget, relZ);
+            targetHoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(fallbackLaunchAngle);
+        }
+
+        // Note: targetFlywheelRPM already set above based on speed preset
 
         // Apply commands
         applyCommands();
@@ -101,84 +202,35 @@ public class ShooterController {
     }
 
     /**
-     * Calculate the turret angle needed to face the target
+     * Fallback hood angle calculation when solver fails
      */
-    private double calculateTurretAngle(Pose2d robotPose, Translation2d turretPos, Translation2d targetPos) {
-        // Vector from turret to target
-        Translation2d toTarget = targetPos.minus(turretPos);
-        
-        // Angle in field coordinates
-        Rotation2d fieldAngle = toTarget.getAngle();
-        
-        // Convert to robot-relative angle
-        Rotation2d relativeAngle = fieldAngle.minus(robotPose.getRotation());
-        
-        // Normalize to [-180, 180]
-        double angleDeg = MathUtil.inputModulus(relativeAngle.getDegrees(), -180, 180);
-        
-        // Clamp to turret limits
-        angleDeg = MathUtil.clamp(angleDeg, -180, 180);
-        
-        return angleDeg;
-    }
-
-    /**
-     * Calculate hood angle based on distance and target height
-     * Uses simple projectile physics approximation
-     * 
-     * TODO: Replace with lookup table or more accurate ballistics model
-     */
-    private double calculateHoodAngle(double distance, double targetHeight) {
-        // Simple linear interpolation for now
-        // Close range (2m) -> steeper angle, Far range (10m) -> shallower angle
-        
-        // Base angle calculation using atan
-        double baseAngle = Math.toDegrees(Math.atan2(targetHeight, distance));
-        
-        // Add compensation for projectile drop (empirical adjustment)
-        // This needs tuning based on actual ball physics
-        double dropCompensation = distance * 1.5; // degrees per meter, needs tuning
-        
+    private double calculateFallbackHoodAngle(double distance, double height) {
+        double baseAngle = Math.toDegrees(Math.atan2(height, distance));
+        double dropCompensation = distance * 1.5;
         double hoodAngle = baseAngle + dropCompensation;
-        
-        // Clamp to hood limits
-        hoodAngle = MathUtil.clamp(hoodAngle, HoodConstants.MIN_ANGLE, HoodConstants.MAX_ANGLE);
-        
-        return hoodAngle;
+        return MathUtil.clamp(hoodAngle, HoodConstants.MIN_ANGLE, HoodConstants.MAX_ANGLE);
     }
 
     /**
-     * Calculate flywheel speed based on distance
-     * 
-     * TODO: Replace with lookup table based on testing
+     * Get current speed preset
      */
-    private double calculateFlywheelSpeed(double distance) {
-        // Linear interpolation between min and max distance
-        // Closer = lower speed, farther = higher speed
-        
-        double minDistance = 2.0; // meters
-        double maxDistance = 10.0; // meters
-        double minRPM = 3000;
-        double maxRPM = FlywheelConstants.MAX_VELOCITY;
-        
-        // Linear interpolation
-        double t = MathUtil.clamp((distance - minDistance) / (maxDistance - minDistance), 0, 1);
-        double rpm = minRPM + t * (maxRPM - minRPM);
-        
-        return rpm;
+    public SpeedPreset getCurrentSpeedPreset() {
+        return currentSpeedPreset;
+    }
+
+    /**
+     * Get current launch velocity used by solver (m/s)
+     */
+    public double getCurrentLaunchVelocity() {
+        return currentLaunchVelocity;
     }
 
     /**
      * Apply calculated values to subsystems (direct calls, not Commands)
      */
     private void applyCommands() {
-        // Turret
         turret.setPosition(Degrees.of(targetTurretAngleDeg));
-        
-        // Hood
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
-        
-        // Flywheels
         flywheels.setVelocity(targetFlywheelRPM);
     }
 
@@ -213,10 +265,31 @@ public class ShooterController {
     }
 
     /**
+     * Check if ballistic solution was found
+     */
+    public boolean hasSolution() {
+        return lastSolverResult != null && lastSolverResult.success;
+    }
+
+    /**
      * Get distance to current target in meters
      */
     public double getDistanceToTarget() {
         return distanceToTarget;
+    }
+
+    /**
+     * Get predicted miss distance from solver (for diagnostics)
+     */
+    public double getPredictedMiss() {
+        return lastSolverResult != null ? lastSolverResult.miss : Double.NaN;
+    }
+
+    /**
+     * Get predicted time of flight (for diagnostics)
+     */
+    public double getTimeOfFlight() {
+        return lastSolverResult != null ? lastSolverResult.tStar : Double.NaN;
     }
 
     /**
@@ -225,6 +298,8 @@ public class ShooterController {
     private void logValues() {
         DogLog.log("ShooterController/Enabled", enabled);
         DogLog.log("ShooterController/DistanceToTarget", distanceToTarget, "Meters");
+        DogLog.log("ShooterController/SpeedPreset", currentSpeedPreset.name());
+        DogLog.log("ShooterController/LaunchVelocity", currentLaunchVelocity, "m/s");
         DogLog.log("ShooterController/TargetTurretAngle", targetTurretAngleDeg, "Degrees");
         DogLog.log("ShooterController/TargetHoodAngle", targetHoodAngleDeg, "Degrees");
         DogLog.log("ShooterController/TargetFlywheelRPM", targetFlywheelRPM, "RPM");
@@ -232,5 +307,13 @@ public class ShooterController {
         DogLog.log("ShooterController/HoodOnTarget", isHoodOnTarget());
         DogLog.log("ShooterController/FlywheelReady", isFlywheelReady());
         DogLog.log("ShooterController/ReadyToShoot", isReadyToShoot());
+
+        // Ballistic solver diagnostics
+        DogLog.log("ShooterController/SolverSuccess", hasSolution());
+        DogLog.log("ShooterController/PredictedMiss", getPredictedMiss(), "Meters");
+        DogLog.log("ShooterController/TimeOfFlight", getTimeOfFlight(), "Seconds");
+        if (lastSolverResult != null) {
+            DogLog.log("ShooterController/SolverIterations", lastSolverResult.iterations);
+        }
     }
 }

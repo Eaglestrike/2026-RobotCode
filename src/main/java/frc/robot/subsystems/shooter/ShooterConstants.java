@@ -59,6 +59,7 @@ public final class ShooterConstants {
 
     public final class HoodConstants {
         public static final int MOTOR_ID = 20;
+        public static final boolean MOTOR_INVERTED = true;
         public static final double GEAR_RATIO = 362.0 / 32.0;
         /** In radians */
         public final static double ENCODER_OFFSET = -1.36;
@@ -66,8 +67,8 @@ public final class ShooterConstants {
         public static final double MAX_VEL = 14;
         public static final double MAX_ACC = 20;
 
-        public static final double MIN_ANGLE = -90.0; // degrees
-        public static final double MAX_ANGLE = 0.0; // degrees
+        public static final double MIN_ANGLE = 0.0; // degrees (水平)
+        public static final double MAX_ANGLE = 90.0; // degrees (向上)
 
         public static final double MAX_VOLTS = 8.0;
 

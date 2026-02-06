@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -39,6 +40,7 @@ public class ShooterHood extends SubsystemBase {
 
         SparkMaxConfig cfg = new SparkMaxConfig();
         cfg.idleMode(IdleMode.kBrake).voltageCompensation(12.0);
+        cfg.inverted(HoodConstants.MOTOR_INVERTED);
         cfg.encoder.positionConversionFactor(2.0 * Math.PI / HoodConstants.GEAR_RATIO);
         cfg.encoder.velocityConversionFactor(2.0 * Math.PI / HoodConstants.GEAR_RATIO / 60.0);
         motor.configure(cfg, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
@@ -109,6 +111,13 @@ public class ShooterHood extends SubsystemBase {
         if (!DriverStation.isEnabled()) {
             motor.setVoltage(0.0);
             return;
+        }
+
+        // Zero from NetworkTables (e.g. Streamlit Shooter Tuner)
+        var nt = NetworkTableInstance.getDefault().getTable("DogLog");
+        if (nt.getEntry("ShooterHood/Zero").getBoolean(false)) {
+            motor.getEncoder().setPosition(HoodConstants.ENCODER_OFFSET);
+            nt.getEntry("ShooterHood/Zero").setBoolean(false);
         }
 
         goal = Radians.of(MathUtil.clamp(goal.magnitude(), Math.toRadians(HoodConstants.MIN_ANGLE),

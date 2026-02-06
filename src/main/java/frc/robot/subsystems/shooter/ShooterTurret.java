@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -136,6 +137,16 @@ public class ShooterTurret extends SubsystemBase {
                     0.0818917055,
                     gearRatio),
             gearbox);
+
+    @Override
+    public void periodic() {
+        // Zero from NetworkTables (e.g. Streamlit Shooter Tuner)
+        var nt = NetworkTableInstance.getDefault().getTable("DogLog");
+        if (nt.getEntry("ShooterTurret/Zero").getBoolean(false)) {
+            motor.setPosition(0.0);
+            nt.getEntry("ShooterTurret/Zero").setBoolean(false);
+        }
+    }
 
     @Override
     public void simulationPeriodic() {
