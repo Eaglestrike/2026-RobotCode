@@ -32,10 +32,20 @@ public class Climb extends SubsystemBase {
         left.getConfigurator().apply(slot0Configs);
         right.getConfigurator().apply(slot0Configs);
     });
+    boolean supportingRobot = false;
     private final DoubleSubscriber kG = DogLog.tunable("Climb/kG", ClimbConstants.kG, newKG -> {
-        slot0Configs.kG = newKG;
-        left.getConfigurator().apply(slot0Configs);
-        right.getConfigurator().apply(slot0Configs);
+        if (!supportingRobot) {
+            slot0Configs.kG = newKG;
+            left.getConfigurator().apply(slot0Configs);
+            right.getConfigurator().apply(slot0Configs);
+        }
+    });
+    private final DoubleSubscriber kGWholeRobot = DogLog.tunable("Climb/kG", ClimbConstants.kG, newKG -> {
+        if (supportingRobot) {
+            slot0Configs.kG = newKG;
+            left.getConfigurator().apply(slot0Configs);
+            right.getConfigurator().apply(slot0Configs);
+        }
     });
     private final DoubleSubscriber kV = DogLog.tunable("Climb/kV", ClimbConstants.kV, newKV -> {
         slot0Configs.kV = newKV;
@@ -64,7 +74,6 @@ public class Climb extends SubsystemBase {
     });
 
     private ClimbConstants.ClimbState currentState = ClimbConstants.ClimbState.STOWED;
-
 
     public Climb() {
         // left motor config
@@ -104,39 +113,40 @@ public class Climb extends SubsystemBase {
                         Map.entry(ClimbConstants.ClimbState.STOWED, stow()),
                         Map.entry(ClimbConstants.ClimbState.L1, climbL1()),
                         Map.entry(ClimbConstants.ClimbState.L2, climbL2()),
-                        Map.entry(ClimbConstants.ClimbState.L3, climbL3())
-                        ),
+                        Map.entry(ClimbConstants.ClimbState.L3, climbL3())),
                 () -> state);
     }
 
     private Command climbL1() {
         return Commands.sequence(
-            moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
-            moveTo(ClimbConstants.CLIMBED_POSITION, left)
-        );
+                moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                moveTo(ClimbConstants.CLIMBED_POSITION, left),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
     }
 
     private Command climbL2() {
-
         return Commands.sequence(
-            climbL1(),
-            moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
-            moveTo(ClimbConstants.CLIMBED_POSITION, right)
-        );
+                climbL1(),
+                moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                moveTo(ClimbConstants.CLIMBED_POSITION, right),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
     }
 
     private Command climbL3() {
         return Commands.sequence(
-            climbL2(),
-            moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
-            moveTo(ClimbConstants.CLIMBED_POSITION, left)
-        );
+                climbL2(),
+                moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                moveTo(ClimbConstants.CLIMBED_POSITION, left),
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
     }
 
     private Command stow() {
         return Commands.sequence(
-            moveTo(ClimbConstants.STOW_HEIGHT, left),
-            moveTo(ClimbConstants.STOW_HEIGHT, right));
+                moveTo(ClimbConstants.STOW_HEIGHT, left),
+                moveTo(ClimbConstants.STOW_HEIGHT, right));
     }
 
     // Move one motor to a specified position
@@ -145,7 +155,26 @@ public class Climb extends SubsystemBase {
                 () -> {
                     motor.setControl(mmReq.withPosition(position).withSlot(0));
                 }).until(
-                    () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
+                        () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
+    }
+
+    //
+    private Command changeWhetherOrNotWeAreSupportingTheWholeRobot(boolean newSupportingRobot) {
+        return runOnce(
+                () -> {
+                    supportingRobot = newSupportingRobot;
+                    if (supportingRobot) {
+                        slot0Configs.kG = kGWholeRobot.get();
+                        left.getConfigurator().apply(slot0Configs);
+                        right.getConfigurator().apply(slot0Configs);
+                    } else {
+                        slot0Configs.kG = kG.get();
+                        left.getConfigurator().apply(slot0Configs);
+                        right.getConfigurator().apply(slot0Configs);
+                    }
+
+                });
+
     }
 
     // Zero the encoders of both motors
