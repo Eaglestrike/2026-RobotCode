@@ -17,8 +17,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -39,6 +37,7 @@ import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionConstants;
 
 public class RobotContainer {
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -80,17 +79,23 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
-    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder,
+    private final Vision vision = new Vision(drivetrain);
+    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
+            feeder,
             hopper);
 
     public RobotContainer() {
         configureBindings();
 
         NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
-        NamedCommands.registerCommand("SetModeFerry", Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
-        NamedCommands.registerCommand("SetModeShoot", Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
-        NamedCommands.registerCommand("StartShooting", Commands.runOnce(() -> superstructure.setShooting(true)));
-        NamedCommands.registerCommand("StopShooting", Commands.runOnce(() -> superstructure.setShooting(false)));
+        NamedCommands.registerCommand("SetModeFerry",
+                Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
+        NamedCommands.registerCommand("SetModeShoot",
+                Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
+        NamedCommands.registerCommand("StartShooting",
+                Commands.runOnce(() -> superstructure.setShooting(true)));
+        NamedCommands.registerCommand("StopShooting",
+                Commands.runOnce(() -> superstructure.setShooting(false)));
         NamedCommands.registerCommand("Intake", superstructure.intake());
         NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
         NamedCommands.registerCommand("Stow", superstructure.stow());
@@ -109,11 +114,15 @@ public class RobotContainer {
                 drivetrain.applyRequest(() -> {
                     var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
                     return drive
-                            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT * driveMult)
-                            .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT * driveMult)
+                            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
+                                    * driveMult)
+                            .withRotationalDeadband(MaxAngularRate
+                                    * DriveConstants.DRIVE_DEADBAND_MULT
+                                    * driveMult)
                             .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
                             .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate * driveMult);
+                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
+                                    * driveMult);
                 }));
 
         rightJoystick.button(2)
@@ -126,7 +135,6 @@ public class RobotContainer {
             drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
         }).ignoringDisable(true));
 
-        
         drivetrain.registerTelemetry(logger::telemeterize);
 
         operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
@@ -139,11 +147,12 @@ public class RobotContainer {
 
         operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
                 .onTrue(shooter.getHood().zero().ignoringDisable(true));
-        
+
         operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
                 .onTrue(shooter.getTurret().zero().ignoringDisable(true));
 
-        operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board is assembled
+        operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board
+                                                                 // is assembled
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
         
         // FOR TESTING ONLY - alignPID left and right
@@ -155,8 +164,12 @@ public class RobotContainer {
         leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
 
         // Manual Commands
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightX())).onFalse(intakeRollers.setManualVoltage(0));
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController.getRightY())).onFalse(intakeWrist.setManualVoltage(0));
+        buttonBoard.button(INTAKE_BUTTON)
+                .whileTrue(intakeRollers.setManualVoltage(operatorController.getRightX()))
+                .onFalse(intakeRollers.setManualVoltage(0));
+        buttonBoard.button(INTAKE_BUTTON)
+                .whileTrue(intakeWrist.setManualVoltage(operatorController.getRightY()))
+                .onFalse(intakeWrist.setManualVoltage(0));
     }
 
     public Command getOffTower() {
@@ -169,7 +182,8 @@ public class RobotContainer {
         return Commands.sequence(
                 superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(
-                        drive.withVelocityY(MaxSpeed * direction * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
+                        drive.withVelocityY(MaxSpeed * direction
+                                * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
                 Commands.waitSeconds(0.5),
                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
     }
