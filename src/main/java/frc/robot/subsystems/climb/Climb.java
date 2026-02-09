@@ -1,12 +1,14 @@
 package frc.robot.subsystems.climb;
 
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -122,7 +124,9 @@ public class Climb extends SubsystemBase {
                 moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
+                Commands.waitSeconds(4),
+                stopIfNearSetpoint(left));
     }
 
     private Command climbL2() {
@@ -131,7 +135,9 @@ public class Climb extends SubsystemBase {
                 moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, right),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
+                Commands.waitSeconds(4),
+                stopIfNearSetpoint(right));
     }
 
     private Command climbL3() {
@@ -140,7 +146,9 @@ public class Climb extends SubsystemBase {
                 moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false));
+                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
+                Commands.waitSeconds(4),
+                stopIfNearSetpoint(left));
     }
 
     private Command stow() {
@@ -175,6 +183,14 @@ public class Climb extends SubsystemBase {
 
                 });
 
+    }
+
+    private Command stopIfNearSetpoint(TalonFX motor) {
+        return runOnce(() -> {
+            if (motor.getMotionMagicAtTarget().getValue()) {
+                motor.setControl(new VoltageOut(0));
+            }
+        });
     }
 
     // Zero the encoders of both motors
