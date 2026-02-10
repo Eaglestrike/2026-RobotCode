@@ -127,6 +127,12 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
+    public Command setManualVoltage(double joystickPosition) {
+        return run(() -> {
+            this.motor.setVoltage(joystickPosition * TurretConstants.MAX_VOLTS);
+        });
+    }
+
     /* sim */
     private static final double gearRatio = TurretConstants.GEAR_RATIO;
     private final DCMotor gearbox = DCMotor.getKrakenX60(1);

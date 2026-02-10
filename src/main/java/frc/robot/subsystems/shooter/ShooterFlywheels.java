@@ -81,6 +81,12 @@ public class ShooterFlywheels extends SubsystemBase {
         });
     }
 
+    public Command setManualVoltage(double joystickPosition) {
+        return this.run(() -> {
+            motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
+        });
+    }
+
     public Command stop() {
         return this.runOnce(() -> {
             motor.stopMotor();
