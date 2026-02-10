@@ -29,25 +29,22 @@ public class Climb extends SubsystemBase {
     private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
     private final TalonFXConfiguration cfg = new TalonFXConfiguration();
     private final Slot0Configs slot0Configs = cfg.Slot0;
+    private final Slot1Configs slot1Configs = cfg.Slot1;
     private final DoubleSubscriber kS = DogLog.tunable("Climb/kS", ClimbConstants.kS, newKS -> {
         slot0Configs.kS = newKS;
         left.getConfigurator().apply(slot0Configs);
         right.getConfigurator().apply(slot0Configs);
     });
     boolean supportingRobot = false;
-    private final DoubleSubscriber kG = DogLog.tunable("Climb/kG", ClimbConstants.kG, newKG -> {
-        if (!supportingRobot) {
-            slot0Configs.kG = newKG;
-            left.getConfigurator().apply(slot0Configs);
-            right.getConfigurator().apply(slot0Configs);
-        }
+    private final DoubleSubscriber kG = DogLog.tunable("Climb/kG (when not supporting the robot)", ClimbConstants.kG, newKG -> {
+        slot0Configs.kG = newKG;
+        left.getConfigurator().apply(slot0Configs);
+        right.getConfigurator().apply(slot0Configs);
     });
-    private final DoubleSubscriber kGWholeRobot = DogLog.tunable("Climb/kG", ClimbConstants.kG, newKG -> {
-        if (supportingRobot) {
-            slot0Configs.kG = newKG;
-            left.getConfigurator().apply(slot0Configs);
-            right.getConfigurator().apply(slot0Configs);
-        }
+    private final DoubleSubscriber kGWholeRobot = DogLog.tunable("Climb/kG (when supporting the robot)", ClimbConstants.kG, newKG -> {
+        slot1Configs.kG = newKG;
+        left.getConfigurator().apply(slot1Configs);
+        right.getConfigurator().apply(slot1Configs);
     });
     private final DoubleSubscriber kV = DogLog.tunable("Climb/kV", ClimbConstants.kV, newKV -> {
         slot0Configs.kV = newKV;
@@ -125,8 +122,9 @@ public class Climb extends SubsystemBase {
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
-                Commands.waitSeconds(4),
-                stopIfNearSetpoint(left));
+                Commands.waitUntil(() -> left.getMotionMagicAtTarget().getValue()),
+                stopMotor(left)
+            );
     }
 
     private Command climbL2() {
@@ -136,8 +134,9 @@ public class Climb extends SubsystemBase {
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, right),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
-                Commands.waitSeconds(4),
-                stopIfNearSetpoint(right));
+                Commands.waitUntil(() -> right.getMotionMagicAtTarget().getValue()),
+                stopMotor(left)
+            );
     }
 
     private Command climbL3() {
@@ -147,21 +146,23 @@ public class Climb extends SubsystemBase {
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
                 changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
-                Commands.waitSeconds(4),
-                stopIfNearSetpoint(left));
+                Commands.waitUntil(() -> left.getMotionMagicAtTarget().getValue()),
+                stopMotor(left)
+            );
     }
 
     private Command stow() {
         return Commands.sequence(
                 moveTo(ClimbConstants.STOW_HEIGHT, left),
-                moveTo(ClimbConstants.STOW_HEIGHT, right));
+                moveTo(ClimbConstants.STOW_HEIGHT, right)
+            );
     }
 
     // Move one motor to a specified position
     private Command moveTo(double position, TalonFX motor) {
         return runOnce(
                 () -> {
-                    motor.setControl(mmReq.withPosition(position).withSlot(0));
+                    motor.setControl(mmReq.withPosition(position).withSlot(supportingRobot ? 1 : 0));
                 }).until(
                         () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
     }
@@ -171,25 +172,13 @@ public class Climb extends SubsystemBase {
         return runOnce(
                 () -> {
                     supportingRobot = newSupportingRobot;
-                    if (supportingRobot) {
-                        slot0Configs.kG = kGWholeRobot.get();
-                        left.getConfigurator().apply(slot0Configs);
-                        right.getConfigurator().apply(slot0Configs);
-                    } else {
-                        slot0Configs.kG = kG.get();
-                        left.getConfigurator().apply(slot0Configs);
-                        right.getConfigurator().apply(slot0Configs);
-                    }
-
                 });
 
     }
 
-    private Command stopIfNearSetpoint(TalonFX motor) {
+    private Command stopMotor(TalonFX motor) {
         return runOnce(() -> {
-            if (motor.getMotionMagicAtTarget().getValue()) {
-                motor.setControl(new VoltageOut(0));
-            }
+            motor.setControl(new VoltageOut(0));
         });
     }
 
