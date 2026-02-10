@@ -145,8 +145,14 @@ public class RobotContainer {
 
         operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board is assembled
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
+
         
         // FOR TESTING ONLY - alignPID left and right
+        operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightY()))
+                        .onFalse(intakeRollers.setManualVoltage(0));
+        operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController.getLeftY()))
+                        .onFalse(intakeWrist.setManualVoltage(0));
+      
         rightJoystick.button(3).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
         rightJoystick.button(4).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
@@ -155,9 +161,10 @@ public class RobotContainer {
         leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
 
         // Manual Commands
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightX())).onFalse(intakeRollers.setManualVoltage(0));
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController.getRightY())).onFalse(intakeWrist.setManualVoltage(0));
-    }
+        //buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightY())).onFalse(intakeRollers.setManualVoltage(0));
+        //buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController.getLeftY())).onFalse(intakeWrist.setManualVoltage(0));
+        
+}
 
     public Command getOffTower() {
         if (superstructure.getClimbState() == null
