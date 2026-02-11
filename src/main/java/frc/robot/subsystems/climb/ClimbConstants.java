@@ -12,7 +12,7 @@ public class ClimbConstants {
     };
 
     public static final int LEFT_CLIMB_MOTOR_ID = 0;
-    public static final int RIGHT_CLIMB_MOTOR_ID = 0;
+    public static final int RIGHT_CLIMB_MOTOR_ID = 1;
 
     public final static double kP = 0.0;
     public final static double kI = 0.0;
