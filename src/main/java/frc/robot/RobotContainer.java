@@ -153,6 +153,9 @@ public class RobotContainer {
                         .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                         .onFalse(intakeWrist.setManualVoltage(() -> 0));
+        
+        operatorController.a().whileTrue(climb.setManualVoltage(operatorController::getLeftY, operatorController::getRightY))
+                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
       
         rightJoystick.button(3).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
         rightJoystick.button(4).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
@@ -169,8 +172,8 @@ public class RobotContainer {
         buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-        buttonBoard.button(CLIMB_BUTTON).whileTrue(climb.setManualVoltage(operatorController.getLeftY(), operatorController.getRightY()))
-                .onFalse(climb.setManualVoltage(0, 0));
+        buttonBoard.button(CLIMB_BUTTON).whileTrue(climb.setManualVoltage(operatorController::getLeftY, operatorController::getRightY))
+                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
         
         
         buttonBoard.button(TURRET_BUTTON).whileTrue(turret.setManualVoltage(operatorController.getLeftY()))

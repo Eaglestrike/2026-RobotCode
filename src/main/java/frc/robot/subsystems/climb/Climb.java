@@ -1,6 +1,7 @@
 package frc.robot.subsystems.climb;
 
 import java.util.Map;
+import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -167,13 +168,13 @@ public class Climb extends SubsystemBase {
                 });
     }
 
-    public Command setManualVoltage(double leftjoystickPosition, double rightjoystickPosition) {
+    public Command setManualVoltage(DoubleSupplier leftjoystickPosition, DoubleSupplier rightjoystickPosition) {
         return run(
                 () -> {
                     left.setVoltage(
-                            leftjoystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            leftjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                     right.setVoltage(
-                            rightjoystickPosition * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            rightjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
                 });
     }
 
