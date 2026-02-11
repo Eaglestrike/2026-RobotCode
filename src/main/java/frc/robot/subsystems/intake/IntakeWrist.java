@@ -3,6 +3,8 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import java.util.function.DoubleSupplier;
+
 import com.revrobotics.PersistMode;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.ResetMode;
@@ -24,12 +26,17 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeWrist extends SubsystemBase {
+    private enum State {
+        IDLE, MOVING_TO_GOAL, MANUAL
+    }
+
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
 
     private final RelativeEncoder enc;
     private final ProfiledPIDController pid;
     private final ArmFeedforward ff;
 
+    private State state = State.IDLE;
     private Angle goal = Radians.of(0.0);
 
     public IntakeWrist() {
@@ -74,6 +81,7 @@ public class IntakeWrist extends SubsystemBase {
         return runOnce(() -> {
             goal = Radians.of(MathUtil.clamp(position.in(Radians), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
                     Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
+            state = State.MOVING_TO_GOAL;
         });
     }
 
@@ -82,12 +90,14 @@ public class IntakeWrist extends SubsystemBase {
             System.out.println("Zeroing Intake Wrist");
             motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
             goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when enabling
+            state = State.IDLE;
         });
     }
 
     public Command kill() {
         return runOnce(() -> {
             motor.setVoltage(0);
+            state = State.IDLE;
         });
     }
 
@@ -97,10 +107,15 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    public Command setManualVoltage(double joystickPosition) {
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            System.out.println("Wrist joystick: " + joystickPosition);
-            motor.setVoltage(joystickPosition * IntakeConstants.Wrist.MAX_VOLTS);
+            double manualVolts = joystickPosition.getAsDouble() * IntakeConstants.Wrist.MAX_VOLTS;
+            if(manualVolts != 0){
+                state = State.MANUAL;
+            } else {
+                state = State.IDLE;
+            }
+            motor.setVoltage(manualVolts);
         });
     }
 
@@ -123,7 +138,9 @@ public class IntakeWrist extends SubsystemBase {
         double volts = pidVolts + ffVolts;
         DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
         double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
-        motor.setVoltage(outputVolts);
+        if(state == State.MOVING_TO_GOAL){
+            motor.setVoltage(outputVolts);
+        }
         DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
     }
 }

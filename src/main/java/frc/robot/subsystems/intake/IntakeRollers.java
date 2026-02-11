@@ -1,5 +1,7 @@
 package frc.robot.subsystems.intake;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 
@@ -36,10 +38,10 @@ public class IntakeRollers extends SubsystemBase {
         });
     }
 
-    public Command setManualVoltage(double joystickPosition) {
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            System.out.println("Rollers Joystick pos: " + joystickPosition);
-            motor.setControl(voltageRequest.withOutput(joystickPosition * IntakeConstants.Rollers.VOLTS));
+            System.out.println("Rollers Joystick pos: " + joystickPosition.getAsDouble());
+            motor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
         });
     }
 }

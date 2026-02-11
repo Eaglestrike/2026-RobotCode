@@ -149,10 +149,10 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x())
                         .onTrue(intakeWrist.zero().ignoringDisable(true));
 
-        operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightY()))
-                        .onFalse(intakeRollers.setManualVoltage(0));
-        operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController.getLeftY()))
-                        .onFalse(intakeWrist.setManualVoltage(0));
+        operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+                        .onFalse(intakeRollers.setManualVoltage(() -> 0));
+        operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+                        .onFalse(intakeWrist.setManualVoltage(() -> 0));
       
         rightJoystick.button(3).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
         rightJoystick.button(4).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
@@ -163,11 +163,11 @@ public class RobotContainer {
         leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
 
         // Manual Commands
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController.getRightY()))
-                .onFalse(intakeRollers.setManualVoltage(0));
+        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+                .onFalse(intakeRollers.setManualVoltage(() -> 0));
 
-        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController.getLeftY()))
-                .onFalse(intakeWrist.setManualVoltage(0));
+        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+                .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
         buttonBoard.button(CLIMB_BUTTON).whileTrue(climb.setManualVoltage(operatorController.getLeftY(), operatorController.getRightY()))
                 .onFalse(climb.setManualVoltage(0, 0));
