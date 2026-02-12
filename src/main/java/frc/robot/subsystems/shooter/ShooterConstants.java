@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.units.measure.Angle;
 
 public final class ShooterConstants {
 
@@ -45,6 +46,8 @@ public final class ShooterConstants {
         public static final double kS = 0.0;
         public static final double kV = 1.2;
         public static final double kA = 0;
+
+        public static final int PHOTOELECTRIC_DIO = 0;
     }
 
     public final class HoodConstants {
@@ -67,4 +70,6 @@ public final class ShooterConstants {
         public static final double kA = 0.04;
         public static final double kG = 0.26;
     }
+
+    public static final Angle ENCODER_OFFSET = null;
 }

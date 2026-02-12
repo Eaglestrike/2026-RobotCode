@@ -11,11 +11,8 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
@@ -26,7 +23,8 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
@@ -37,8 +35,15 @@ public class ShooterTurret extends SubsystemBase {
     private final Angle minRotation = Degrees.of(-180);
     private final Angle maxRotation = Degrees.of(180);
 
+    private final DigitalInput photoelectric;
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true;
+    // set to false if your sensor outputs HIGH when it sees a note
+
+    // set to false if your sensor outputs HIGH when it sees a note
+
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
+        this.photoelectric = new DigitalInput(TurretConstants.PHOTOELECTRIC_DIO);
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
@@ -108,12 +113,11 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public void setFacing(Pose2d to) {
-        var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));
-        var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
-                .minus(pose.getRotation());
-
-        this.motor.setControl(this.position.withPosition(angle.getRotations()));
+    public Command setFacing(Angle pos) {
+        return runOnce(() -> {
+            DogLog.log("ShooterTurret/MoveToRequestedDeg", pos.in(Degrees), "Degrees");
+            motor.setControl(position.withPosition(pos));
+        });
     }
 
     public Command stop() {
@@ -122,15 +126,15 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public Command zero() {
-        return runOnce(() -> {
-            this.motor.setPosition(0.0);
-        });
-    }
-
     public Command setManualVoltage(double joystickPosition) {
         return run(() -> {
             this.motor.setVoltage(joystickPosition * TurretConstants.MAX_VOLTS);
+        });
+    }
+
+    public Command zero() {
+        return runOnce(() -> {
+            this.motor.setPosition(ShooterConstants.ENCODER_OFFSET);
         });
     }
 
@@ -157,6 +161,11 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
         DogLog.log("ShooterTurret/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
+    
+        DogLog.log("ShooterTurret/PhotoelectricRaw", getPhotoelectricRaw());
+        DogLog.log("ShooterTurret/HasNote", hasNote());
+        DogLog.log("ShooterTurret/ZeroSensorGreen", isZeroSensorGreen());
+
     }
 
     public Pose3d getComponentPose3d() {
@@ -165,5 +174,20 @@ public class ShooterTurret extends SubsystemBase {
                 -0.046547,
                 0.391529,
                 new Rotation3d(0, 0, this.motor.getPosition().getValue().in(Radians)));
+    }
+
+    // getters/setters for photoelectric sensor
+    public boolean isZeroSensorGreen() {
+        boolean raw = getPhotoelectricRaw();
+        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
+    }
+
+    public boolean hasNote() {
+        boolean raw = photoelectric.get();
+        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
+    }
+
+    public boolean getPhotoelectricRaw() {
+        return photoelectric.get();
     }
 }
