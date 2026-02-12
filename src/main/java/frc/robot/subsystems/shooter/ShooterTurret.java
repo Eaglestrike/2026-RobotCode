@@ -22,6 +22,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
@@ -96,7 +97,7 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
         DogLog.tunable("TurretRequest", 0.0, x -> {
-            requestPosition(Radians.of(x)).schedule();
+            CommandScheduler.getInstance().schedule(requestPosition(Radians.of(x)));
         });
     }
 

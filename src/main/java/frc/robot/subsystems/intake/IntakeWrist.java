@@ -23,6 +23,7 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeWrist extends SubsystemBase {
@@ -68,7 +69,7 @@ public class IntakeWrist extends SubsystemBase {
                 IntakeConstants.Wrist.kA);
 
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
-            moveTo(Degrees.of(x)).schedule();
+            CommandScheduler.getInstance().schedule(moveTo(Degrees.of(x)));
         });
     }
 
@@ -89,7 +90,8 @@ public class IntakeWrist extends SubsystemBase {
         return runOnce(() -> {
             System.out.println("Zeroing Intake Wrist");
             motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
-            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when enabling
+            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when
+                                                                 // enabling
             state = State.IDLE;
         });
     }
@@ -101,7 +103,7 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    public Command eject(){
+    public Command eject() {
         return runOnce(() -> {
             this.moveTo(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
         });
@@ -110,7 +112,7 @@ public class IntakeWrist extends SubsystemBase {
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             double manualVolts = joystickPosition.getAsDouble() * IntakeConstants.Wrist.MAX_VOLTS;
-            if(manualVolts != 0){
+            if (manualVolts != 0) {
                 state = State.MANUAL;
             } else {
                 state = State.IDLE;
@@ -138,7 +140,7 @@ public class IntakeWrist extends SubsystemBase {
         double volts = pidVolts + ffVolts;
         DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
         double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
-        if(state == State.MOVING_TO_GOAL){
+        if (state == State.MOVING_TO_GOAL) {
             motor.setVoltage(outputVolts);
         }
         DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");

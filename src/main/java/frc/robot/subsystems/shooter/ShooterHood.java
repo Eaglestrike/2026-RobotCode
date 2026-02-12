@@ -18,6 +18,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
@@ -91,7 +92,7 @@ public class ShooterHood extends SubsystemBase {
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
         DogLog.tunable("HoodRequest", 0.0, x -> {
-            goToPos(Radians.of(x)).schedule();
+            CommandScheduler.getInstance().schedule(goToPos(Radians.of(x)));
         });
     }
 
