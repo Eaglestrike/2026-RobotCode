@@ -188,7 +188,7 @@ public class RobotContainer {
         buttonBoard.button(SERIALIZER_BUTTON).whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
                 .onFalse(hopper.setManualVoltage(() -> 0));
         
-        // Should the kicker and flywheels be on the same button, like hood getRightY or serializer getRightY? Since they need to spin simulatenously to launch 
+        // Should the kicker and flywheels be on the same button, like hood getRightY or serializer getRightY? Since they need to spin simultaneously to launch 
         }
 
     public Command getOffTower() {
