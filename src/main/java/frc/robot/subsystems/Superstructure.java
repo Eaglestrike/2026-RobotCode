@@ -6,6 +6,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -120,25 +121,23 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (isShooting) {
-            if (currentMode == ShootMode.FERRY) {
-                shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
-            } else if (currentMode == ShootMode.SHOOT) {
-                shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            }
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            // TODO: set flywheel speeds based on distance to target
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
+        if (currentMode == ShootMode.FERRY) {
+            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
+        } else {
+            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+        }
 
-            if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
+        if (isShooting) {
+            
+            if (shooter.isReady()) {
                 feeder.startMotor();
             } else {
                 feeder.stopMotor();
             }
         } else {
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            CommandScheduler.getInstance().schedule(
+                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
             feeder.stopMotor();
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
         }
     }
 

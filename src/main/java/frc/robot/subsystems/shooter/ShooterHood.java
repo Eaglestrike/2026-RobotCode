@@ -1,7 +1,11 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
+
+import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -22,11 +26,13 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
     private final MotionMagicVoltage request = new MotionMagicVoltage(0).withEnableFOC(true);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
+    private Angle targetAngle = Rotations.of(0);
 
     public ShooterHood() {
         motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -91,14 +97,21 @@ public class ShooterHood extends SubsystemBase {
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
-        DogLog.tunable("HoodRequest", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Radians.of(x)));
+        DogLog.tunable("ShooterHood/Request Degrees", 0.0, x -> {
+            CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
     }
 
     public Command goToPos(Angle position) {
         return runOnce(() -> {
+            targetAngle = position;
             motor.setControl(request.withPosition(position));
+        });
+    }
+
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return run(() -> {
+            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
         });
     }
 
@@ -112,6 +125,16 @@ public class ShooterHood extends SubsystemBase {
         return runOnce(() -> {
             motor.setPosition(Radians.of(HoodConstants.OFFSET));
         });
+    }
+
+    public boolean atTarget() {
+        return motor.getPosition().getValue().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterHood/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
+        DogLog.log("ShooterHood/AtTarget", atTarget() ? 1 : 0, "Boolean");
     }
 
     /* sim */

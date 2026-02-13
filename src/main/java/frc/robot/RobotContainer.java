@@ -11,6 +11,8 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import dev.doglog.DogLog;
+
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
@@ -84,8 +86,7 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
-    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder,
-            hopper);
+    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder, hopper);
 
     public RobotContainer() {
         configureBindings();
@@ -102,7 +103,7 @@ public class RobotContainer {
                 drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
         NamedCommands.registerCommand("AlignRightTower",
                 drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
-
+        
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);
 
@@ -175,12 +176,19 @@ public class RobotContainer {
         buttonBoard.button(CLIMB_BUTTON).whileTrue(climb.setManualVoltage(operatorController::getLeftY, operatorController::getRightY))
                 .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
         
-        
-        buttonBoard.button(TURRET_BUTTON).whileTrue(turret.setManualVoltage(operatorController.getLeftY()))
-                .onFalse(turret.setManualVoltage(0));
+        buttonBoard.button(TURRET_BUTTON).whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+                .onFalse(turret.setManualVoltage(() -> 0));
 
-        buttonBoard.button(TURRET_BUTTON).whileTrue(shooterFlywheels.setManualVoltage(operatorController.getRightY()))
-                        .onFalse(shooterFlywheels.setManualVoltage(0));
+        buttonBoard.button(TURRET_BUTTON).whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
+                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+        
+        buttonBoard.button(HOOD_BUTTON).whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
+                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+        
+        buttonBoard.button(SERIALIZER_BUTTON).whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
+                .onFalse(hopper.setManualVoltage(() -> 0));
+        
+        // Should the kicker and flywheels be on the same button, like hood getRightY or serializer getRightY? Since they need to spin simulatenously to launch 
         }
 
     public Command getOffTower() {
@@ -189,7 +197,7 @@ public class RobotContainer {
             return Commands.print("Not currently climbing, cannot get off tower");
         }
 
-        int direction = drivetrain.getState().Pose.getY() > FieldConstants.getYMiddle() ? 1 : -1;
+        int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
         return Commands.sequence(
                 superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(

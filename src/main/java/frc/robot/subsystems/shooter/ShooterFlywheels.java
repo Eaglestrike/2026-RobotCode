@@ -1,5 +1,9 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
@@ -10,6 +14,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.*;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
@@ -19,6 +24,7 @@ public class ShooterFlywheels extends SubsystemBase {
     private MotionMagicVelocityVoltage motionMagic = new MotionMagicVelocityVoltage(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
+    private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
 
     private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
         slot0Configs.kS = newKS;
@@ -77,14 +83,20 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
-            motor.setControl(motionMagic.withVelocity(targetVel).withAcceleration(targetAccel.get()));
+            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
+            motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
         });
     }
 
-    public Command setManualVoltage(double joystickPosition) {
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return this.run(() -> {
-            motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
+            motor.setVoltage(joystickPosition.getAsDouble() * FlywheelConstants.MAX_VOLTS);
         });
+    }
+
+    public boolean atVelocity() {
+        return motor.getVelocity().getValue()
+            .isNear(targetVel, AngularVelocity.ofBaseUnits(FlywheelConstants.VELOCITY_TOLERANCE, RotationsPerSecond));
     }
 
     public Command stop() {

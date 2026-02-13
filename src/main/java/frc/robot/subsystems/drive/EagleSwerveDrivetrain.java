@@ -12,17 +12,23 @@ import java.util.function.Supplier;
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -59,6 +65,19 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     private boolean m_hasAppliedOperatorPerspective = false;
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
+
+    private static double alignKP = 3.114;
+    private static double alignKI = 0.0;
+    private static double alignKD = 0.114;
+
+    /* PID controllers for auto align */
+    private final PIDController alignXController = new PIDController(alignKP, alignKI, alignKD);
+    private final PIDController alignYController = new PIDController(alignKP, alignKI, alignKD);
+    /* Swerve request for alignment */
+    private SwerveRequest.FieldCentricFacingAngle velocityRequest = new SwerveRequest.FieldCentricFacingAngle()
+            .withForwardPerspective(ForwardPerspectiveValue.BlueAlliance)
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withHeadingPID(4, 0,0);
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -404,7 +423,37 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     }
 
     public Command alignPID(Supplier<Pose3d> targetSupplier) {
-        return Commands.none(); // TODO: Alan is rethinking implementation
+        return this.run(() -> {
+            Pose2d pose = this.getState().Pose;
+            Pose2d target = targetSupplier.get().toPose2d();
+            DogLog.log("AutoAlign/Target Pose", target);
+
+            double veloX = alignXController.calculate(pose.getX(), target.getX());
+            double veloY = alignYController.calculate(pose.getY(), target.getY());
+            Rotation2d headingReference = target.getRotation();
+            
+            this.setControl(velocityRequest
+                    .withVelocityX(veloX)
+                    .withVelocityY(veloY)
+                    .withTargetDirection(headingReference));
+        })
+                .until(() -> {
+                    Pose2d pose = this.getState().Pose;
+                    Pose2d target = targetSupplier.get().toPose2d();
+                    Transform2d error = pose.minus(target);
+                    Translation2d errorTrans = error.getTranslation();
+                    Translation2d unitHeading = new Translation2d(target.getRotation().getCos(), target.getRotation().getSin());
+                    
+                    double dot = errorTrans.getX()*unitHeading.getX() + errorTrans.getY()*unitHeading.getY();  // a · b̂
+                    Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
+                    Translation2d perpendicular = errorTrans.minus(proj);
+
+                    return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
+                           Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
+                })
+                .finallyDo(() -> {
+                    this.setControl(new SwerveRequest.Idle());
+                });
     }
 
     @Override
