@@ -111,6 +111,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
+            this.targetAngle = pos;
             this.motor.setControl(this.position.withPosition(pos));
         });
     }
