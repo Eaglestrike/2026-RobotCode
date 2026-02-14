@@ -142,7 +142,6 @@ public class Climb extends SubsystemBase {
                 setSupportingRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, right),
                 setSupportingRobot(false),
-                Commands.waitUntil(() -> right.getMotionMagicAtTarget().getValue()),
                 stopMotor(left)
             );
     }
