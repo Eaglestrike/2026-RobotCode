@@ -9,12 +9,12 @@ public class Vision extends SubsystemBase {
     private final EagleSwerveDrivetrain drive;
 
     private final Camera[] cameras = {
-            // new Camera(VisionConstants.LEFT_BACK_NAME,
-            // VisionConstants.LEFT_BACK_TRANSFORM,
-            // this::addVisionMeasurement),
-            // new Camera(VisionConstants.LEFT_LEFT_NAME,
-            // VisionConstants.LEFT_LEFT_TRANSFORM,
-            // this::addVisionMeasurement),
+            new Camera(VisionConstants.LEFT_BACK_NAME,
+            VisionConstants.LEFT_BACK_TRANSFORM,
+            this::addVisionMeasurement),
+            new Camera(VisionConstants.LEFT_LEFT_NAME,
+            VisionConstants.LEFT_LEFT_TRANSFORM,
+            this::addVisionMeasurement),
             new Camera(VisionConstants.RIGHT_BACK_NAME, VisionConstants.RIGHT_BACK_TRANSFORM,
                 this::addVisionMeasurement),
             new Camera(VisionConstants.RIGHT_RIGHT_NAME, VisionConstants.RIGHT_RIGHT_TRANSFORM,
@@ -23,18 +23,18 @@ public class Vision extends SubsystemBase {
 
     public Vision(EagleSwerveDrivetrain drive) {
         this.drive = drive;
+
+        Pose3d robot3d = new Pose3d(drive.getState().Pose);
+        NetworkTableInstance.getDefault().getStructTopic("LeftCameraBackPose",
+                Pose3d.struct)
+                .publish().set(robot3d.transformBy(VisionConstants.LEFT_BACK_TRANSFORM));
+        NetworkTableInstance.getDefault().getStructTopic("LeftCameraLeftPose",
+                Pose3d.struct)
+                .publish().set(robot3d.transformBy(VisionConstants.LEFT_LEFT_TRANSFORM));
     }
 
     @Override
     public void periodic() {
-        Pose3d robot3d = new Pose3d(drive.getState().Pose);
-        NetworkTableInstance.getDefault().getStructTopic("skibidi",
-                Pose3d.struct)
-                .publish().set(robot3d.transformBy(VisionConstants.RIGHT_BACK_TRANSFORM));
-        NetworkTableInstance.getDefault().getStructTopic("skibidi toilet",
-                Pose3d.struct)
-                .publish().set(robot3d.transformBy(VisionConstants.RIGHT_RIGHT_TRANSFORM));
-
         for (var camera : cameras) {
             camera.periodic();
         }
