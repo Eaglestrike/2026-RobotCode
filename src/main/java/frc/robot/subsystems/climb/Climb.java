@@ -112,6 +112,10 @@ public class Climb extends SubsystemBase {
         left.getConfigurator().apply(leftMotorConfigs);
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
+
+        DogLog.tunable("Climb/SupportingRobot", supportingRobot, newSupportingRobot -> {
+            supportingRobot = newSupportingRobot;
+        });
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
