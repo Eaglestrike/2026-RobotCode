@@ -23,6 +23,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
@@ -66,6 +67,10 @@ public class ShooterHood extends SubsystemBase {
 
         DogLog.tunable("ShooterHood/RequestDegrees", 0.0, x -> {
             goToPos(Degrees.of(x)).schedule();
+        });
+
+        DogLog.tunable("HoodRequest", 0.0, x -> {
+            CommandScheduler.getInstance().schedule(goToPos(Radians.of(x)));
         });
     }
 

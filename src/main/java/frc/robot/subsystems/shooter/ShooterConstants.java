@@ -25,8 +25,9 @@ public final class ShooterConstants {
 
         public static final double MIN_OUTPUT = -1.0;
         public static final double MAX_OUTPUT = 1.0;
+        public static final double MAX_VOLTS = 8.0;
 
-        /** In RPM per second */
+        /** In RPM per second squared */
         public static final double MAX_ACCEL = 10000.0;
 
         /** Tolerance for velocity check in RPM */
