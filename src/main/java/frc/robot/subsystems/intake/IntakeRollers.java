@@ -24,9 +24,21 @@ public class IntakeRollers extends SubsystemBase {
         });
     }
 
+    public Command eject() {
+        return runOnce(() -> {
+            motor.setControl(voltageRequest.withOutput(-voltage.get()));
+        });
+    }
+
     public Command stop() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(0));
+        });
+    }
+
+    public Command setManualVoltage(double joystickPosition) {
+        return run(() -> {
+            motor.setControl(voltageRequest.withOutput(joystickPosition * IntakeConstants.Rollers.VOLTS));
         });
     }
 }
