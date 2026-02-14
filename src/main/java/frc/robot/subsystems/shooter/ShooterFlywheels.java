@@ -4,6 +4,10 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import java.util.function.DoubleSupplier;
 
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
@@ -14,6 +18,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.*;
 import frc.robot.RobotContainer;
@@ -83,6 +88,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
+            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
             this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
             motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
         });

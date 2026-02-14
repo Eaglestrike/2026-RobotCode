@@ -6,6 +6,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
@@ -17,6 +18,7 @@ import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -119,24 +121,22 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (isShooting) {
-            // Set target based on mode
-            if (currentMode == ShootMode.FERRY) {
-                shooter.aimAt(FieldConstants.getAllianceOutpostPosition());
-            } else if (currentMode == ShootMode.SHOOT) {
-                shooter.aimAt(FieldConstants.getAllianceHubPosition());
-            }
+        if (currentMode == ShootMode.FERRY) {
+            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
+        } else {
+            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+        }
 
-            // Feed when ready to shoot
-            if (shooter.isReadyToShoot()) {
+        if (isShooting) {
+            
+            if (shooter.isReady()) {
                 feeder.startMotor();
             } else {
                 feeder.stopMotor();
             }
         } else {
-            // Idle mode - stop aiming, pre-aim at hub
-            shooter.stopAiming();
-            shooter.getController().setTarget(FieldConstants.getAllianceHubPosition());
+            CommandScheduler.getInstance().schedule(
+                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
             feeder.stopMotor();
         }
     }

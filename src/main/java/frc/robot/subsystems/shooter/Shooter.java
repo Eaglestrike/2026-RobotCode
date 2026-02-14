@@ -1,9 +1,12 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Rotations;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
@@ -15,47 +18,45 @@ public class Shooter extends SubsystemBase {
     private final ShooterController controller;
 
     public Shooter(EagleSwerveDrivetrain drive) {
-        turret = new ShooterTurret();
+        turret = new ShooterTurret(drive);
         hood = new ShooterHood();
         flywheels = new ShooterFlywheels();
         controller = new ShooterController(drive, turret, hood, flywheels);
     }
 
-    /**
-     * Get the unified shooter controller for aiming
-     */
-    public ShooterController getController() {
-        return controller;
-    }
-
-    /**
-     * Set target and enable aiming
-     */
-    public void aimAt(Pose3d target) {
-        controller.setTarget(target);
-        controller.setEnabled(true);
-    }
-
-    /**
-     * Disable aiming (go to idle)
-     */
-    public void stopAiming() {
-        controller.setEnabled(false);
-    }
-
-    /**
-     * Check if ready to shoot
-     */
-    public boolean isReadyToShoot() {
-        return controller.isReadyToShoot();
-    }
-
     public Command stowShooter() {
         return Commands.parallel(
-            turret.requestPosition(Degrees.of(0)),
-            hood.goToPos(Degrees.of(0)),
-            flywheels.stop()
+                turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
+                hood.goToPos(Radians.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                flywheels.startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)
         );
+    }
+
+    public void setFacing(Pose3d targetPose) {
+        turret.setFacing(targetPose.toPose2d());
+        // TODO: Calculate hood angle based on distance to targetPose - this cna either be done in Shooter or create a ShooterUtils class with all the math
+        double hoodAngle = 0; 
+
+        // TODO: Calculate this in meters per second based on distance to targetPose and desired launch angle
+        double targetBallVel = 0; 
+
+        CommandScheduler.getInstance().schedule(Commands.parallel(
+            hood.goToPos(Radians.of(hoodAngle)),
+            flywheels.startAtVelocity(ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(targetBallVel))
+        )
+        );
+    }
+
+    public boolean isReady() {
+        return isAtVelocity() && isFacingTarget();
+    }
+
+    private boolean isAtVelocity() {
+        return flywheels.atVelocity();
+    }
+
+    private boolean isFacingTarget() {
+        return turret.atTarget() && hood.atTarget();
     }
 
     public ShooterFlywheels getFlywheels() {

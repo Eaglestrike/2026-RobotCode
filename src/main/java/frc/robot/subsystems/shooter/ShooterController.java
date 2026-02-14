@@ -117,7 +117,7 @@ public class ShooterController {
 
         if (targetPose == null || !enabled) {
             // Idle mode - just maintain idle flywheel speed
-            flywheels.setVelocity(FlywheelConstants.IDLE_VELOCITY);
+            flywheels.startAtVelocity(FlywheelConstants.IDLE_VELOCITY);
             lastSolverResult = null;
             return;
         }
@@ -229,16 +229,16 @@ public class ShooterController {
      * Apply calculated values to subsystems (direct calls, not Commands)
      */
     private void applyCommands() {
-        turret.setPosition(Degrees.of(targetTurretAngleDeg));
+        turret.requestPosition(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
-        flywheels.setVelocity(targetFlywheelRPM);
+        flywheels.startAtVelocity(targetFlywheelRPM);
     }
 
     /**
      * Check if turret is aimed at target within tolerance
      */
     public boolean isTurretOnTarget() {
-        double currentAngle = turret.getAngleDegrees();
+        double currentAngle = turret.getAngle().in(Degrees);
         return Math.abs(currentAngle - targetTurretAngleDeg) < TURRET_TOLERANCE_DEG;
     }
 
@@ -254,7 +254,7 @@ public class ShooterController {
      * Check if flywheel is at target speed
      */
     public boolean isFlywheelReady() {
-        return flywheels.isAtVelocity(targetFlywheelRPM);
+        return flywheels.atVelocity();
     }
 
     /**

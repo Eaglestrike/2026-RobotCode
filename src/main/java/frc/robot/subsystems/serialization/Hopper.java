@@ -1,5 +1,7 @@
 package frc.robot.subsystems.serialization;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 
@@ -22,6 +24,12 @@ public class Hopper extends SubsystemBase {
     public Command startMotor() {
         return runOnce(() -> {
             motor.setControl(voltageOutReq.withOutput(voltage.get()));
+        });
+    }
+
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return run(() -> {
+            motor.setControl(voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.HOPPER_MAX_VOLTS));
         });
     }
 

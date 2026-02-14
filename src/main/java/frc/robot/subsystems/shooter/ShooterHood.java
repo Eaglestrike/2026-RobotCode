@@ -3,14 +3,13 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Rotations;
 
-import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.ResetMode;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
-import com.revrobotics.spark.SparkMax;
+import java.util.function.DoubleSupplier;
+
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
@@ -25,62 +24,92 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 
 public class ShooterHood extends SubsystemBase {
-    private final SparkMax motor = new SparkMax(HoodConstants.MOTOR_ID, MotorType.kBrushless);
+    private final TalonFX motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+    private TalonFXConfiguration cfg = new TalonFXConfiguration();
 
-    private final RelativeEncoder enc;
-    private final ProfiledPIDController pid;
-    private final ArmFeedforward ff;
 
     private Angle goal = Radians.of(0.0);
+    private Angle targetAngle = Rotations.of(0);
 
     public ShooterHood() {
-        enc = motor.getEncoder();
+        cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
+        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VEL;
+        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACC;
+        cfg.Slot0.kP = HoodConstants.kP;
+        cfg.Slot0.kD = HoodConstants.kD;
+        cfg.Slot0.kS = HoodConstants.kS;
+        cfg.Slot0.kV = HoodConstants.kV;
+        cfg.Slot0.kA = HoodConstants.kA;
+        cfg.Slot0.kG = HoodConstants.kG;
+        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
-        SparkMaxConfig cfg = new SparkMaxConfig();
-        cfg.idleMode(IdleMode.kBrake).voltageCompensation(12.0);
-        cfg.inverted(HoodConstants.MOTOR_INVERTED);
-        cfg.encoder.positionConversionFactor(2.0 * Math.PI / HoodConstants.GEAR_RATIO);
-        cfg.encoder.velocityConversionFactor(2.0 * Math.PI / HoodConstants.GEAR_RATIO / 60.0);
-        motor.configure(cfg, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
+        cfg.Voltage.PeakForwardVoltage = HoodConstants.MAX_VOLTS;
+        cfg.Voltage.PeakReverseVoltage = -HoodConstants.MAX_VOLTS;
 
-        pid = new ProfiledPIDController(
-                HoodConstants.kP,
-                HoodConstants.kI,
-                HoodConstants.kD,
-                new TrapezoidProfile.Constraints(
-                        HoodConstants.MAX_VEL,
-                        HoodConstants.MAX_ACC));
-        pid.setTolerance(Math.toRadians(1.0));
-        pid.reset(getAngle().magnitude());
+        this.motor.getConfigurator().apply(cfg);
 
-        pid.setIntegratorRange(-HoodConstants.IMAX_VOLTS, HoodConstants.IMAX_VOLTS);
-        pid.setIZone(Math.toRadians(HoodConstants.IZONE_DEG));
-
-        ff = new ArmFeedforward(
-                HoodConstants.kS,
-                HoodConstants.kG,
-                HoodConstants.kV,
-                HoodConstants.kA);
-
-        DogLog.tunable("ShooterHood/RequestDegrees", 0.0, x -> {
-            goToPos(Degrees.of(x)).schedule();
+        DogLog.tunable("ShooterHood/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
+            System.out.println("Updating CruiseVelo to " + x);
+            cfg.MotionMagic.MotionMagicCruiseVelocity = x;
+            motor.getConfigurator().apply(cfg);
+        });
+        DogLog.tunable("ShooterHood/Acceleration", cfg.MotionMagic.MotionMagicAcceleration, x -> {
+            System.out.println("Updating Acceleration to " + x);
+            cfg.MotionMagic.MotionMagicAcceleration = x;
+            motor.getConfigurator().apply(cfg);
         });
 
-        DogLog.tunable("HoodRequest", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Radians.of(x)));
+        DogLog.tunable("ShooterHood/kP", cfg.Slot0.kP, x -> {
+            System.out.println("Updating kP to " + x);
+            cfg.Slot0.kP = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+        DogLog.tunable("ShooterHood/kD", cfg.Slot0.kD, x -> {
+            System.out.println("Updating kD to " + x);
+            cfg.Slot0.kD = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+        DogLog.tunable("ShooterHood/kS", cfg.Slot0.kS, x -> {
+            System.out.println("Updating kS to " + x);
+            cfg.Slot0.kS = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+        DogLog.tunable("ShooterHood/kV", cfg.Slot0.kV, x -> {
+            System.out.println("Updating kV to " + x);
+            cfg.Slot0.kV = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+        DogLog.tunable("ShooterHood/kA", cfg.Slot0.kA, x -> {
+            System.out.println("Updating kA to " + x);
+            cfg.Slot0.kA = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+        DogLog.tunable("ShooterHood/kG", cfg.Slot0.kG, x -> {
+            System.out.println("Updating kG to " + x);
+            cfg.Slot0.kG = x;
+            motor.getConfigurator().apply(cfg.Slot0);
+        });
+
+        DogLog.tunable("ShooterHood/Request Degrees", 0.0, x -> {
+            CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
     }
 
-    // encoder gives value in radians
+    /**
+     * @return Get the current angle of the hood as an <code>Angle</code>
+     */
     public Angle getAngle() {
-        return Radians.of(enc.getPosition());
+        return motor.getPosition().getValue();
     }
 
     public Command goToPos(Angle position) {
         return runOnce(() -> {
+            targetAngle = position;
             setGoal(position);
         });
     }
@@ -92,6 +121,12 @@ public class ShooterHood extends SubsystemBase {
         goal = position;
     }
 
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return run(() -> {
+            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+        });
+    }
+
     public Command stop() {
         return runOnce(() -> {
             motor.setVoltage(0);
@@ -101,46 +136,24 @@ public class ShooterHood extends SubsystemBase {
     public Command zero() {
         return runOnce(() -> {
             System.out.println("Zeroing Shooter Hood");
-            motor.getEncoder().setPosition(HoodConstants.ENCODER_OFFSET);
+            motor.setPosition(HoodConstants.ENCODER_OFFSET);
         });
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterHood/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
+        DogLog.log("ShooterHood/AtTarget", atTarget() ? 1 : 0, "Boolean");
+    }
+
+    public boolean atTarget() {
+        return motor.getPosition().getValue().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
     }
 
     public Command setManualVoltage(double joystickPosition) {
         return runOnce(() -> {
             motor.setVoltage(joystickPosition * HoodConstants.MAX_VOLTS);
         });
-    }
-
-    @Override
-    public void periodic() {
-        if (!DriverStation.isEnabled()) {
-            motor.setVoltage(0.0);
-            return;
-        }
-
-        // Zero from NetworkTables (e.g. Streamlit Shooter Tuner)
-        var nt = NetworkTableInstance.getDefault().getTable("DogLog");
-        if (nt.getEntry("ShooterHood/Zero").getBoolean(false)) {
-            motor.getEncoder().setPosition(HoodConstants.ENCODER_OFFSET);
-            nt.getEntry("ShooterHood/Zero").setBoolean(false);
-        }
-
-        goal = Radians.of(MathUtil.clamp(goal.magnitude(), Math.toRadians(HoodConstants.MIN_ANGLE),
-                Math.toRadians(HoodConstants.MAX_ANGLE)));
-        DogLog.log("ShooterHood/GoalRad", goal);
-        pid.setGoal(goal.magnitude());
-
-        DogLog.log("ShooterHood/CurrAngDeg", getAngle().in(Degrees), "Degrees");
-
-        double pidVolts = pid.calculate(getAngle().in(Rotations));
-        DogLog.log("ShooterHood/PIDVolts", pidVolts, "Volts");
-        double ffVolts = ff.calculate(getAngle().in(Rotations), pid.getSetpoint().velocity);
-        DogLog.log("ShooterHood/FeedforwardVolts", ffVolts, "Volts");
-        double volts = pidVolts + ffVolts;
-        DogLog.log("ShooterHood/TotalRequestedVolts", volts, "Volts");
-        double outputVolts = MathUtil.clamp(volts, -HoodConstants.MAX_VOLTS, HoodConstants.MAX_VOLTS);
-        motor.setVoltage(outputVolts);
-        DogLog.log("ShooterHood/OutputVolts", outputVolts, "Volts");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
