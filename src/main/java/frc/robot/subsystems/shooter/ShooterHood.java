@@ -111,7 +111,7 @@ public class ShooterHood extends SubsystemBase {
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+            motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
         });
     }
 
