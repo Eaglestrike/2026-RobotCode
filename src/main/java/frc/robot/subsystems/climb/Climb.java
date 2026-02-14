@@ -35,7 +35,6 @@ public class Climb extends SubsystemBase {
         left.getConfigurator().apply(slot0Configs);
         right.getConfigurator().apply(slot0Configs);
     });
-    boolean supportingRobot = false;
     private final DoubleSubscriber kG = DogLog.tunable("Climb/kG (when not supporting the robot)", ClimbConstants.kG, newKG -> {
         slot0Configs.kG = newKG;
         left.getConfigurator().apply(slot0Configs);
@@ -73,6 +72,7 @@ public class Climb extends SubsystemBase {
     });
 
     private ClimbConstants.ClimbState currentState = ClimbConstants.ClimbState.STOWED;
+    private boolean supportingRobot = false;
 
     public Climb() {
         // left motor config
@@ -93,6 +93,15 @@ public class Climb extends SubsystemBase {
         slot0Configs.kI = ClimbConstants.kI;
         slot0Configs.kD = ClimbConstants.kD;
         slot0Configs.GravityType = GravityTypeValue.Elevator_Static;
+
+        slot1Configs.kS = ClimbConstants.kS;
+        slot1Configs.kG = ClimbConstants.kG;
+        slot1Configs.kV = ClimbConstants.kV;
+        slot1Configs.kA = ClimbConstants.kA;
+        slot1Configs.kP = ClimbConstants.kP;
+        slot1Configs.kI = ClimbConstants.kI;
+        slot1Configs.kD = ClimbConstants.kD;
+        slot1Configs.GravityType = GravityTypeValue.Elevator_Static;
 
         VoltageConfigs voltages = cfg.Voltage;
         voltages.PeakForwardVoltage = ClimbConstants.MAX_VOLTS;
@@ -119,10 +128,9 @@ public class Climb extends SubsystemBase {
     private Command climbL1() {
         return Commands.sequence(
                 moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                setSupportingRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
-                Commands.waitUntil(() -> left.getMotionMagicAtTarget().getValue()),
+                setSupportingRobot(false),
                 stopMotor(left)
             );
     }
@@ -131,9 +139,9 @@ public class Climb extends SubsystemBase {
         return Commands.sequence(
                 climbL1(),
                 moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                setSupportingRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, right),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
+                setSupportingRobot(false),
                 Commands.waitUntil(() -> right.getMotionMagicAtTarget().getValue()),
                 stopMotor(left)
             );
@@ -143,10 +151,9 @@ public class Climb extends SubsystemBase {
         return Commands.sequence(
                 climbL2(),
                 moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(true),
+                setSupportingRobot(true),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left),
-                changeWhetherOrNotWeAreSupportingTheWholeRobot(false),
-                Commands.waitUntil(() -> left.getMotionMagicAtTarget().getValue()),
+                setSupportingRobot(false),
                 stopMotor(left)
             );
     }
@@ -167,11 +174,10 @@ public class Climb extends SubsystemBase {
                         () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
     }
 
-    //
-    private Command changeWhetherOrNotWeAreSupportingTheWholeRobot(boolean newSupportingRobot) {
+    private Command setSupportingRobot(boolean supportingRobot) {
         return runOnce(
                 () -> {
-                    supportingRobot = newSupportingRobot;
+                    this.supportingRobot = supportingRobot;
                 });
 
     }
