@@ -37,6 +37,8 @@ public class ShooterHood extends SubsystemBase {
     private final ProfiledPIDController pid;
     private ArmFeedforward ff;
     private Angle goal = Degrees.of(HoodConstants.MAX_ANGLE); // 默认最陡位置（对应 31.8° 从垂直射击角）
+    /** Hood 只有被显式激活后才输出电压，防止 Enable 后堵转发热 */
+    private boolean active = false;
 
     /** Shared NT table */
     private final NetworkTable nt;
@@ -109,6 +111,10 @@ public class ShooterHood extends SubsystemBase {
 
     public void setGoal(Angle position) {
         goal = position;
+        if (!active) {
+            active = true;
+            pid.reset(getAngle().in(Radians)); // 激活时从当前位置开始，避免突然跳跃
+        }
     }
 
     /**
@@ -116,6 +122,14 @@ public class ShooterHood extends SubsystemBase {
      */
     public Command adjustGoal(double deltaDeg) {
         return runOnce(() -> {
+            if (!active) {
+                // 首次激活：从当前编码器位置开始，而不是默认 goal
+                double startDeg = MathUtil.clamp(getAngle().in(Degrees),
+                        HoodConstants.MIN_ANGLE, HoodConstants.MAX_ANGLE);
+                goal = Degrees.of(startDeg);
+                active = true;
+                pid.reset(getAngle().in(Radians));
+            }
             double currentGoalDeg = goal.in(Degrees);
             double newGoalDeg = MathUtil.clamp(
                     currentGoalDeg + deltaDeg,
@@ -125,7 +139,10 @@ public class ShooterHood extends SubsystemBase {
     }
 
     public Command stop() {
-        return runOnce(() -> motor.setVoltage(0));
+        return runOnce(() -> {
+            active = false;
+            motor.setVoltage(0);
+        });
     }
 
     public Command zero() {
@@ -141,8 +158,11 @@ public class ShooterHood extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!DriverStation.isEnabled()) {
+        if (!DriverStation.isEnabled() || !active) {
             motor.setVoltage(0.0);
+            SmartDashboard.putBoolean("Hood/Active", active);
+            SmartDashboard.putNumber("Hood/CurrAngDeg", getAngle().in(Degrees));
+            SmartDashboard.putNumber("Hood/OutputVolts", 0.0);
             return;
         }
 
@@ -247,6 +267,7 @@ public class ShooterHood extends SubsystemBase {
         SmartDashboard.putNumber("Hood/FFVolts", ffVolts);
         SmartDashboard.putNumber("Hood/VelDegPerS", Math.toDegrees(enc.getVelocity()));
         SmartDashboard.putBoolean("Hood/AtTarget", pid.atGoal());
+        SmartDashboard.putBoolean("Hood/Active", active);
 
         // DogLog 文件日志
         DogLog.log("ShooterHood/CurrAngDeg", curDeg);

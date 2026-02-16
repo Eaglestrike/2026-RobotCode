@@ -64,13 +64,13 @@ public class RobotContainer {
                         .andThen(shooter.getTurret().requestPosition(Degrees.of(0))));
 
         // ═══════════════════════════════════════════════
-        //  Hood 测试 — POV 上/下 ±10°
+        //  Hood 测试 — 左/右 Bumper ±10°
         // ═══════════════════════════════════════════════
-        operatorController.povUp()
+        operatorController.rightBumper()
                 .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
                         .andThen(shooter.getHood().adjustGoal(10)));
 
-        operatorController.povDown()
+        operatorController.leftBumper()
                 .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
                         .andThen(shooter.getHood().adjustGoal(-10)));
 
