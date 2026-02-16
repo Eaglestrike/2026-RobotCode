@@ -27,7 +27,7 @@ public class RobotContainer {
     private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
     // ─── Controller ───
-    private final CommandXboxController operatorController = new CommandXboxController(2);
+    private final CommandXboxController operatorController = new CommandXboxController(0);
 
     // ─── 只保留射手子系统 ───
     private final Shooter shooter = new Shooter(drivetrain);
