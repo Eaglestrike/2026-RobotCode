@@ -122,8 +122,8 @@ public class ShooterController {
             enabled = true;
         }
 
-        // When disabled, don't touch subsystems (allow manual testing)
-        if (!enabled) {
+        // When disabled or no drivetrain, don't touch subsystems (allow manual testing)
+        if (!enabled || drive == null) {
             lastSolverResult = null;
             return;
         }

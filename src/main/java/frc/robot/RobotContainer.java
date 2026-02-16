@@ -11,26 +11,22 @@ import static edu.wpi.first.units.Units.Degrees;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
-import frc.robot.generated.TunerConstants;
-import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ballistics.BallisticConstants;
 
 /**
  * RobotContainer — 射手子系统测试模式
- * 仅保留 Turret / Flywheel / Hood，其他子系统全部禁用。
+ * 仅保留 Turret / Flywheel / Hood，drivetrain 和其他子系统完全不创建。
  */
 public class RobotContainer {
-    public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
-
-    // ─── Drivetrain: 仅创建对象（Shooter 构造需要），不绑定任何命令 ───
-    private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    // 保留给其他子系统编译用，改为默认 RIO CAN 总线（不再尝试连接 CANivore）
+    public static final CANBus MECHANISM_CANBUS = new CANBus("");
 
     // ─── Controller ───
     private final CommandXboxController operatorController = new CommandXboxController(0);
 
-    // ─── 只保留射手子系统 ───
-    private final Shooter shooter = new Shooter(drivetrain);
+    // ─── 只保留射手子系统（无 drivetrain） ───
+    private final Shooter shooter = new Shooter(null);
 
     public RobotContainer() {
         configureBindings();
@@ -102,7 +98,4 @@ public class RobotContainer {
         return Commands.none();
     }
 
-    public EagleSwerveDrivetrain getDrivetrain() {
-        return drivetrain;
-    }
 }

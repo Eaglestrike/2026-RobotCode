@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 
 /**
@@ -62,7 +61,7 @@ public class ShooterTurret extends SubsystemBase {
         nt.getEntry("Acceleration").setDouble(TurretConstants.MAX_ACCEL);
 
         motorId = (int) nt.getEntry("MotorID").getDouble(TurretConstants.MOTOR_ID);
-        this.motor = new TalonFX(motorId, RobotContainer.MECHANISM_CANBUS);
+        this.motor = new TalonFX(motorId);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
