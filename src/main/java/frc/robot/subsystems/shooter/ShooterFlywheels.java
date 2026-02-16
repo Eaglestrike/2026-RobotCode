@@ -88,6 +88,15 @@ public class ShooterFlywheels extends SubsystemBase {
         });
     }
 
+    /**
+     * Function to set flywheel velocity
+     * @param targetVel in RPM
+     */
+    public void setVelocity(double targetVel) {
+        this.targetVel = AngularVelocity.ofBaseUnits(targetVel / 60, RotationsPerSecond);
+        motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+    }
+
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return this.run(() -> {
             motor.setVoltage(joystickPosition.getAsDouble() * FlywheelConstants.MAX_VOLTS);

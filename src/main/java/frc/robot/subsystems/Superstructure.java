@@ -135,8 +135,7 @@ public class Superstructure extends SubsystemBase {
                 feeder.stopMotor();
             }
         } else {
-            CommandScheduler.getInstance().schedule(
-                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
+            shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
         }
     }

@@ -157,7 +157,7 @@ public class ShooterTurret extends SubsystemBase {
     @Override
     public void periodic() {
         DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
-        DogLog.log("ShooterTurret/Photoelectric", isZeroSensorGreen() ? 1 : 0, "Boolean");
+        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get() ? 1 : 0, "Boolean");
         DogLog.log("ShooterTurret/AtTarget", atTarget() ? 1 : 0, "Boolean");
     }
 
@@ -184,6 +184,8 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
         DogLog.log("ShooterTurret/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
+    
+        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
 
     }
 
