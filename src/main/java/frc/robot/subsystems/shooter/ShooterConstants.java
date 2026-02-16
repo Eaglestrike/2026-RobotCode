@@ -7,13 +7,6 @@ import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.units.measure.Angle;
 
 public final class ShooterConstants {
-
-    /** Maps ball velocity (in meters per second) to flywheel velocity (in rotations per second) */
-    public static final InterpolatingDoubleTreeMap BALL_VEL_TO_FLYWHEEL_VEL = new InterpolatingDoubleTreeMap();
-    static {
-        BALL_VEL_TO_FLYWHEEL_VEL.put(0.0, 0.0);
-    }
-
     public final class FlywheelConstants {
         public static final int MOTOR_ID = 21;
         // public static final double MAX_VOLTS = 8.0;

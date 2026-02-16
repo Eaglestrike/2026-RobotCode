@@ -4,10 +4,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import java.util.function.DoubleSupplier;
 
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
@@ -18,7 +14,6 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
-import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.*;
 import frc.robot.RobotContainer;
@@ -61,7 +56,7 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getConfigurator().apply(slot0Configs);
     });
 
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
+    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel (rotations/s^2)",
             FlywheelConstants.MAX_ACCEL, newTargetAccel -> {
                 slot0Configs.kD = newTargetAccel;
                 motor.getConfigurator().apply(slot0Configs);
@@ -86,12 +81,13 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getConfigurator().apply(config);
     }
 
-    public Command startAtVelocity(double targetVel) {
-        return this.runOnce(() -> {
-            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-            motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
-        });
+    /**
+     * Directly set the flywheel target velocity (for use by Shooter in periodic())
+     * @param targetVel Target velocity in rotations per minute
+     */
+    public void setVelocity(double targetVel) {
+        this.targetVel = AngularVelocity.ofBaseUnits(targetVel/60, RotationsPerSecond);
+        motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {

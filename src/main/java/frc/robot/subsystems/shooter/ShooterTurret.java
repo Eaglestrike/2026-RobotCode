@@ -117,20 +117,23 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
-            this.targetAngle = pos;
-            this.targetAngle = pos;
-            this.motor.setControl(this.position.withPosition(pos));
+            setAngle(pos);
         });
+    }
+
+    /**
+     * Directly set the turret target angle (for use by Shooter in periodic())
+     */
+    public void setAngle(Angle pos) {
+        this.targetAngle = pos;
+        this.motor.setControl(this.position.withPosition(pos));
     }
 
     public void setFacing(Pose2d to) {
         // TODO: Maybe account for robot's velocity when calculating angle to turn to
-        // TODO: Maybe account for robot's velocity when calculating angle to turn to
         var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));
         var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
                 .minus(pose.getRotation());
-        // TODO: Check if this normalizes between -180 to 180 correctly
-        targetAngle = Rotations.of(angle.getRotations());
         // TODO: Check if this normalizes between -180 to 180 correctly
         targetAngle = Rotations.of(angle.getRotations());
 
@@ -151,7 +154,6 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(TurretConstants.ENCODER_OFFSET);
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
         });
     }

@@ -3,37 +3,29 @@ package frc.robot.subsystems.shooter;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.Rotations;
 
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
-import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
+
 
 public class ShooterHood extends SubsystemBase {
     private final TalonFX motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+    private final MotionMagicVoltage mmreq = new MotionMagicVoltage(0).withEnableFOC(true);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
-
-
-    private Angle goal = Radians.of(0.0);
     private Angle targetAngle = Rotations.of(0);
 
     public ShooterHood() {
@@ -118,12 +110,13 @@ public class ShooterHood extends SubsystemBase {
      * Directly set the hood goal position (for use by ShooterController)
      */
     public void setGoal(Angle position) {
-        goal = position;
+        targetAngle = position;
+        motor.setControl(mmreq.withPosition(position));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+            motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
         });
     }
 
@@ -148,12 +141,6 @@ public class ShooterHood extends SubsystemBase {
 
     public boolean atTarget() {
         return motor.getPosition().getValue().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
-    }
-
-    public Command setManualVoltage(double joystickPosition) {
-        return runOnce(() -> {
-            motor.setVoltage(joystickPosition * HoodConstants.MAX_VOLTS);
-        });
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
