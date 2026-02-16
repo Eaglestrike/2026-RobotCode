@@ -127,8 +127,10 @@ public class Superstructure extends SubsystemBase {
             }
         } else {
             // Idle mode - stop aiming, pre-aim at hub
-            shooter.stopAiming();
-            shooter.getController().setTarget(FieldConstants.getAllianceHubPosition());
+            if (!shooter.isManualTestMode()) {
+                shooter.stopAiming();
+                shooter.getController().setTarget(FieldConstants.getAllianceHubPosition());
+            }
             feeder.stopMotor();
         }
     }

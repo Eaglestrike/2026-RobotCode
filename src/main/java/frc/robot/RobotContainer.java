@@ -4,151 +4,102 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
-import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.swerve.SwerveRequest;
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Degrees;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
-import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.drive.EagleSwerveTelemetry;
-import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.Superstructure;
-import frc.robot.subsystems.Superstructure.ShootMode;
-import frc.robot.subsystems.climb.Climb;
-import frc.robot.subsystems.climb.ClimbConstants;
-import frc.robot.subsystems.intake.IntakeRollers;
-import frc.robot.subsystems.intake.IntakeWrist;
-import frc.robot.subsystems.serialization.Feeder;
-import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.shooter.ballistics.BallisticConstants;
 
+/**
+ * RobotContainer — 射手子系统测试模式
+ * 仅保留 Turret / Flywheel / Hood，其他子系统全部禁用。
+ */
 public class RobotContainer {
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
-    private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
-    private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
-    // swerve
-    private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
-            .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
-            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-            .withSteerRequestType(SteerRequestType.MotionMagicExpo);
-
-    private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
+    // ─── Drivetrain: 仅创建对象（Shooter 构造需要），不绑定任何命令 ───
     private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-    private boolean slowModeOn = false;
-
-    // controllers
-    private final CommandJoystick leftJoystick = new CommandJoystick(0);
-    private final CommandJoystick rightJoystick = new CommandJoystick(1);
+    // ─── Controller ───
     private final CommandXboxController operatorController = new CommandXboxController(2);
-    private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
-    // auto
-    private final SendableChooser<Command> autoChooser;
-
-    // subsystems
+    // ─── 只保留射手子系统 ───
     private final Shooter shooter = new Shooter(drivetrain);
-    private final IntakeRollers intakeRollers = new IntakeRollers();
-    private final IntakeWrist intakeWrist = new IntakeWrist();
-    private final Feeder feeder = new Feeder();
-    private final Hopper hopper = new Hopper();
-    private final Climb climb = new Climb();
-    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist, feeder,
-            hopper);
 
     public RobotContainer() {
         configureBindings();
-
-        NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
-        NamedCommands.registerCommand("SetModeFerry", Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
-        NamedCommands.registerCommand("SetModeShoot", Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
-        NamedCommands.registerCommand("StartShooting", Commands.runOnce(() -> superstructure.setShooting(true)));
-        NamedCommands.registerCommand("StopShooting", Commands.runOnce(() -> superstructure.setShooting(false)));
-        NamedCommands.registerCommand("Intake", superstructure.intake());
-        NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
-        NamedCommands.registerCommand("Stow", superstructure.stow());
-        NamedCommands.registerCommand("AlignLeftTower",
-                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
-        NamedCommands.registerCommand("AlignRightTower",
-                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
-
-        autoChooser = AutoBuilder.buildAutoChooser("Tests");
-        SmartDashboard.putData("Auto Chooser", autoChooser);
-
     }
 
     private void configureBindings() {
-        drivetrain.setDefaultCommand(
-                drivetrain.applyRequest(() -> {
-                    var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
-                    return drive
-                            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT * driveMult)
-                            .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT * driveMult)
-                            .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                            .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate * driveMult);
-                }));
+        // ═══════════════════════════════════════════════
+        //  Flywheel 测试
+        // ═══════════════════════════════════════════════
+        // A 按钮 (按住): 飞轮中档 RPM
+        operatorController.a()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getFlywheels().startAtVelocity(BallisticConstants.MEDIUM_SPEED_RPM)))
+                .onFalse(Commands.runOnce(() -> shooter.setManualTestMode(false))
+                        .andThen(shooter.getFlywheels().stop()));
 
-        rightJoystick.button(2)
-                .onTrue(Commands.runOnce(() -> slowModeOn = true))
-                .onFalse(Commands.runOnce(() -> slowModeOn = false));
+        // B 按钮 (按住): 飞轮低档 RPM
+        operatorController.b()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getFlywheels().startAtVelocity(BallisticConstants.LOW_SPEED_RPM)))
+                .onFalse(Commands.runOnce(() -> shooter.setManualTestMode(false))
+                        .andThen(shooter.getFlywheels().stop()));
 
-        rightJoystick.button(3).onTrue(drivetrain.runOnce(() -> {
-            System.out.println("Zeroing drive");
-            drivetrain.seedFieldCentric();
-            drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
-        }).ignoringDisable(true));
+        // ═══════════════════════════════════════════════
+        //  Turret 测试
+        // ═══════════════════════════════════════════════
+        // X 按钮: turret → 45°
+        operatorController.x()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getTurret().requestPosition(Degrees.of(45))));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
+        // Y 按钮: turret → 0°
+        operatorController.y()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getTurret().requestPosition(Degrees.of(0))));
 
+        // ═══════════════════════════════════════════════
+        //  Hood 测试 — POV 上/下 ±10°
+        // ═══════════════════════════════════════════════
+        operatorController.povUp()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getHood().adjustGoal(10)));
+
+        operatorController.povDown()
+                .onTrue(Commands.runOnce(() -> shooter.setManualTestMode(true))
+                        .andThen(shooter.getHood().adjustGoal(-10)));
+
+        // ═══════════════════════════════════════════════
+        //  Turret / Hood Zero (Back + X / Back + Y)
+        // ═══════════════════════════════════════════════
         operatorController.button(7).and(operatorController.x())
-                .onTrue(intakeWrist.zero().ignoringDisable(true));
+                .onTrue(shooter.getHood().zero().ignoringDisable(true));
 
-        rightJoystick.trigger().onTrue(superstructure.intake()).onFalse(superstructure.stowIntake());
-    }
+        operatorController.button(7).and(operatorController.y())
+                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
 
-    public Command getOffTower() {
-        if (superstructure.getClimbState() == null
-                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
-            return Commands.print("Not currently climbing, cannot get off tower");
-        }
-
-        int direction = drivetrain.getState().Pose.getY() > FieldConstants.getYMiddle() ? 1 : -1;
-        return Commands.sequence(
-                superstructure.climb(ClimbConstants.ClimbState.STOWED),
-                Commands.runOnce(() -> drivetrain.setControl(
-                        drive.withVelocityY(MaxSpeed * direction * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
+        // ═══════════════════════════════════════════════
+        //  Start 按钮: stow (turret 归零 + hood 最低 + flywheel 停)
+        // ═══════════════════════════════════════════════
+        operatorController.start()
+                .onTrue(shooter.stowShooter());
     }
 
     public Command getAutonomousCommand() {
-        return Commands.sequence(
-                superstructure.initialize(),
-                autoChooser.getSelected());
+        return Commands.none();
     }
 
     public Command getTeleopCommand() {
-        return superstructure.initialize();
+        return Commands.none();
     }
 
     public EagleSwerveDrivetrain getDrivetrain() {

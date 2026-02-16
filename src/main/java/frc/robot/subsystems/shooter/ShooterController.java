@@ -106,6 +106,13 @@ public class ShooterController {
     }
 
     /**
+     * Check if the controller is enabled (for debugging)
+     */
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    /**
      * Call this periodically to update all aiming calculations and commands
      */
     public void update() {
@@ -115,8 +122,14 @@ public class ShooterController {
             enabled = true;
         }
 
-        if (targetPose == null || !enabled) {
-            // Idle mode - just maintain idle flywheel speed
+        // When disabled, don't touch subsystems (allow manual testing)
+        if (!enabled) {
+            lastSolverResult = null;
+            return;
+        }
+
+        if (targetPose == null) {
+            // Idle mode - maintain idle flywheel speed only when controller is enabled
             flywheels.setVelocity(FlywheelConstants.IDLE_VELOCITY);
             lastSolverResult = null;
             return;

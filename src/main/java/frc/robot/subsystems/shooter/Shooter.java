@@ -13,6 +13,7 @@ public class Shooter extends SubsystemBase {
     private final ShooterHood hood;
     private final ShooterFlywheels flywheels;
     private final ShooterController controller;
+    private boolean manualTestMode = false;
 
     public Shooter(EagleSwerveDrivetrain drive) {
         turret = new ShooterTurret();
@@ -53,9 +54,21 @@ public class Shooter extends SubsystemBase {
     public Command stowShooter() {
         return Commands.parallel(
             turret.requestPosition(Degrees.of(0)),
-            hood.goToPos(Degrees.of(0)),
+            hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.MIN_ANGLE)),
             flywheels.stop()
         );
+    }
+
+    /** Enable/disable manual test mode (prevents Superstructure from overriding) */
+    public void setManualTestMode(boolean manual) {
+        this.manualTestMode = manual;
+        if (manual) {
+            controller.setEnabled(false);
+        }
+    }
+
+    public boolean isManualTestMode() {
+        return manualTestMode;
     }
 
     public ShooterFlywheels getFlywheels() {
