@@ -36,6 +36,8 @@ import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterFlywheels;
+import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionConstants;
 
@@ -74,6 +76,8 @@ public class RobotContainer {
 
     // subsystems
     private final Shooter shooter = new Shooter(drivetrain);
+    private final ShooterTurret turret = shooter.getTurret();
+    private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
     private final IntakeRollers intakeRollers = new IntakeRollers();
     private final IntakeWrist intakeWrist = new IntakeWrist();
     private final Feeder feeder = new Feeder();
@@ -81,8 +85,7 @@ public class RobotContainer {
     private final Climb climb = new Climb();
     private final Vision vision = new Vision(drivetrain);
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder,
-            hopper);
+            feeder, hopper);
 
     public RobotContainer() {
         configureBindings();
@@ -139,8 +142,6 @@ public class RobotContainer {
 
         operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
                 .onTrue(climb.zero().ignoringDisable(true));
-        
-        operatorController.button(7).onTrue(getDrivetrain().alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
 
         operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
@@ -154,22 +155,50 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x()) // for testing ONLY, remove when button board
                                                                  // is assembled
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
-        
-        // FOR TESTING ONLY - alignPID left and right
-        rightJoystick.button(3).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
-        rightJoystick.button(4).onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
+
+        operatorController.a()
+                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
+                        operatorController::getRightY))
+                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
+
+        rightJoystick.button(3)
+                .onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+        rightJoystick.button(4)
+                .onTrue(drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
+        // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());
         leftJoystick.trigger().onTrue(superstructure.stowIntake());
         leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
 
-        // Manual Commands
         buttonBoard.button(INTAKE_BUTTON)
-                .whileTrue(intakeRollers.setManualVoltage(operatorController.getRightX()))
-                .onFalse(intakeRollers.setManualVoltage(0));
-        buttonBoard.button(INTAKE_BUTTON)
-                .whileTrue(intakeWrist.setManualVoltage(operatorController.getRightY()))
-                .onFalse(intakeWrist.setManualVoltage(0));
+                .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+                .onFalse(intakeRollers.setManualVoltage(() -> 0));
+
+        buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+                .onFalse(intakeWrist.setManualVoltage(() -> 0));
+
+        buttonBoard.button(CLIMB_BUTTON)
+                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
+                        operatorController::getRightY))
+                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
+
+        buttonBoard.button(TURRET_BUTTON).whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+                .onFalse(turret.setManualVoltage(() -> 0));
+
+        buttonBoard.button(TURRET_BUTTON)
+                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
+                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+
+        buttonBoard.button(HOOD_BUTTON)
+                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
+                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+
+        buttonBoard.button(SERIALIZER_BUTTON).whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
+                .onFalse(hopper.setManualVoltage(() -> 0));
+
+        // Should the kicker and flywheels be on the same button, like hood getRightY or
+        // serializer getRightY? Since they need to spin simultaneously to launch
     }
 
     public Command getOffTower() {
@@ -178,7 +207,7 @@ public class RobotContainer {
             return Commands.print("Not currently climbing, cannot get off tower");
         }
 
-        int direction = drivetrain.getState().Pose.getY() > FieldConstants.getYMiddle() ? 1 : -1;
+        int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
         return Commands.sequence(
                 superstructure.climb(ClimbConstants.ClimbState.STOWED),
                 Commands.runOnce(() -> drivetrain.setControl(
