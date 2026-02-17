@@ -17,14 +17,10 @@ public final class ShooterConstants {
 
         // NEO Vertex free speed ~6784 RPM, so kV ≈ 1/6784 ≈ 0.000147
         // 注意：feedforward (kV/kS/kA) 未配置到电机控制器（固件兼容问题），纯靠 PID
-        public static final double kP = 0.001;
-        public static final double kI = 0.0000005;
-        public static final double kD = 0.0;
-        /** Spark Flex 固件对 kS 有最小值要求，0.0001 仍报 Invalid parameter，用 0.001 */
-        public static final double kS = 0.01;
-        public static final double kV = 0.000147;
-        public static final double kA = 0.0;
-
+        public static final double kP = 0.0087;
+        public static final double kI = 0.0;
+        public static final double kD = 0.0075;
+        
         public static final double MIN_OUTPUT = -1.0;
         public static final double MAX_OUTPUT = 1.0;
 

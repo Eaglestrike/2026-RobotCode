@@ -28,7 +28,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class IntakeWrist extends SubsystemBase {
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
 
-    private final RelativeEncoder enc;
+    // Safety flag
+    private boolean active = true;
+
+    private RelativeEncoder enc;
     private final ProfiledPIDController pid;
     private final ArmFeedforward ff;
 
@@ -74,7 +77,15 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command moveTo(Angle position) {
         return runOnce(() -> {
+            active = true;
             goal = position;
+        });
+    }
+
+    public Command stop() {
+        return runOnce(() -> {
+            active = false;
+            motor.setVoltage(0);
         });
     }
 
@@ -99,7 +110,7 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!DriverStation.isEnabled()) {
+        if (!DriverStation.isEnabled() || !active) {
             motor.setVoltage(0.0);
             return;
         }

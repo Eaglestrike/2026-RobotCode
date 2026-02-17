@@ -36,6 +36,9 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private double lastRequestedPositionRot = 0.0;
 
+    // Safety flag
+    private boolean active = true;
+
     private final Angle minRotation = Degrees.of(-90);
     private final Angle maxRotation = Degrees.of(90);
 
@@ -88,16 +91,24 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public Command requestPosition(Angle pos) {
-        return runOnce(() -> setPosition(pos));
+        return runOnce(() -> {
+            active = true;
+            setPosition(pos);
+        });
     }
 
     public void setPosition(Angle pos) {
         lastRequestedPositionRot = pos.in(Rotations);
-        this.motor.setControl(this.position.withPosition(pos));
+        if (active) {
+            this.motor.setControl(this.position.withPosition(pos));
+        }
     }
 
     public Command stop() {
-        return runOnce(() -> this.motor.stopMotor());
+        return runOnce(() -> {
+            active = false;
+            this.motor.stopMotor();
+        });
     }
 
     public Command zero() {
@@ -140,7 +151,8 @@ public class ShooterTurret extends SubsystemBase {
             cfg.Slot0.kV = nt.getEntry("kV").getDouble(TurretConstants.kV);
             cfg.Slot0.kS = nt.getEntry("kS").getDouble(TurretConstants.kS);
             cfg.Slot0.kA = nt.getEntry("kA").getDouble(TurretConstants.kA);
-            cfg.MotionMagic.MotionMagicCruiseVelocity = nt.getEntry("CruiseVelo").getDouble(TurretConstants.MAX_VELOCITY);
+            cfg.MotionMagic.MotionMagicCruiseVelocity = nt.getEntry("CruiseVelo")
+                    .getDouble(TurretConstants.MAX_VELOCITY);
             cfg.MotionMagic.MotionMagicAcceleration = nt.getEntry("Acceleration").getDouble(TurretConstants.MAX_ACCEL);
             motor.getConfigurator().apply(cfg);
         }
@@ -155,7 +167,7 @@ public class ShooterTurret extends SubsystemBase {
         nt.getEntry("RequestedPosition").setDouble(requestedDeg);
         nt.getEntry("Error").setDouble(errDeg);
         nt.getEntry("AtTarget").setBoolean(atTarget);
-        nt.getEntry("Enabled").setBoolean(true);
+        nt.getEntry("Enabled").setBoolean(active);
 
         // DogLog 文件日志
         DogLog.log("ShooterTurret/CurrentAngle", curDeg);

@@ -45,9 +45,6 @@ public class ShooterFlywheels extends SubsystemBase {
         nt.getEntry("kP").setDouble(FlywheelConstants.kP);
         nt.getEntry("kI").setDouble(FlywheelConstants.kI);
         nt.getEntry("kD").setDouble(FlywheelConstants.kD);
-        nt.getEntry("kS").setDouble(FlywheelConstants.kS);
-        nt.getEntry("kV").setDouble(FlywheelConstants.kV);
-        nt.getEntry("kA").setDouble(FlywheelConstants.kA);
         nt.getEntry("maxAccel").setDouble(FlywheelConstants.MAX_ACCEL);
         nt.getEntry("TuneLive").setBoolean(false);
         nt.getEntry("ManualControl").setBoolean(false);
@@ -68,9 +65,6 @@ public class ShooterFlywheels extends SubsystemBase {
                 .i(FlywheelConstants.kI)
                 .d(FlywheelConstants.kD)
                 .outputRange(FlywheelConstants.MIN_OUTPUT, FlywheelConstants.MAX_OUTPUT);
-
-        // NOTE: feedForward.kS/kV/kA 在旧版 Spark Flex 固件上会报 Invalid parameter id (204)
-        // 故不使用 config.closedLoop.feedForward，等固件升级后再启用。
 
         config.closedLoop.maxMotion
                 .maxAcceleration(FlywheelConstants.MAX_ACCEL);
@@ -129,13 +123,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
         // ─── 1. 从 NT 读取命令 ───
         double ntRpm = nt.getEntry("TargetRPM").getDouble(Double.NaN);
-        // #region agent log
-        nt.getEntry("Debug_ntRpm").setDouble(ntRpm);
-        nt.getEntry("Debug_prevNtRpm").setDouble(prevNtTargetRPM);
-        nt.getEntry("Debug_isNaN").setBoolean(Double.isNaN(ntRpm));
-        nt.getEntry("Debug_changed").setBoolean(!Double.isNaN(ntRpm) && ntRpm != prevNtTargetRPM);
-        nt.getEntry("Debug_ntOverride").setBoolean(ntOverride);
-        // #endregion
+        
         if (!Double.isNaN(ntRpm) && ntRpm != prevNtTargetRPM) {
             prevNtTargetRPM = ntRpm;
             // 使用 setVelocityInternal 绕过 ntOverride 检查
