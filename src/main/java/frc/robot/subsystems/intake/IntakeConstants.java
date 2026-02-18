@@ -19,7 +19,7 @@ public final class IntakeConstants {
 		public static final double ENCODER_OFFSET = -0.304283 - Math.PI / 2;
 
 		public static final double MIN_ANGLE = Math.toDegrees(ENCODER_OFFSET); // degrees
-		public static final double MAX_ANGLE = 35; // degrees
+		public static final double MAX_ANGLE = 18; // degrees
 		public static final double STOW_ANGLE = -90; // degrees
 
 		public static final double MAX_VOLTS = 8.0;

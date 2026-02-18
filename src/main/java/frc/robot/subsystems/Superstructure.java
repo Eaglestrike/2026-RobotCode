@@ -56,16 +56,13 @@ public class Superstructure extends SubsystemBase {
                 shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
-    private final DoubleSubscriber wristIntake = DogLog.tunable("wristIntake", IntakeConstants.Wrist.MAX_ANGLE);
-
     /**
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
         return Commands.sequence(
                 intakeRollers.start(),
-                runOnce(() -> intakeWrist.requestAngle(wristIntake.get())));
-        // intakeWrist.moveTo(Degrees.of(wristIntake.get())));
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
 
     }
 

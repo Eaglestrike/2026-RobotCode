@@ -86,11 +86,6 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    public void requestAngle(double position) {
-        goal = Degrees.of(position);
-        state = State.MOVING_TO_GOAL;
-    }
-
     public Command zero() {
         return runOnce(() -> {
             System.out.println("Zeroing Intake Wrist");
