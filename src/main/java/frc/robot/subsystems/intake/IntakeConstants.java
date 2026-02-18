@@ -5,7 +5,7 @@ public final class IntakeConstants {
 		public static final int MOTOR_ID = 14;
 		public static final boolean INVERTED = false;
 
-		public static final double VOLTS = 5.0;
+		public static final double VOLTS = 4.0;
 	}
 
 	public static final class Wrist {
@@ -15,8 +15,8 @@ public final class IntakeConstants {
 		public static final double MAX_ACC = 20;
 
 		public static final double GEAR_RATIO = 100.0;
-		/**In radians of the intake */
-		public static final double ENCODER_OFFSET = -0.304283 - Math.PI/2;
+		/** In radians of the intake */
+		public static final double ENCODER_OFFSET = -0.304283 - Math.PI / 2;
 
 		public static final double MIN_ANGLE = Math.toDegrees(ENCODER_OFFSET); // degrees
 		public static final double MAX_ANGLE = 35; // degrees
@@ -35,6 +35,6 @@ public final class IntakeConstants {
 		public static final double IZONE_DEG = 0.5;
 		public static final double IMAX_VOLTS = 1.0;
 
-        public static final double EJECT_ANGLE = 0;
+		public static final double EJECT_ANGLE = 0;
 	}
 }
