@@ -1,76 +1,74 @@
 package frc.robot.subsystems.shooter.solver;
 
+import static edu.wpi.first.units.Units.Meters;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
 import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ShooterTurret;
+import edu.wpi.first.units.measure.Distance;
 
-public class LUTSolver implements ISolver {
-    private Config cfg;
-    private Translation2d target;
-    private ISolver.State state;
-
+public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
 
-    public LUTSolver(EagleSwerveDrivetrain drive, ShooterTurret turret) {
+    public static Distance getDistanceToTarget(Pose2d robot, Translation3d target) {
+        return Meters.of(robot.getTranslation().getDistance(target.toTranslation2d()));
+    }
 
+    public static Translation3d getFutureTarget(Translation3d target, ChassisSpeeds fieldSpeeds, double tof) {
+        double futureX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof;
+        double futureY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof;
+
+        return new Translation3d(futureX, futureY, target.getZ());
     }
 
     @Override
-    public void setTarget(Translation2d target) {
-        this.target = target;
-    }
+    public ShotData calculateShot(Pose2d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget) {
+        double distance = getDistanceToTarget(launcherPose, actualTarget).in(Meters);
+        Translation3d predictedTarget = actualTarget;
+        double tof = TOF_MAP.get(distance);
 
-    @Override
-    public State getState() {
-        return this.state;
-    }
-
-    @Override
-    public void periodic(Pose2d pose, ChassisSpeeds speed) {
-        // iteratively calculate aimpoint
-        Translation2d aim = target;
-        double distance = pose.getTranslation().getDistance(aim);
         for (int i = 0; i < ITERS; i++) {
-            double tof = cfg.tofMap.get(distance);
-
-            // update aimpoint to account for robot velocity
-            // TODO: translation and rotation velocity should probably use different factors?
-            Translation2d disp = pose.exp(speed.toTwist2d(tof)).getTranslation();
-            aim = target.minus(disp);
-            distance = pose.getTranslation().getDistance(aim);
+            tof = TOF_MAP.get(distance);
+            predictedTarget = getFutureTarget(actualTarget, fieldSpeeds, tof);
+            distance = getDistanceToTarget(launcherPose, predictedTarget).in(Meters);
         }
 
-        double tof = cfg.tofMap.get(distance);
-        double error = target.getDistance(aim.plus(pose.exp(speed.toTwist2d(tof)).getTranslation()));
+        Rotation2d turretAngle = predictedTarget.toTranslation2d()
+                .minus(launcherPose.getTranslation()).getAngle()
+                .minus(launcherPose.getRotation());
 
-        Rotation2d pitch = cfg.pitchMap.get(distance);
-        Rotation2d azimuth = aim.minus(pose.getTranslation()).getAngle().minus(pose.getRotation());
-        double rpm = cfg.rpmMap.get(distance);
-        this.state = new State(error, pitch, azimuth, rpm);
+        return new ShotData(
+                HOOD_MAP.get(distance),
+                turretAngle,
+                RPM_MAP.get(distance),
+                predictedTarget,
+                true);
     }
 
-    public class Config {
-        /**
-         * Map from shooting distance to hood angle
-         */
-        public InterpolatingTreeMap<Double, Rotation2d> pitchMap = new InterpolatingTreeMap<>(
-                InverseInterpolator.forDouble(), Rotation2d::interpolate);
+    /**
+     * Map from shooting distance to hood angle
+     */
+    public static final InterpolatingTreeMap<Double, Rotation2d> HOOD_MAP = new InterpolatingTreeMap<>(
+            InverseInterpolator.forDouble(), Rotation2d::interpolate);
 
-        /**
-         * Map from shooting distance to flywheel RPM
-         */
-        public InterpolatingDoubleTreeMap rpmMap = new InterpolatingDoubleTreeMap();
+    /**
+     * Map from shooting distance to flywheel RPM
+     */
+    public static final InterpolatingDoubleTreeMap RPM_MAP = new InterpolatingDoubleTreeMap();
 
-        /**
-         * Map from shooting distance to time of flight; used
-         * to account for the velocity imparted by shooting on the move
-         */
-        public InterpolatingDoubleTreeMap tofMap = new InterpolatingDoubleTreeMap();
+    /**
+     * Map from shooting distance to time of flight (seconds); used
+     * to account for the velocity imparted by shooting on the move
+     */
+    public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
+
+    static {
+        RPM_MAP.put(0.0, 0.0);
+        HOOD_MAP.put(0.0, Rotation2d.fromDegrees(0.0));
+        TOF_MAP.put(0.0, 0.0);
     }
 }
