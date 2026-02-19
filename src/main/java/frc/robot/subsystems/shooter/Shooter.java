@@ -15,11 +15,11 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ballistics.BallisticConstants;
-import frc.robot.subsystems.shooter.ballistics.BallisticConstants.SpeedPreset;
-import frc.robot.subsystems.shooter.ballistics.BallisticSolver;
-import frc.robot.subsystems.shooter.ballistics.BallisticSolver.SolverResult;
-import frc.robot.subsystems.shooter.ballistics.BallisticSolver.Vec3;
+import frc.robot.subsystems.shooter.solver.BallisticConstants;
+import frc.robot.subsystems.shooter.solver.BallisticSolver;
+import frc.robot.subsystems.shooter.solver.BallisticConstants.SpeedPreset;
+import frc.robot.subsystems.shooter.solver.ShooterSolver;
+import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
     private final EagleSwerveDrivetrain drive;
@@ -28,13 +28,14 @@ public class Shooter extends SubsystemBase {
     private final ShooterFlywheels flywheels;
 
     // Current target (field-relative 3D pose, set each loop by Superstructure)
-    private Pose3d targetPose = null;
+    private Translation3d targetPose = null;
 
     // Ballistic solver parameters (configured once, reused every loop)
     private final BallisticConstants ballisticParams = new BallisticConstants();
+    private final ShooterSolver solver;
 
     // Cached solver result for diagnostics
-    private SolverResult lastSolverResult = null;
+    private ShotData lastSolverResult = null;
 
     // Calculated targets (for on-target checks and logging)
     private double targetTurretAngleDeg = 0;
@@ -56,10 +57,12 @@ public class Shooter extends SubsystemBase {
         // Solver configuration
         ballisticParams.highArc = true; // low-arc for speed
         ballisticParams.g = 9.80665;
-        ballisticParams.dt = 0.005;     // 5 ms RK4 step
-        ballisticParams.tMax = 3.0;     // max 3 s flight
+        ballisticParams.dt = 0.005; // 5 ms RK4 step
+        ballisticParams.tMax = 3.0; // max 3 s flight
         ballisticParams.tolMiss = 0.05; // 5 cm miss tolerance
         ballisticParams.maxIter = 15;
+
+        solver = new BallisticSolver(ballisticParams, BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
     }
 
     /**
@@ -67,7 +70,7 @@ public class Shooter extends SubsystemBase {
      * Called from Superstructure.periodic() every loop.
      * Actual motor commands are issued in this class's periodic().
      */
-    public void setFacing(Pose3d target) {
+    public void setFacing(Translation3d target) {
         this.targetPose = target;
     }
 
@@ -86,32 +89,33 @@ public class Shooter extends SubsystemBase {
 
     public boolean isTurretOnTarget() {
         double cur = turret.getAngle().in(Degrees);
-        return Math.abs(cur - targetTurretAngleDeg)
-                < ShooterConstants.TurretConstants.ANGLE_TOLERANCE.in(Degrees);
+        return Math.abs(cur - targetTurretAngleDeg) < ShooterConstants.TurretConstants.ANGLE_TOLERANCE.in(Degrees);
     }
 
     private boolean isHoodOnTarget() {
         double cur = hood.getAngle().in(Degrees);
-        return Math.abs(cur - targetHoodAngleDeg)
-                < ShooterConstants.HoodConstants.ANGLE_TOLERANCE.in(Degrees);
+        return Math.abs(cur - targetHoodAngleDeg) < ShooterConstants.HoodConstants.ANGLE_TOLERANCE.in(Degrees);
     }
 
     private boolean isFlywheelReady() {
         return flywheels.atVelocity();
     }
 
-    private boolean hasSolution() {
-        return lastSolverResult != null && lastSolverResult.success;
-    }
-
     public double getDistanceToTarget() {
         return distanceToTarget;
     }
 
-    public ShooterFlywheels getFlywheels() { return flywheels; }
-    public ShooterTurret getTurret()       { return turret; }
-    public ShooterHood getHood()           { return hood; }
+    public ShooterFlywheels getFlywheels() {
+        return flywheels;
+    }
 
+    public ShooterTurret getTurret() {
+        return turret;
+    }
+
+    public ShooterHood getHood() {
+        return hood;
+    }
 
     @Override
     public void periodic() {
@@ -123,12 +127,9 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        // ---- 1. Robot state ----
         Pose2d robotPose = drive.getState().Pose;
-        var chassisSpeeds = drive.getState().Speeds;
         double robotYawRad = robotPose.getRotation().getRadians();
 
-        // ---- 2. Shooter exit point in field frame ----
         Translation2d offsetField = ShooterConstants.TurretConstants.OFFSET
                 .rotateBy(robotPose.getRotation());
         Translation2d shooterPos2d = robotPose.getTranslation().plus(offsetField);
@@ -136,67 +137,24 @@ public class Shooter extends SubsystemBase {
                 shooterPos2d.getX(), shooterPos2d.getY(),
                 BallisticConstants.SHOOTER_HEIGHT);
 
-        // ---- 3. Delta from shooter → target in field frame ----
-        Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
+        // ---- Solve ballistics via ShooterSolver interface ----
+        lastSolverResult = solver.calculateShot(
+                shooterPos, drive.getState().Speeds,
+                targetPose);
 
-        // ---- 4. Rotate delta into robot-body frame (X = fwd, Y = left) ----
-        double cos = Math.cos(-robotYawRad);
-        double sin = Math.sin(-robotYawRad);
-        double relX = deltaField.getX() * cos - deltaField.getY() * sin;
-        double relY = deltaField.getX() * sin + deltaField.getY() * cos;
-        double relZ = deltaField.getZ();
+        // ---- Extract results from ShotData ----
+        targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
+                ShooterConstants.HoodConstants.MIN_ANGLE,
+                ShooterConstants.HoodConstants.MAX_ANGLE);
+        targetTurretAngleDeg = MathUtil.inputModulus(lastSolverResult.turretAngle().getDegrees(), -180, 180);
+        targetFlywheelVel = lastSolverResult.rpm();
 
-        // ---- 5. Relative velocity of target w.r.t. shooter ----
-        //  v_shooter_field = v_chassis + omega × r_offset
-        double vxF = chassisSpeeds.vxMetersPerSecond;
-        double vyF = chassisSpeeds.vyMetersPerSecond;
-        double omega = chassisSpeeds.omegaRadiansPerSecond;
-
-        // Tangential velocity from yaw rate: ω × r  (2D cross product)
-        double vTangX = -omega * offsetField.getY();
-        double vTangY =  omega * offsetField.getX();
-
-        double shooterVxF = vxF + vTangX;
-        double shooterVyF = vyF + vTangY;
-
-        // Into body frame, negated (target moves opposite to shooter)
-        double relVelX = -(shooterVxF * cos - shooterVyF * sin);
-        double relVelY = -(shooterVxF * sin + shooterVyF * cos);
-
-        // ---- 6. Horizontal distance → speed preset ----
-        distanceToTarget = Math.sqrt(relX * relX + relY * relY);
+        // Update distance for diagnostics
+        Translation3d deltaField = targetPose.minus(shooterPos);
+        distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
+                + deltaField.getY() * deltaField.getY());
         currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
         currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
-        targetFlywheelVel = BallisticConstants.getRPMForPreset(currentSpeedPreset);
-
-        // ---- 7. Solve ballistics ----
-        Vec3 relPos = new Vec3(relX, relY, relZ);
-        Vec3 relVel = new Vec3(relVelX, relVelY, 0);
-
-        lastSolverResult = BallisticSolver.solve(
-                relPos, relVel,
-                currentLaunchVelocity,
-                BallisticConstants.DEFAULT_DRAG_COEFFICIENT,
-                ballisticParams);
-
-        if (lastSolverResult.success || Double.isFinite(lastSolverResult.theta)) {
-            double launchAngleDeg = Math.toDegrees(lastSolverResult.theta);
-            targetTurretAngleDeg = Math.toDegrees(lastSolverResult.phi);
-            targetHoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(launchAngleDeg);
-            targetHoodAngleDeg = MathUtil.clamp(targetHoodAngleDeg,
-                    ShooterConstants.HoodConstants.MIN_ANGLE,
-                    ShooterConstants.HoodConstants.MAX_ANGLE);
-            targetTurretAngleDeg = MathUtil.inputModulus(targetTurretAngleDeg, -180, 180);
-        } else {
-            // Fallback: point directly at target with crude gravity compensation
-            targetTurretAngleDeg = Math.toDegrees(Math.atan2(relY, relX));
-            double fallbackLaunch = Math.toDegrees(Math.atan2(relZ, distanceToTarget))
-                    + distanceToTarget * 1.5;
-            targetHoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(
-                    MathUtil.clamp(fallbackLaunch,
-                            ShooterConstants.HoodConstants.MIN_ANGLE,
-                            ShooterConstants.HoodConstants.MAX_ANGLE));
-        }
 
         // ---- 8. Command subsystems directly (no Command scheduling in periodic) ----
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
@@ -214,28 +172,33 @@ public class Shooter extends SubsystemBase {
     // Trajectory visualization (for AdvantageScope 3D Field)
     // ================================================================
     private void buildTrajectoryVisualization(Translation3d shooterPos, double robotYawRad) {
-        if (lastSolverResult == null || !Double.isFinite(lastSolverResult.theta)
-                || !Double.isFinite(lastSolverResult.tStar) || lastSolverResult.tStar <= 0) {
+        if (lastSolverResult == null || !lastSolverResult.validShot()) {
             predictedTrajectoryPoses = new Pose3d[0];
             return;
         }
 
-        double theta = lastSolverResult.theta;
-        double phi   = lastSolverResult.phi;
-        double tFlight = lastSolverResult.tStar;
+        // Recover launch angles from ShotData
+        double launchAngleRad = Math.toRadians(
+                BallisticConstants.hoodAngleToLaunchAngle(lastSolverResult.hoodAngle().getDegrees()));
+        double turretAngleRad = lastSolverResult.turretAngle().getRadians();
 
-        // Launch velocity in body frame
-        double ct = Math.cos(theta);
-        double vxB = currentLaunchVelocity * ct * Math.cos(phi);
-        double vyB = currentLaunchVelocity * ct * Math.sin(phi);
-        double vzB = currentLaunchVelocity * Math.sin(theta);
+        // Estimate time of flight from distance / launch velocity
+        Translation3d predictedTarget = lastSolverResult.predictedTarget();
+        double dx = predictedTarget.getX() - shooterPos.getX();
+        double dy = predictedTarget.getY() - shooterPos.getY();
+        double horizDist = Math.sqrt(dx * dx + dy * dy);
+        double tFlight = horizDist / Math.max(currentLaunchVelocity * Math.cos(launchAngleRad), 1e-6);
+        if (!Double.isFinite(tFlight) || tFlight <= 0) {
+            predictedTrajectoryPoses = new Pose3d[0];
+            return;
+        }
 
-        // Body → field rotation
-        double cosY = Math.cos(robotYawRad);
-        double sinY = Math.sin(robotYawRad);
-        double vxF = vxB * cosY - vyB * sinY;
-        double vyF = vxB * sinY + vyB * cosY;
-        double vzF = vzB;
+        // Launch velocity in field frame (turret angle from solver is already
+        // field-relative)
+        double ct = Math.cos(launchAngleRad);
+        double vxF = currentLaunchVelocity * ct * Math.cos(turretAngleRad);
+        double vyF = currentLaunchVelocity * ct * Math.sin(turretAngleRad);
+        double vzF = currentLaunchVelocity * Math.sin(launchAngleRad);
 
         // Sample ~20 points along the trajectory
         int n = 20;
@@ -279,20 +242,17 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/ReadyToShoot", isReady());
 
         // Solver diagnostics
-        DogLog.log("Shooter/Solver/Success", hasSolution());
+        DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());
         if (lastSolverResult != null) {
-            DogLog.log("Shooter/Solver/Miss_m", lastSolverResult.miss);
-            DogLog.log("Shooter/Solver/TimeOfFlight_s", lastSolverResult.tStar);
-            DogLog.log("Shooter/Solver/Iterations", lastSolverResult.iterations);
-            DogLog.log("Shooter/Solver/LaunchAngle_deg",
-                    Math.toDegrees(lastSolverResult.theta));
-            DogLog.log("Shooter/Solver/YawAngle_deg",
-                    Math.toDegrees(lastSolverResult.phi));
+            DogLog.log("Shooter/Solver/HoodAngle_deg", lastSolverResult.hoodAngle().getDegrees());
+            DogLog.log("Shooter/Solver/TurretAngle_deg", lastSolverResult.turretAngle().getDegrees());
+            DogLog.log("Shooter/Solver/RPM", lastSolverResult.rpm());
         }
 
         // 3D visualization poses
         if (targetPose != null) {
-            DogLog.log("Shooter/TargetPose3d", new Pose3d[] { targetPose });
+            DogLog.log("Shooter/TargetPose3d",
+                    new Pose3d[] { new Pose3d(targetPose, new Rotation3d()) });
         }
         if (predictedTrajectoryPoses.length > 0) {
             DogLog.log("Shooter/PredictedTrajectory", predictedTrajectoryPoses);

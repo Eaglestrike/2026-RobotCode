@@ -121,9 +121,9 @@ public class Superstructure extends SubsystemBase {
     @Override
     public void periodic() {
         if (currentMode == ShootMode.FERRY) {
-            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
+            shooter.setFacing(FieldConstants.getAllianceOutpostPosition().getTranslation());
         } else {
-            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+            shooter.setFacing(FieldConstants.getAllianceHubPosition().getTranslation());
         }
 
         if (isShooting) {

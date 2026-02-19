@@ -8,9 +8,9 @@
  * Copyright (c) 2026 Jiarui Wu
  */
 
-package frc.robot.subsystems.shooter.ballistics;
+package frc.robot.subsystems.shooter.solver;
 
-import frc.robot.subsystems.shooter.ballistics.BallisticSolver.Vec3;
+import frc.robot.subsystems.shooter.solver.BallisticSolver.Vec3;
 
 /**
  * Constants and parameters for the ballistic solver

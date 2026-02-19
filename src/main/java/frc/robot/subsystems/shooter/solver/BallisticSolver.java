@@ -8,9 +8,12 @@
  * Copyright (c) 2026 Jiarui Wu
  */
 
-package frc.robot.subsystems.shooter.ballistics;
+package frc.robot.subsystems.shooter.solver;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 /**
  * Ballistic Solver - Computes launch angles to intercept moving targets
@@ -19,7 +22,7 @@ import edu.wpi.first.math.MathUtil;
  * Ported from ballistic-solver-main (C++ implementation)
  * Uses RK4 integration + gradient descent optimization
  */
-public class BallisticSolver {
+public class BallisticSolver implements ShooterSolver {
 
     // ================================================================
     // Vec3 - Simple 3D vector
@@ -63,18 +66,6 @@ public class BallisticSolver {
     }
 
     // ================================================================
-    // Result
-    // ================================================================
-    public static class SolverResult {
-        public boolean success = false;
-        public double theta = Double.NaN; // pitch angle (radians)
-        public double phi = Double.NaN;   // yaw angle (radians)
-        public double miss = Double.NaN;
-        public double tStar = Double.NaN; // time of closest approach
-        public int iterations = 0;
-    }
-
-    // ================================================================
     // State for RK4
     // ================================================================
     private static class State {
@@ -95,11 +86,110 @@ public class BallisticSolver {
     }
 
     // ================================================================
+    // Solver Result (internal)
+    // ================================================================
+    public static class SolverResult {
+        public double theta = 0; // launch pitch angle (radians)
+        public double phi = 0; // launch yaw angle (radians)
+        public double miss = Double.MAX_VALUE; // miss distance (meters)
+        public double tStar = 0; // time of closest approach (seconds)
+        public int iterations = 0; // solver iterations used
+        public boolean success = false; // whether miss <= tolerance
+    }
+
+    // ================================================================
+    // Instance fields (configurable per-robot)
+    // ================================================================
+    private final BallisticConstants params;
+    private final double dragCoeff;
+
+    /**
+     * Create a BallisticSolver with the given parameters.
+     *
+     * @param params    solver / physics parameters
+     * @param dragCoeff quadratic drag coefficient (kDrag)
+     */
+    public BallisticSolver(BallisticConstants params, double dragCoeff) {
+        this.params = params;
+        this.dragCoeff = dragCoeff;
+    }
+
+    /** Create a BallisticSolver with default parameters. */
+    public BallisticSolver() {
+        this(new BallisticConstants(), BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
+    }
+
+    // ================================================================
+    // ShooterSolver interface implementation
+    // ================================================================
+    @Override
+    public ShotData calculateShot(Translation3d launcherPosition, ChassisSpeeds fieldSpeeds,
+            Translation3d actualTarget) {
+        // ---- 1. Relative position: target w.r.t. launcher in field frame ----
+        Translation3d deltaField = actualTarget.minus(launcherPosition);
+        double relX = deltaField.getX();
+        double relY = deltaField.getY();
+        double relZ = deltaField.getZ();
+
+        // ---- 2. Relative velocity of target w.r.t. launcher (target is stationary,
+        // so relative velocity = -(launcher velocity)) ----
+        double relVelX = -fieldSpeeds.vxMetersPerSecond;
+        double relVelY = -fieldSpeeds.vyMetersPerSecond;
+
+        // ---- 3. Distance → speed preset → launch velocity & RPM ----
+        double horizontalDistance = Math.sqrt(relX * relX + relY * relY);
+        BallisticConstants.SpeedPreset preset = BallisticConstants.getSpeedPresetForDistance(horizontalDistance);
+        double launchVelocity = BallisticConstants.getLaunchVelocityForPreset(preset);
+        double rpm = BallisticConstants.getRPMForPreset(preset);
+
+        // ---- 4. Run ballistic solver ----
+        Vec3 relPos = new Vec3(relX, relY, relZ);
+        Vec3 relVel = new Vec3(relVelX, relVelY, 0);
+
+        SolverResult result = solve(relPos, relVel, launchVelocity, dragCoeff, params);
+
+        // ---- 5. Convert solver output → ShotData ----
+        if (result.success || Double.isFinite(result.theta)) {
+            double launchAngleDeg = Math.toDegrees(result.theta);
+            double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(result.phi), -180, 180);
+            double hoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(launchAngleDeg);
+
+            // Predicted target position at intercept time
+            Translation3d predictedTarget = new Translation3d(
+                    actualTarget.getX() + relVelX * result.tStar,
+                    actualTarget.getY() + relVelY * result.tStar,
+                    actualTarget.getZ());
+
+            return new ShotData(
+                    Rotation2d.fromDegrees(hoodAngleDeg),
+                    Rotation2d.fromDegrees(turretAngleDeg),
+                    rpm,
+                    predictedTarget,
+                    result.success);
+        }
+
+        // ---- 6. Fallback: point directly at target with crude gravity compensation
+        // ----
+        double fallbackTurretDeg = Math.toDegrees(Math.atan2(relY, relX));
+        double fallbackLaunchDeg = Math.toDegrees(Math.atan2(relZ, horizontalDistance))
+                + horizontalDistance * 1.5;
+        double fallbackHoodDeg = BallisticConstants.launchAngleToHoodAngle(fallbackLaunchDeg);
+
+        return new ShotData(
+                Rotation2d.fromDegrees(fallbackHoodDeg),
+                Rotation2d.fromDegrees(MathUtil.inputModulus(fallbackTurretDeg, -180, 180)),
+                rpm,
+                actualTarget,
+                false);
+    }
+
+    // ================================================================
     // Utility functions
     // ================================================================
     private static double wrapPi(double a) {
         a = ((a + Math.PI) % (2.0 * Math.PI));
-        if (a < 0) a += 2.0 * Math.PI;
+        if (a < 0)
+            a += 2.0 * Math.PI;
         return a - Math.PI;
     }
 
@@ -300,8 +390,10 @@ public class BallisticSolver {
         if (angles0[2] == 0 || angles1[2] == 0) {
             double[] a0 = vecToAngles(aim);
             double[] a1 = vecToAngles(aimCorr);
-            th0 = a0[0]; ph0 = a0[1];
-            th1 = a1[0]; ph1 = a1[1];
+            th0 = a0[0];
+            ph0 = a0[1];
+            th1 = a1[0];
+            ph1 = a1[1];
         }
 
         double F0 = th1 - th0;
@@ -400,7 +492,8 @@ public class BallisticSolver {
 
             if (!improved) {
                 stepSize *= 0.5;
-                if (stepSize < 1e-6) break;
+                if (stepSize < 1e-6)
+                    break;
             }
         }
 
@@ -430,13 +523,4 @@ public class BallisticSolver {
         return solve(relPos, relVel, launchSpeed, dragCoeff, null);
     }
 
-    /**
-     * Solve for stationary target
-     */
-    public static SolverResult solveStationary(
-            double targetX, double targetY, double targetZ,
-            double launchSpeed, double dragCoeff) {
-
-        return solve(targetX, targetY, targetZ, 0, 0, 0, launchSpeed, dragCoeff);
-    }
 }
