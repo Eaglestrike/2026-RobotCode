@@ -26,27 +26,27 @@ public class Shooter extends SubsystemBase {
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
                 hood.goToPos(Radians.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                flywheel.startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)
-        );
+                flywheel.startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
     public void setFacing(Pose3d targetPose) {
         turret.setFacing(targetPose.toPose2d());
-        // TODO: Calculate hood angle based on distance to targetPose - this cna either be done in Shooter or create a ShooterUtils class with all the math
-        double hoodAngle = 0; 
+        // TODO: Calculate hood angle based on distance to targetPose - this cna either
+        // be done in Shooter or create a ShooterUtils class with all the math
+        double hoodAngle = 0;
 
-        // TODO: Calculate this in meters per second based on distance to targetPose and desired launch angle
-        double targetBallVel = 0; 
+        // TODO: Calculate this in meters per second based on distance to targetPose and
+        // desired launch angle
+        double targetBallVel = 0;
 
         CommandScheduler.getInstance().schedule(Commands.parallel(
-            hood.goToPos(Radians.of(hoodAngle)),
-            flywheel.startAtVelocity(ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(targetBallVel))
-        )
-        );
+                hood.goToPos(Radians.of(hoodAngle)),
+                flywheel.startAtVelocity(ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(targetBallVel))));
     }
 
     public boolean isReady() {
-        return isAtVelocity() && isFacingTarget();
+        return true; // testing purposes only
+        // return isAtVelocity() && isFacingTarget();
     }
 
     private boolean isAtVelocity() {
