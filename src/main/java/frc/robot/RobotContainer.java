@@ -183,6 +183,8 @@ public class RobotContainer {
         leftJoystick.button(3).onTrue(superstructure.ejectIntake());
         // stow all
         leftJoystick.button(2).onTrue(superstructure.stow());
+        // jiggle intake
+        rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
         // Manual Commands
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))

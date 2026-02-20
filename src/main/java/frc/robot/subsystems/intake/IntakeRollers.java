@@ -40,6 +40,12 @@ public class IntakeRollers extends SubsystemBase {
         });
     }
 
+    public Command jiggle() {
+        return run(() -> {
+            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
+        });
+    }
+
     public Command stop() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(0));

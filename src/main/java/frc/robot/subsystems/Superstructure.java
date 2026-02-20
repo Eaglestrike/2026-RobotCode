@@ -99,6 +99,12 @@ public class Superstructure extends SubsystemBase {
                 intakeRollers.eject());
     }
 
+    public Command jiggleIntake() {
+        return Commands.parallel(
+                intakeWrist.jiggle(),
+                intakeRollers.jiggle());
+    }
+
     /**
      * Command to climb to a specified level
      * 
