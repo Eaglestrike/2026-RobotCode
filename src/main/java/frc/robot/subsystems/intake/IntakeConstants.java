@@ -36,5 +36,9 @@ public final class IntakeConstants {
 		public static final double IMAX_VOLTS = 1.0;
 
 		public static final double EJECT_ANGLE = 0;
+
+        public static final double INTAKE_UP_ANGLE = 0;
+
+        public static final double INTAKE_DOWN_ANGLE = 0;
 	}
 }

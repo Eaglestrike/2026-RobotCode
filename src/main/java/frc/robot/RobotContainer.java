@@ -17,6 +17,8 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import java.util.function.DoubleSupplier;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -26,7 +28,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
@@ -45,6 +47,7 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
+        public static final double AXIS_DEADBAND = 0.02;
         public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
         private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
         private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
@@ -179,30 +182,33 @@ public class RobotContainer {
                 leftJoystick.button(2).onTrue(superstructure.outtake()).onFalse(superstructure.stowIntake());
 
                 // Manual Commands
-                buttonBoard.button(INTAKE_BUTTON)
+                buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
                                 .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
 
-                buttonBoard.button(INTAKE_BUTTON).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+                buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+                                .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-                buttonBoard.button(CLIMB_BUTTON)
+                buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                                 .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
                                                 operatorController::getRightY))
                                 .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
-                buttonBoard.button(TURRET_BUTTON).whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+                buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+                                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
                                 .onFalse(turret.setManualVoltage(() -> 0));
 
-                buttonBoard.button(TURRET_BUTTON)
+                buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
                                 .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
                                 .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
 
-                buttonBoard.button(HOOD_BUTTON)
+                buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                                 .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
                                 .onFalse(shooter.getHood().setManualVoltage(() -> 0));
 
-                buttonBoard.button(SERIALIZER_BUTTON).whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
+                buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+                                .whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
                                 .onFalse(hopper.setManualVoltage(() -> 0));
 
                 operatorController.leftBumper()
@@ -225,6 +231,10 @@ public class RobotContainer {
                                                                 * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
                                 Commands.waitSeconds(0.5),
                                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
+        }
+
+        public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
+                return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);
         }
 
         public Command getAutonomousCommand() {

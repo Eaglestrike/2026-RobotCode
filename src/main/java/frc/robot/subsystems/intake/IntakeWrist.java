@@ -30,6 +30,9 @@ public class IntakeWrist extends SubsystemBase {
     private enum State {
         IDLE, MOVING_TO_GOAL, MANUAL
     }
+    private enum IntakePosition {
+        INTAKING_UP, INTAKING_DOWN, IDLE
+    }
 
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
 
@@ -38,6 +41,7 @@ public class IntakeWrist extends SubsystemBase {
     private final ArmFeedforward ff;
 
     private State state = State.IDLE;
+    private IntakePosition intakePosition = IntakePosition.IDLE;
     private Angle goal = Radians.of(0.0);
 
     public IntakeWrist() {
@@ -142,7 +146,16 @@ public class IntakeWrist extends SubsystemBase {
         double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
         if (state == State.MOVING_TO_GOAL) {
             motor.setVoltage(outputVolts);
+            intakePosition = IntakePosition.INTAKING_DOWN;
         }
         DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
+
+        if (intakePosition == IntakePosition.INTAKING_DOWN) {
+            this.moveTo(Degrees.of(IntakeConstants.Wrist.INTAKE_UP_ANGLE)).schedule();
+            intakePosition = IntakePosition.INTAKING_UP;
+        } else if (intakePosition == IntakePosition.INTAKING_UP) {
+            this.moveTo(Degrees.of(IntakeConstants.Wrist.INTAKE_DOWN_ANGLE)).schedule();
+            intakePosition = IntakePosition.INTAKING_DOWN;
+        }
     }
 }
