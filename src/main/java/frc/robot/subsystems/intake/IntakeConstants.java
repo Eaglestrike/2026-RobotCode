@@ -6,7 +6,7 @@ public final class IntakeConstants {
 		public static final boolean INVERTED = false;
 
 		public static final double VOLTS = 4.0;
-		public static final double HOPPER_OUT_VOLTS = -1.0;
+		public static final double HOPPER_OUT_VOLTS = -1.5;
 	}
 
 	public static final class Wrist {
@@ -20,10 +20,11 @@ public final class IntakeConstants {
 		public static final double ENCODER_OFFSET = -0.2199114858 - Math.PI / 2;
 
 		public static final double MIN_ANGLE = Math.toDegrees(ENCODER_OFFSET); // degrees
-		public static final double MAX_ANGLE = 14; // degrees
+		public static final double MAX_ANGLE = 13; // degrees
 		public static final double STOW_ANGLE = -90; // degrees
 
-		public static final double MAX_VOLTS = 2.0;
+		public static final double EXTEND_HOPPER_VOLTS = 2.0;
+		public static final double MAX_VOLTS = 8.0;
 
 		public static final double kP = 40;
 		public static final double kI = 100;
@@ -37,9 +38,5 @@ public final class IntakeConstants {
 		public static final double IMAX_VOLTS = 1.0;
 
 		public static final double EJECT_ANGLE = 0;
-
-		public static final double INTAKE_UP_ANGLE = 0;
-
-		public static final double INTAKE_DOWN_ANGLE = 0;
 	}
 }

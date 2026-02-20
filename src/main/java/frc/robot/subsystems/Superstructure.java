@@ -52,7 +52,6 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.parallel(
-                hopper.startMotor(),
                 shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
@@ -64,8 +63,7 @@ public class Superstructure extends SubsystemBase {
                 intakeRollers.startHopperOut(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
                 Commands.waitUntil(intakeWrist::clearedHopper),
-                intakeRollers.start(),
-                hopper.startKicking());
+                intakeRollers.start());
 
     }
 
@@ -75,8 +73,11 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
-                hopper.startMotor());
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+    }
+
+    public Command stopIntakeRollers() {
+        return intakeRollers.stop();
     }
 
     /**
@@ -88,11 +89,10 @@ public class Superstructure extends SubsystemBase {
                 intakeWrist.requestPosition(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED),
-                hopper.startKicking());
+                climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
-    public Command outtake() {
+    public Command ejectIntake() {
         return Commands.sequence(
                 intakeWrist.eject(),
                 Commands.waitSeconds(0.5),
@@ -138,12 +138,15 @@ public class Superstructure extends SubsystemBase {
 
             if (shooter.isReady()) {
                 feeder.startMotor();
+                hopper.startKicking();
             } else {
                 feeder.stopMotor();
+                hopper.startMotor();
             }
         } else {
             shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
+            hopper.startMotor();
         }
     }
 

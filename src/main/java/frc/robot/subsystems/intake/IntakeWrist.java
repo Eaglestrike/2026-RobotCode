@@ -28,11 +28,10 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeWrist extends SubsystemBase {
+    // public boolean hasExtendedHopper = false;
+
     private enum State {
         IDLE, MOVING_TO_GOAL, MANUAL
-    }
-    private enum IntakePosition {
-        INTAKING_UP, INTAKING_DOWN, IDLE
     }
 
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
@@ -42,7 +41,6 @@ public class IntakeWrist extends SubsystemBase {
     private final ArmFeedforward ff;
 
     private State state = State.IDLE;
-    private IntakePosition intakePosition = IntakePosition.IDLE;
     private Angle goal = Radians.of(0.0);
 
     public IntakeWrist() {
@@ -149,19 +147,18 @@ public class IntakeWrist extends SubsystemBase {
         DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
         double volts = pidVolts + ffVolts;
         DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
-        double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
+        double maxVolts = IntakeConstants.Wrist.EXTEND_HOPPER_VOLTS;
+        // README: do NOT uncomment this unless you want to break our robot.
+        // if (this.clearedHopper()) {
+        // hasExtendedHopper = true;
+        // }
+        // if (!hasExtendedHopper) {
+        // maxVolts = IntakeConstants.Wrist.EXTEND_HOPPER_VOLTS;
+        // }
+        double outputVolts = MathUtil.clamp(volts, -maxVolts, maxVolts);
         if (state == State.MOVING_TO_GOAL) {
             motor.setVoltage(outputVolts);
-            intakePosition = IntakePosition.INTAKING_DOWN;
         }
         DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
-
-        if (intakePosition == IntakePosition.INTAKING_DOWN) {
-            this.moveTo(Degrees.of(IntakeConstants.Wrist.INTAKE_UP_ANGLE)).schedule();
-            intakePosition = IntakePosition.INTAKING_UP;
-        } else if (intakePosition == IntakePosition.INTAKING_UP) {
-            this.moveTo(Degrees.of(IntakeConstants.Wrist.INTAKE_DOWN_ANGLE)).schedule();
-            intakePosition = IntakePosition.INTAKING_DOWN;
-        }
     }
 }

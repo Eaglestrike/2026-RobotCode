@@ -22,10 +22,8 @@ public class Hopper extends SubsystemBase {
         motor = new TalonFX(SerializationConstants.HOPPER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
     }
 
-    public Command startMotor() {
-        return runOnce(() -> {
-            motor.setControl(voltageOutReq.withOutput(voltage.get()));
-        });
+    public void startMotor() {
+        motor.setControl(voltageOutReq.withOutput(voltage.get()));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
@@ -35,15 +33,11 @@ public class Hopper extends SubsystemBase {
         });
     }
 
-    public Command stopMotor() {
-        return runOnce(() -> {
-            motor.setControl(voltageOutReq.withOutput(0));
-        });
+    public void stopMotor() {
+        motor.setControl(voltageOutReq.withOutput(0));
     }
 
-    public Command startKicking() {
-        return runOnce(() -> {
-            motor.setControl(voltageOutReq.withOutput(SerializationConstants.HOPPER_MAX_VOLTS));
-        });
+    public void startKicking() {
+        motor.setControl(voltageOutReq.withOutput(SerializationConstants.HOPPER_MAX_VOLTS));
     }
 }
