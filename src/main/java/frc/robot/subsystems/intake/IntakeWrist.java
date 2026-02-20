@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.revrobotics.PersistMode;
@@ -73,7 +74,7 @@ public class IntakeWrist extends SubsystemBase {
                 IntakeConstants.Wrist.kA);
 
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(moveTo(Degrees.of(x)));
+            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
     }
 
@@ -82,7 +83,12 @@ public class IntakeWrist extends SubsystemBase {
         return Radians.of(enc.getPosition());
     }
 
-    public Command moveTo(Angle position) {
+    public boolean clearedHopper() {
+        // todo: adjust this to be a specific position
+        return getAngle().in(Radians) > 0;
+    }
+
+    public Command requestPosition(Angle position) {
         return runOnce(() -> {
             goal = Radians.of(MathUtil.clamp(position.in(Radians), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
                     Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
@@ -109,7 +115,7 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command eject() {
         return runOnce(() -> {
-            this.moveTo(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
+            this.requestPosition(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
         });
     }
 
@@ -127,6 +133,8 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
+        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
+
         if (!DriverStation.isEnabled()) {
             motor.setVoltage(0.0);
             return;
@@ -134,8 +142,6 @@ public class IntakeWrist extends SubsystemBase {
 
         DogLog.log("IntakeWrist/GoalRad", goal);
         pid.setGoal(goal.in(Radians));
-
-        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
 
         double pidVolts = pid.calculate(getAngle().in(Radians));
         DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
