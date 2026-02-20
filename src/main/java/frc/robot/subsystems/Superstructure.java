@@ -62,7 +62,8 @@ public class Superstructure extends SubsystemBase {
     public Command intake() {
         return Commands.sequence(
                 intakeRollers.start(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                hopper.startKicking());
 
     }
 
@@ -72,7 +73,8 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
+                hopper.startMotor());
     }
 
     /**
@@ -84,7 +86,8 @@ public class Superstructure extends SubsystemBase {
                 intakeWrist.moveTo(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED));
+                climb.moveTo(ClimbConstants.ClimbState.STOWED),
+                hopper.startKicking());
     }
 
     public Command outtake() {

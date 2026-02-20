@@ -14,7 +14,8 @@ import frc.robot.RobotContainer;
 public class Hopper extends SubsystemBase {
     private TalonFX motor;
     private VoltageOut voltageOutReq = new VoltageOut(0);
-    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage", SerializationConstants.HOPPER_MAX_VOLTS,
+    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage",
+            SerializationConstants.HOPPER_NORMAL_VOLTS,
             "V");
 
     public Hopper() {
@@ -29,13 +30,20 @@ public class Hopper extends SubsystemBase {
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            motor.setControl(voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.HOPPER_MAX_VOLTS));
+            motor.setControl(
+                    voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.HOPPER_MAX_VOLTS));
         });
     }
 
     public Command stopMotor() {
         return runOnce(() -> {
             motor.setControl(voltageOutReq.withOutput(0));
+        });
+    }
+
+    public Command startKicking() {
+        return runOnce(() -> {
+            motor.setControl(voltageOutReq.withOutput(SerializationConstants.HOPPER_MAX_VOLTS));
         });
     }
 }
