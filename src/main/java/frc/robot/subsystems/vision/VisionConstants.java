@@ -17,9 +17,9 @@ public class VisionConstants {
             new Rotation3d(0, -Math.PI / 6, Units.degreesToRadians(110)));
     
     public static final Transform3d RIGHT_BACK_TRANSFORM = new Transform3d(
-            new Translation3d(-0.317, -0.238 - 0.038, 0.189),
+            new Translation3d(-0.3387, -0.2801, 0.277),
             new Rotation3d(0, Units.degreesToRadians(-10), Units.degreesToRadians(-165)));
     public static final Transform3d RIGHT_RIGHT_TRANSFORM = new Transform3d(
-            new Translation3d(-0.276, -0.278 - 0.038, 0.189),
+            new Translation3d(-0.2782, -0.3387, 0.277),
             new Rotation3d(0, Units.degreesToRadians(-10), Units.degreesToRadians(-110)));
 }

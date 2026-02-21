@@ -91,6 +91,7 @@ public class RobotContainer {
         private final Climb climb = new Climb();
         private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
                         feeder, hopper);
+        private final Vision vision = new Vision(drivetrain);
 
         public RobotContainer() {
                 configureBindings();
