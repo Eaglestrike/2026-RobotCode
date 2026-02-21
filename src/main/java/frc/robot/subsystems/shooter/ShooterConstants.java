@@ -25,12 +25,15 @@ public final class ShooterConstants {
         /** In rotations per second */
         public static final double VELOCITY_TOLERANCE = 0.5;
 
-        public static final double kP = 0.0;
+        /** Current limit in Amps */
+        public static final int CURRENT_LIMIT = 40;
+
+        public static final double kP = 12.5;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.0;
-        public static final double kV = 0.0;
-        public static final double kA = 0.0;
+        public static final double kD = 0.008;
+        public static final double kS = 8;
+        public static final double kV = 1;
+        public static final double kA = 45;
 
         /** In rotations per second squared */
         public static final double TARGET_ACCEL = 0.0;
