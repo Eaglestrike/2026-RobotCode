@@ -1,11 +1,12 @@
 package frc.robot.subsystems.shooter.solver;
 
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public interface ShooterSolver {
-    ShotData calculateShot(Translation3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget);
+    ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget);
 
     public record ShotData(
             Rotation2d hoodAngle,

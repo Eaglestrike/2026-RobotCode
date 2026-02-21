@@ -11,6 +11,7 @@
 package frc.robot.subsystems.shooter.solver;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -123,10 +124,10 @@ public class BallisticSolver implements ShooterSolver {
     // ShooterSolver interface implementation
     // ================================================================
     @Override
-    public ShotData calculateShot(Translation3d launcherPosition, ChassisSpeeds fieldSpeeds,
+    public ShotData calculateShot(Pose3d launcherPosition, ChassisSpeeds fieldSpeeds,
             Translation3d actualTarget) {
         // ---- 1. Relative position: target w.r.t. launcher in field frame ----
-        Translation3d deltaField = actualTarget.minus(launcherPosition);
+        Translation3d deltaField = actualTarget.minus(launcherPosition.getTranslation());
         double relX = deltaField.getX();
         double relY = deltaField.getY();
         double relZ = deltaField.getZ();

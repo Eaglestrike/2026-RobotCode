@@ -77,13 +77,13 @@ public class BallisticConstants {
     public static final double HIGH_SPEED_RPM = 6000.0;
 
     /** Low speed launch velocity (m/s) - TODO: calibrate */
-    public static final double LOW_SPEED_LAUNCH_VEL = 12.0;
+    public static final double LOW_SPEED_LAUNCH_VEL = 10.0;
 
     /** Medium speed launch velocity (m/s) - TODO: calibrate */
-    public static final double MEDIUM_SPEED_LAUNCH_VEL = 18.0;
+    public static final double MEDIUM_SPEED_LAUNCH_VEL = 12.0;
 
     /** High speed launch velocity (m/s) - TODO: calibrate */
-    public static final double HIGH_SPEED_LAUNCH_VEL = 24.0;
+    public static final double HIGH_SPEED_LAUNCH_VEL = 15;
 
     /** Distance threshold for LOW -> MEDIUM transition (meters) */
     public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
