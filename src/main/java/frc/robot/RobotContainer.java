@@ -73,12 +73,12 @@ public class RobotContainer {
         // auto
         private final SendableChooser<Command> autoChooser;
 
-        // Button Board constants
-        private final int CLIMB_BUTTON = 0;
-        private final int INTAKE_BUTTON = 1;
-        private final int HOOD_BUTTON = 2;
-        private final int TURRET_BUTTON = 3;
-        private final int SERIALIZER_BUTTON = 4;
+    // Button Board constants
+    private final int CLIMB_BUTTON = 4;
+    private final int INTAKE_BUTTON = 5;
+    private final int HOOD_BUTTON = 2;
+    private final int TURRET_BUTTON = 1;
+    private final int SERIALIZER_BUTTON = 3;
 
         // subsystems
         private final Shooter shooter = new Shooter(drivetrain);
