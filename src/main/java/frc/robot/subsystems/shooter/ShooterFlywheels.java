@@ -68,8 +68,9 @@ public class ShooterFlywheels extends SubsystemBase {
         voltages.PeakForwardVoltage = FlywheelConstants.MAX_VOLTS;
         voltages.PeakReverseVoltage = -FlywheelConstants.MAX_VOLTS;
 
-        config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        config.Feedback.SensorToMechanismRatio = FlywheelConstants.GEAR_RATIO;
 
         slot0Configs.kS = FlywheelConstants.kS;
         slot0Configs.kV = FlywheelConstants.kV;

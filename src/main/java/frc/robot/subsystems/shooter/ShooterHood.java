@@ -30,8 +30,8 @@ public class ShooterHood extends SubsystemBase {
 
     public ShooterHood() {
         cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VEL;
-        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACC;
+        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VELOCITY;
+        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACCEL;
         cfg.Slot0.kP = HoodConstants.kP;
         cfg.Slot0.kD = HoodConstants.kD;
         cfg.Slot0.kS = HoodConstants.kS;
@@ -129,7 +129,7 @@ public class ShooterHood extends SubsystemBase {
     public Command zero() {
         return runOnce(() -> {
             System.out.println("Zeroing Shooter Hood");
-            motor.setPosition(HoodConstants.ENCODER_OFFSET);
+            motor.setPosition(HoodConstants.OFFSET);
         });
     }
 

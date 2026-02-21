@@ -10,6 +10,7 @@
 
 package frc.robot.subsystems.shooter.solver;
 
+import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.solver.BallisticSolver.Vec3;
 
 /**
@@ -76,14 +77,14 @@ public class BallisticConstants {
     /** High speed flywheel RPM - for long range shots */
     public static final double HIGH_SPEED_RPM = 6000.0;
 
-    /** Low speed launch velocity (m/s) - TODO: calibrate */
-    public static final double LOW_SPEED_LAUNCH_VEL = 10.0;
+    /** Low speed launch velocity (m/s) */
+    public static final double LOW_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(LOW_SPEED_RPM/60.0);
 
-    /** Medium speed launch velocity (m/s) - TODO: calibrate */
-    public static final double MEDIUM_SPEED_LAUNCH_VEL = 12.0;
+    /** Medium speed launch velocity (m/s) */
+    public static final double MEDIUM_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(MEDIUM_SPEED_RPM/60.0);
 
-    /** High speed launch velocity (m/s) - TODO: calibrate */
-    public static final double HIGH_SPEED_LAUNCH_VEL = 15;
+    /** High speed launch velocity (m/s) */
+    public static final double HIGH_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(HIGH_SPEED_RPM/60.0);
 
     /** Distance threshold for LOW -> MEDIUM transition (meters) */
     public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
