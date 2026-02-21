@@ -11,7 +11,13 @@ public final class ShooterConstants {
     /** Maps ball velocity (in meters per second) to flywheel velocity (in rotations per second) */
     public static final InterpolatingDoubleTreeMap BALL_VEL_TO_FLYWHEEL_VEL = new InterpolatingDoubleTreeMap();
     static {
-        BALL_VEL_TO_FLYWHEEL_VEL.put(0.0, 0.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(1.7303, 10.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(4.7783, 20.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(6.7228, 30.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(8.0715, 40.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(9.2410, 61.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(9.7809, 62.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(10.1543, 70.0);
     }
 
     public final class FlywheelConstants {
@@ -21,6 +27,8 @@ public final class ShooterConstants {
         public static final double MAX_VELOCITY = 0.0;
         /** In rotations per second (for when not shooting) */
         public static final double IDLE_VELOCITY = 0.0;
+
+        public static final double GEAR_RATIO = 10/9.0;
 
         /** In rotations per second */
         public static final double VELOCITY_TOLERANCE = 0.5;
@@ -72,7 +80,7 @@ public final class ShooterConstants {
     }
 
     public final class HoodConstants {
-        public static final int MOTOR_ID = 20;
+        public static final int MOTOR_ID = 0;
         public static final double GEAR_RATIO = 362.0 / 32.0;
         /** In radians */
         public final static double OFFSET = -1.36;
