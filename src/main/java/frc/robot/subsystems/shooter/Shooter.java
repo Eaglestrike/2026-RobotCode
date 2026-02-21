@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
@@ -82,9 +83,20 @@ public class Shooter extends SubsystemBase {
                 runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
-    /** True when turret + hood + flywheel are all at their targets. */
+    public void setFacing(Pose3d targetPose) {
+        turret.setFacing(targetPose.toPose2d());
+        // TODO: Calculate hood angle based on distance to targetPose - this cna either
+        // be done in Shooter or create a ShooterUtils class with all the math
+        double hoodAngle = 0;
+
+        // TODO: Calculate this in meters per second based on distance to targetPose and
+        // desired launch angle
+        double targetBallVel = 0;
+    }
+
     public boolean isReady() {
-        return isTurretOnTarget() && isHoodOnTarget() && isFlywheelReady();
+        return true; // testing purposes only
+        // return isAtVelocity() && isFacingTarget();
     }
 
     public boolean isTurretOnTarget() {

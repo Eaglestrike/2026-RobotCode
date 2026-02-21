@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -18,6 +19,7 @@ import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -26,7 +28,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     private ShootMode currentMode;
-    private boolean isShooting;
+    public boolean isShooting;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -48,9 +50,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command initialize() {
-        return Commands.parallel(
-                hopper.startMotor());
-        // Shooter controller handles idle velocity automatically
+        return runOnce(() -> shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
     /**
@@ -58,8 +58,11 @@ public class Superstructure extends SubsystemBase {
      */
     public Command intake() {
         return Commands.sequence(
-                intakeRollers.start(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+                intakeRollers.startHopperOut(),
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                Commands.waitUntil(intakeWrist::clearedHopper),
+                intakeRollers.start());
+
     }
 
     /**
@@ -68,7 +71,11 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+    }
+
+    public Command stopIntakeRollers() {
+        return intakeRollers.stop();
     }
 
     /**
@@ -77,18 +84,23 @@ public class Superstructure extends SubsystemBase {
     public Command stow() {
         return Commands.parallel(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(
+                intakeWrist.requestPosition(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
-    public Command outtake() {
+    public Command ejectIntake() {
         return Commands.sequence(
                 intakeWrist.eject(),
                 Commands.waitSeconds(0.5),
-                intakeRollers.eject()
-        );
+                intakeRollers.eject());
+    }
+
+    public Command jiggleIntake() {
+        return Commands.parallel(
+                intakeWrist.jiggle(),
+                intakeRollers.jiggle());
     }
 
     /**
@@ -127,14 +139,18 @@ public class Superstructure extends SubsystemBase {
         }
 
         if (isShooting) {
+
             if (shooter.isReady()) {
                 feeder.startMotor();
+                hopper.startKicking();
             } else {
                 feeder.stopMotor();
+                hopper.startMotor();
             }
         } else {
             shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
+            hopper.startMotor();
         }
     }
 
