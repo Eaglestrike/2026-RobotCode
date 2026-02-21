@@ -12,14 +12,14 @@ public class VisionConstants {
     public static final String RIGHT_RIGHT_NAME = "RightCameraRight";
 
     public static final Transform3d LEFT_BACK_TRANSFORM = new Transform3d(new Translation3d(-0.3211576, 0.29718, 0.2022856),
-            new Rotation3d(0, -Math.PI / 3, Math.toRadians(-25.029094)));
+            new Rotation3d(0, -Math.PI / 6, Units.degreesToRadians(165)));
     public static final Transform3d LEFT_LEFT_TRANSFORM = new Transform3d(new Translation3d(-0.263398, 0.324104, 0.2022856),
-            new Rotation3d(0, -Math.PI / 3, Math.PI / 2));
+            new Rotation3d(0, -Math.PI / 6, Units.degreesToRadians(110)));
     
     public static final Transform3d RIGHT_BACK_TRANSFORM = new Transform3d(
             new Translation3d(-0.317, -0.238 - 0.038, 0.189),
-            new Rotation3d(0, Units.degreesToRadians(10), Units.degreesToRadians(-165)));
+            new Rotation3d(0, Units.degreesToRadians(-10), Units.degreesToRadians(-165)));
     public static final Transform3d RIGHT_RIGHT_TRANSFORM = new Transform3d(
             new Translation3d(-0.276, -0.278 - 0.038, 0.189),
-            new Rotation3d(0, Units.degreesToRadians(10), Units.degreesToRadians(-110)));
+            new Rotation3d(0, Units.degreesToRadians(-10), Units.degreesToRadians(-110)));
 }

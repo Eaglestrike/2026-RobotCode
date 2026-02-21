@@ -31,6 +31,12 @@ public class Vision extends SubsystemBase {
         NetworkTableInstance.getDefault().getStructTopic("LeftCameraLeftPose",
                 Pose3d.struct)
                 .publish().set(robot3d.transformBy(VisionConstants.LEFT_LEFT_TRANSFORM));
+        NetworkTableInstance.getDefault().getStructTopic("RightCameraBackPose",
+                Pose3d.struct)
+                .publish().set(robot3d.transformBy(VisionConstants.RIGHT_BACK_TRANSFORM));
+        NetworkTableInstance.getDefault().getStructTopic("RightCameraRightPose",
+                Pose3d.struct)
+                .publish().set(robot3d.transformBy(VisionConstants.RIGHT_RIGHT_TRANSFORM));
     }
 
     @Override
