@@ -28,13 +28,12 @@ public final class ShooterConstants {
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
 
-        // NEO Vertex free speed ~6784 RPM, so kV ≈ 1/6784 ≈ 0.000147
-        public static final double kP = 0.0001;
+        public static final double kP = 12.5;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
-        public static final double kS = 0.0;
-        public static final double kV = 0.000147;
-        public static final double kA = 0.0;
+        public static final double kD = 0.008;
+        public static final double kS = 8;
+        public static final double kV = 1;
+        public static final double kA = 45;
 
         public static final double MIN_OUTPUT = -1.0;
         public static final double MAX_OUTPUT = 1.0;
