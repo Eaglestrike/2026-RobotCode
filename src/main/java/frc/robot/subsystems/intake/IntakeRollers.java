@@ -22,13 +22,27 @@ public class IntakeRollers extends SubsystemBase {
 
     public Command start() {
         return runOnce(() -> {
+            System.out.println("starting normal intake voltage");
             motor.setControl(voltageRequest.withOutput(voltage.get()));
+        });
+    }
+
+    public Command startHopperOut() {
+        return runOnce(() -> {
+            System.out.println("starting hopper out");
+            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.HOPPER_OUT_VOLTS));
         });
     }
 
     public Command eject() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(-voltage.get()));
+        });
+    }
+
+    public Command jiggle() {
+        return run(() -> {
+            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
         });
     }
 

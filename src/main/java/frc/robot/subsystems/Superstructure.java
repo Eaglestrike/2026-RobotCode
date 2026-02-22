@@ -52,7 +52,6 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.parallel(
-                hopper.startMotor(),
                 shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
@@ -61,8 +60,10 @@ public class Superstructure extends SubsystemBase {
      */
     public Command intake() {
         return Commands.sequence(
-                intakeRollers.start(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+                intakeRollers.startHopperOut(),
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                Commands.waitUntil(intakeWrist::clearedHopper),
+                intakeRollers.start());
 
     }
 
@@ -72,7 +73,11 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+    }
+
+    public Command stopIntakeRollers() {
+        return intakeRollers.stop();
     }
 
     /**
@@ -81,17 +86,23 @@ public class Superstructure extends SubsystemBase {
     public Command stow() {
         return Commands.parallel(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(
+                intakeWrist.requestPosition(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
-    public Command outtake() {
+    public Command ejectIntake() {
         return Commands.sequence(
                 intakeWrist.eject(),
                 Commands.waitSeconds(0.5),
                 intakeRollers.eject());
+    }
+
+    public Command jiggleIntake() {
+        return Commands.parallel(
+                intakeWrist.jiggle(),
+                intakeRollers.jiggle());
     }
 
     /**
@@ -133,12 +144,15 @@ public class Superstructure extends SubsystemBase {
 
             if (shooter.isReady()) {
                 feeder.startMotor();
+                hopper.startKicking();
             } else {
                 feeder.stopMotor();
+                hopper.startMotor();
             }
         } else {
             shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
+            hopper.startMotor();
         }
     }
 

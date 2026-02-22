@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.revrobotics.PersistMode;
@@ -22,13 +23,16 @@ import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class IntakeWrist extends SubsystemBase {
+    // public boolean hasExtendedHopper = false;
+
     private enum State {
-        IDLE, MOVING_TO_GOAL, MANUAL
+        IDLE, MOVING_TO_GOAL, MANUAL, JIGGLING
     }
 
     private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
@@ -69,7 +73,7 @@ public class IntakeWrist extends SubsystemBase {
                 IntakeConstants.Wrist.kA);
 
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(moveTo(Degrees.of(x)));
+            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
     }
 
@@ -78,7 +82,12 @@ public class IntakeWrist extends SubsystemBase {
         return Radians.of(enc.getPosition());
     }
 
-    public Command moveTo(Angle position) {
+    public boolean clearedHopper() {
+        // todo: adjust this to be a specific position
+        return getAngle().in(Radians) > 0;
+    }
+
+    public Command requestPosition(Angle position) {
         return runOnce(() -> {
             goal = Radians.of(MathUtil.clamp(position.in(Radians), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
                     Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
@@ -96,6 +105,12 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
+    public Command jiggle() {
+        return runOnce(() -> {
+            state = State.JIGGLING;
+        });
+    }
+
     public Command kill() {
         return runOnce(() -> {
             motor.setVoltage(0);
@@ -105,7 +120,7 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command eject() {
         return runOnce(() -> {
-            this.moveTo(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
+            this.requestPosition(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
         });
     }
 
@@ -123,15 +138,25 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
+        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
+
         if (!DriverStation.isEnabled()) {
             motor.setVoltage(0.0);
             return;
         }
 
-        DogLog.log("IntakeWrist/GoalRad", goal);
-        pid.setGoal(goal.in(Radians));
-
-        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
+        if (state == State.JIGGLING) {
+            double jiggleAngle = (Timer.getFPGATimestamp()
+                    % IntakeConstants.Wrist.JIGGLE_FREQ_SEC < IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2)
+                            ? IntakeConstants.Wrist.JIGGLE_UP_ANGLE
+                            : IntakeConstants.Wrist.JIGGLE_DOWN_ANGLE;
+            goal = Degrees.of(jiggleAngle);
+            pid.setGoal(goal.in(Radians));
+            DogLog.log("IntakeWrist/GoalRad", goal);
+        } else {
+            DogLog.log("IntakeWrist/GoalRad", goal);
+            pid.setGoal(goal.in(Radians));
+        }
 
         double pidVolts = pid.calculate(getAngle().in(Radians));
         DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
@@ -139,8 +164,16 @@ public class IntakeWrist extends SubsystemBase {
         DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
         double volts = pidVolts + ffVolts;
         DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
-        double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
-        if (state == State.MOVING_TO_GOAL) {
+        double maxVolts = IntakeConstants.Wrist.EXTEND_HOPPER_VOLTS;
+        // README: do NOT uncomment this unless you want to break our robot.
+        // if (this.clearedHopper()) {
+        // hasExtendedHopper = true;
+        // }
+        // if (!hasExtendedHopper) {
+        // maxVolts = IntakeConstants.Wrist.EXTEND_HOPPER_VOLTS;
+        // }
+        double outputVolts = MathUtil.clamp(volts, -maxVolts, maxVolts);
+        if (state == State.MOVING_TO_GOAL || state == State.JIGGLING) {
             motor.setVoltage(outputVolts);
         }
         DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
