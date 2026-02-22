@@ -38,9 +38,9 @@ public class Shooter extends SubsystemBase {
         // desired launch angle
         double targetBallVel = 0;
 
-        CommandScheduler.getInstance().schedule(Commands.parallel(
-                hood.goToPos(Radians.of(hoodAngle)),
-                flywheel.startAtVelocity(ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(targetBallVel))));
+        // CommandScheduler.getInstance().schedule(Commands.parallel(
+        // hood.goToPos(Radians.of(hoodAngle)),
+        // flywheel.startAtVelocity(ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(targetBallVel))));
     }
 
     public boolean isReady() {

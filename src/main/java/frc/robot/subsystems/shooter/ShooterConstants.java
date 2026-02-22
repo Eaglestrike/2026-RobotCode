@@ -82,29 +82,28 @@ public final class ShooterConstants {
     }
 
     public final class HoodConstants {
-        public static final int MOTOR_ID = 69;
-        public static final double GEAR_RATIO = 362.0 / 32.0;
+        public static final int MOTOR_ID = 20;
+        public static final double GEAR_RATIO = 362.0 / 32.0 * 20.0 / 15.0 * 48.0 / 16.0;
         /** In radians */
-        public final static double OFFSET = -1.36;
+        public final static double OFFSET = -0.2083;
 
         /** In radians */
         public static final double STOW_ANGLE = 0.0;
 
-        public static final double MAX_VOLTS = 8.0;
-        /** In rotations per second squared */
-        public static final double MAX_ACCEL = 1;
-        /** In rotations per second */
-        public static final double MAX_VELOCITY = 1;
+        public static final double MAX_VOLTS = 3.0;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
-        public static final double kP = 8.0;
+        public static final double kP = 300.0;
         public static final double kI = 0.0;
-        public static final double kD = 0.2;
+        public static final double kD = 5.0;
         public static final double kS = 0.0;
-        public static final double kV = 1.11;
-        public static final double kA = 0.04;
-        public static final double kG = 0.26;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
+        public static final double kG = 0.0;
+
+        public static final double FORWARD_LIMIT = -0.118;
+        public static final double BACKWARD_LIMIT = OFFSET;
     }
 
 }
