@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
 
@@ -15,7 +16,11 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -50,11 +55,12 @@ public class ShooterHood extends SubsystemBase {
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.MIN_ANGLE / 360.0;
 
         this.motor.getConfigurator().apply(cfg);
-        motor.setPosition(Degrees.of(HoodConstants.OFFSET));
-        zeroed = true;
 
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
+
+        motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+        zeroed = true;
 
         DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
             CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
@@ -117,6 +123,27 @@ public class ShooterHood extends SubsystemBase {
 
     public boolean atTarget() {
         return getAngle().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
+    }
+
+    /* sim */
+    private static final double gearRatio = HoodConstants.GEAR_RATIO;
+    private final DCMotor gearbox = DCMotor.getKrakenX44(1);
+    private final DCMotorSim sim = new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(gearbox, 0.001, gearRatio),
+            gearbox);
+
+    @Override
+    public void simulationPeriodic() {
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
+        var motorVoltage = talonFXSim.getMotorVoltageMeasure();
+
+        sim.setInputVoltage(motorVoltage.in(Volts));
+        sim.update(0.020);
+
+        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
+        talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
+        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {

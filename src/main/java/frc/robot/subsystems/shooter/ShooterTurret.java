@@ -40,8 +40,10 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final Angle minRotation = Degrees.of(0);
-    private final Angle maxRotation = Degrees.of(180);
+    private final Angle minRotation = Degrees.of(-180);
+    private final Angle maxRotation = Degrees.of(0);
+
+    private boolean zeroed = false;
 
     private final DigitalInput photoelectric;
     private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
@@ -68,7 +70,7 @@ public class ShooterTurret extends SubsystemBase {
 
         cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
-        cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         this.motor.getConfigurator().apply(cfg);
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
@@ -80,6 +82,8 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
+            if (!zeroed)
+                return;
             DogLog.log("ShooterTurret/RequestedPosition", pos.in(Rotations));
             System.out.println("request pos " + pos.in(Rotations));
             this.targetAngle = pos;
@@ -91,6 +95,8 @@ public class ShooterTurret extends SubsystemBase {
      * Directly set the turret target angle (for use by Shooter in periodic())
      */
     public void setAngle(Angle pos) {
+        if (!zeroed)
+            return;
         this.targetAngle = pos;
         this.motor.setControl(this.position.withPosition(pos));
     }
@@ -122,6 +128,7 @@ public class ShooterTurret extends SubsystemBase {
         return runOnce(() -> {
             System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
+            zeroed = true;
         });
     }
 
@@ -133,11 +140,16 @@ public class ShooterTurret extends SubsystemBase {
         return motor.getPosition().getValue();
     }
 
+    public boolean isZeroed() {
+        return zeroed;
+    }
+
     @Override
     public void periodic() {
         DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
         DogLog.log("ShooterTurret/Photoelectric", photoelectric.get() ? 1 : 0, "Boolean");
         DogLog.log("ShooterTurret/AtTarget", atTarget() ? 1 : 0, "Boolean");
+        DogLog.log("ShooterTurret/Zeroed", zeroed);
     }
 
     public boolean isZeroSensorGreen() {

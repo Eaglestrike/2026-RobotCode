@@ -49,7 +49,7 @@ public class Shooter extends SubsystemBase {
     // Predicted trajectory for AdvantageScope 3D visualization
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
 
-    private static final int SOLVER_PERIOD = 5; // run solver every N cycles (5 * 20ms = 100ms)
+    private static final int SOLVER_PERIOD = 25; // run solver every N cycles (25 * 20ms = 500ms)
     private int solverCounter = 0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -69,7 +69,8 @@ public class Shooter extends SubsystemBase {
         solver = new BallisticSolver(ballisticParams, BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
 
         // Constrain solver pitch (theta) to the hood's physical range.
-        // MIN_ANGLE and MAX_ANGLE are already in shooting angle (= launch angle from horizontal).
+        // MIN_ANGLE and MAX_ANGLE are already in shooting angle (= launch angle from
+        // horizontal).
         ballisticParams.thetaMin = Math.toRadians(ShooterConstants.HoodConstants.MIN_ANGLE);
         ballisticParams.thetaMax = Math.toRadians(ShooterConstants.HoodConstants.MAX_ANGLE);
     }
@@ -92,8 +93,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public boolean isReady() {
-        return true; // testing purposes only
-        // return isAtVelocity() && isFacingTarget();
+        return isTurretOnTarget() && isHoodOnTarget() && isFlywheelReady();
     }
 
     public boolean isTurretOnTarget() {

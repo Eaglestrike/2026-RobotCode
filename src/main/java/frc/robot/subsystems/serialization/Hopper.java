@@ -2,8 +2,10 @@ package frc.robot.subsystems.serialization;
 
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -20,6 +22,10 @@ public class Hopper extends SubsystemBase {
 
     public Hopper() {
         motor = new TalonFX(SerializationConstants.HOPPER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        var cfg = new TalonFXConfiguration();
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        motor.getConfigurator().apply(cfg);
+        motor.stopMotor();
     }
 
     public void startMotor() {

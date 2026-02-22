@@ -42,12 +42,13 @@ public class Camera {
             }
             if (poseOpt.isPresent()) {
                 var pose = poseOpt.get();
-                if (pose.strategy == PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR
+                boolean isMultiTag = pose.strategy == PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR;
+                if (isMultiTag
                         || (pose.strategy == PhotonPoseEstimator.PoseStrategy.LOWEST_AMBIGUITY
                                 && pose.targetsUsed.get(0).getPoseAmbiguity() < 0.05
                                 && pose.targetsUsed.get(0).getArea() > 0.25)) {
                     addVisionMeasurement
-                            .accept(new PoseObservation(result.getTimestampSeconds(), pose.estimatedPose.toPose2d()));
+                            .accept(new PoseObservation(result.getTimestampSeconds(), pose.estimatedPose.toPose2d(), isMultiTag));
                 }
             }
         }

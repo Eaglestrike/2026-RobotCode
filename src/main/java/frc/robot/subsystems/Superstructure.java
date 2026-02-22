@@ -132,6 +132,13 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
+            isShooting = false;
+            feeder.stopMotor();
+            hopper.stopMotor();
+            return;
+        }
+
         if (currentMode == ShootMode.FERRY) {
             shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
         } else {
@@ -139,7 +146,6 @@ public class Superstructure extends SubsystemBase {
         }
 
         if (isShooting) {
-
             if (shooter.isReady()) {
                 feeder.startMotor();
                 hopper.startKicking();

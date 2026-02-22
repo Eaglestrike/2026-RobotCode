@@ -12,6 +12,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import dev.doglog.DogLog;
+import frc.robot.FieldConstants;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -73,12 +74,12 @@ public class RobotContainer {
         // auto
         private final SendableChooser<Command> autoChooser;
 
-    // Button Board constants
-    private final int CLIMB_BUTTON = 4;
-    private final int INTAKE_BUTTON = 5;
-    private final int HOOD_BUTTON = 2;
-    private final int TURRET_BUTTON = 1;
-    private final int SERIALIZER_BUTTON = 3;
+        // Button Board constants
+        private final int CLIMB_BUTTON = 4;
+        private final int INTAKE_BUTTON = 5;
+        private final int HOOD_BUTTON = 2;
+        private final int TURRET_BUTTON = 1;
+        private final int SERIALIZER_BUTTON = 3;
 
         // subsystems
         private final Shooter shooter = new Shooter(drivetrain);
@@ -94,7 +95,7 @@ public class RobotContainer {
         private final Vision vision = new Vision(drivetrain);
 
         public RobotContainer() {
-                drivetrain.resetPose(new Pose2d(3.0, 4.0, Rotation2d.fromDegrees(0)));
+                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, 0.5, Rotation2d.fromDegrees(0)));
                 configureBindings();
 
                 NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
@@ -142,7 +143,8 @@ public class RobotContainer {
                 operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
                         System.out.println("Zeroing drive");
                         drivetrain.seedFieldCentric();
-                        drivetrain.resetPose(new Pose2d(3.0, 4.0, Rotation2d.fromDegrees(0)));
+                        drivetrain.resetPose(
+                                        new Pose2d(FieldConstants.fieldLength - 0.5, 0.5, Rotation2d.fromDegrees(0)));
                 }).ignoringDisable(true));
 
                 drivetrain.registerTelemetry(logger::telemeterize);

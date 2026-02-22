@@ -99,8 +99,8 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0;
 
-        public static final double FORWARD_LIMIT = 0.5;
-        public static final double BACKWARD_LIMIT = 0.0;
+        public static final double FORWARD_LIMIT = 0.0;
+        public static final double BACKWARD_LIMIT = -0.5;
 
         public static final int PHOTOELECTRIC_DIO = 0;
     }
@@ -121,7 +121,7 @@ public final class ShooterConstants {
 
         public static final double STOW_ANGLE = MAX_ANGLE; // stow at hard stop
 
-        public static final double MAX_VOLTS = 3.0;
+        public static final double MAX_VOLTS = 0.5;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
