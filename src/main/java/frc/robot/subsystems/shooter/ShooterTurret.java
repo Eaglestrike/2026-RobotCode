@@ -7,12 +7,11 @@ import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -35,16 +34,17 @@ import edu.wpi.first.wpilibj.DigitalInput;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
-    private MotionMagicVoltage position = new MotionMagicVoltage(0).withEnableFOC(true);
+    private PositionVoltage position = new PositionVoltage(0).withEnableFOC(true);
     private EagleSwerveDrivetrain drive;
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final Angle minRotation = Degrees.of(-180);
+    private final Angle minRotation = Degrees.of(0);
     private final Angle maxRotation = Degrees.of(180);
 
     private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when broken
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
+                                                                  // broken
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -69,6 +69,7 @@ public class ShooterTurret extends SubsystemBase {
 
         cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
+        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         this.motor.getConfigurator().apply(cfg);
 
         DogLog.tunable("ShooterTurret/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
@@ -105,10 +106,6 @@ public class ShooterTurret extends SubsystemBase {
 
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
-
-        DogLog.tunable("ShooterTurret/TurretRequest Degrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
-        });
 
         DogLog.tunable("ShooterTurret/TurretRequest Degrees", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
@@ -172,7 +169,7 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.log("ShooterTurret/Photoelectric", photoelectric.get() ? 1 : 0, "Boolean");
         DogLog.log("ShooterTurret/AtTarget", atTarget() ? 1 : 0, "Boolean");
     }
-    
+
     public boolean isZeroSensorGreen() {
         boolean raw = photoelectric.get();
         return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
@@ -201,9 +198,8 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
         DogLog.log("ShooterTurret/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
-    
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
 
+        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
 
     }
 
@@ -214,6 +210,5 @@ public class ShooterTurret extends SubsystemBase {
                 0.391529,
                 new Rotation3d(0, 0, this.motor.getPosition().getValue().in(Radians)));
     }
-
 
 }

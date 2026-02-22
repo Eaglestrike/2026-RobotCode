@@ -77,14 +77,14 @@ public class BallisticConstants {
     /** High speed flywheel RPM - for long range shots */
     public static final double HIGH_SPEED_RPM = 6000.0;
 
-    /** Low speed launch velocity (m/s) */
-    public static final double LOW_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(LOW_SPEED_RPM/60.0);
+    /** Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic fit */
+    public static final double LOW_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(LOW_SPEED_RPM / 60.0);
 
     /** Medium speed launch velocity (m/s) */
-    public static final double MEDIUM_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(MEDIUM_SPEED_RPM/60.0);
+    public static final double MEDIUM_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(MEDIUM_SPEED_RPM / 60.0);
 
     /** High speed launch velocity (m/s) */
-    public static final double HIGH_SPEED_LAUNCH_VEL = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(HIGH_SPEED_RPM/60.0);
+    public static final double HIGH_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(HIGH_SPEED_RPM / 60.0);
 
     /** Distance threshold for LOW -> MEDIUM transition (meters) */
     public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
@@ -201,14 +201,9 @@ public class BallisticConstants {
     // Shooter geometry (MEASURE THESE)
     // ================================================================
 
-    /** Height of shooter exit point above ground (meters) */
-    public static final double SHOOTER_HEIGHT = 0.5;
+    /** Height of shooter exit point above ground (meters) — 17.580041 in */
+    public static final double SHOOTER_HEIGHT = 0.44673;
 
-    /** Forward offset of shooter from robot center (meters) */
-    public static final double SHOOTER_FORWARD_OFFSET = 0.0;
-
-    /** Lateral offset of shooter from robot center (meters) */
-    public static final double SHOOTER_LATERAL_OFFSET = 0.0;
 
     // ================================================================
     // Hood Angle Calibration (Hood Shooter Geometry)
@@ -267,100 +262,6 @@ public class BallisticConstants {
 
     // ================================================================
     // Flywheel RPM ↔ Launch Speed Mapping (Experimental Data)
-    // ================================================================
-    // 
-    // HOW TO CALIBRATE:
-    // 1. Set flywheel to known RPM (e.g., 3000, 4000, 5000, 6000)
-    // 2. Shoot ball horizontally from known height
-    // 3. Measure horizontal distance traveled
-    // 4. Calculate initial velocity: v = distance / sqrt(2 * height / g)
-    // 5. Add data points below
-    //
-    // Example measurement setup:
-    //   - Shooter height: 1.0m above ground
-    //   - Ball lands at 4.5m horizontal distance
-    //   - Time to fall: t = sqrt(2 * 1.0 / 9.81) = 0.452s
-    //   - Initial velocity: v = 4.5 / 0.452 = 9.96 m/s
-
-    /** 
-     * Calibration data points: {RPM, LaunchSpeed (m/s)}
-     * TODO: Replace with actual measured data from your shooter
-     */
-    private static final double[][] CALIBRATION_DATA = {
-        // {RPM, Launch Speed (m/s)}
-        {2000, 8.0},    // placeholder - measure this
-        {3000, 12.0},   // placeholder - measure this
-        {4000, 16.0},   // placeholder - measure this
-        {5000, 20.0},   // placeholder - measure this
-        {6000, 24.0},   // placeholder - measure this
-    };
-
-    /**
-     * Convert flywheel RPM to launch speed using calibration data
-     * Uses linear interpolation between data points
-     * 
-     * @param rpm Flywheel RPM
-     * @return Estimated launch speed in m/s
-     */
-    public static double rpmToLaunchSpeed(double rpm) {
-        // Clamp to data range
-        if (rpm <= CALIBRATION_DATA[0][0]) {
-            return CALIBRATION_DATA[0][1];
-        }
-        if (rpm >= CALIBRATION_DATA[CALIBRATION_DATA.length - 1][0]) {
-            return CALIBRATION_DATA[CALIBRATION_DATA.length - 1][1];
-        }
-
-        // Find interpolation interval
-        for (int i = 0; i < CALIBRATION_DATA.length - 1; i++) {
-            double rpm0 = CALIBRATION_DATA[i][0];
-            double rpm1 = CALIBRATION_DATA[i + 1][0];
-
-            if (rpm >= rpm0 && rpm <= rpm1) {
-                double speed0 = CALIBRATION_DATA[i][1];
-                double speed1 = CALIBRATION_DATA[i + 1][1];
-                double t = (rpm - rpm0) / (rpm1 - rpm0);
-                return speed0 + t * (speed1 - speed0);
-            }
-        }
-
-        // Fallback (shouldn't reach here)
-        return 15.0;
-    }
-
-    /**
-     * Convert launch speed to required flywheel RPM using calibration data
-     * Uses linear interpolation between data points
-     * 
-     * @param launchSpeed Desired launch speed in m/s
-     * @return Required flywheel RPM
-     */
-    public static double launchSpeedToRPM(double launchSpeed) {
-        // Clamp to data range
-        if (launchSpeed <= CALIBRATION_DATA[0][1]) {
-            return CALIBRATION_DATA[0][0];
-        }
-        if (launchSpeed >= CALIBRATION_DATA[CALIBRATION_DATA.length - 1][1]) {
-            return CALIBRATION_DATA[CALIBRATION_DATA.length - 1][0];
-        }
-
-        // Find interpolation interval
-        for (int i = 0; i < CALIBRATION_DATA.length - 1; i++) {
-            double speed0 = CALIBRATION_DATA[i][1];
-            double speed1 = CALIBRATION_DATA[i + 1][1];
-
-            if (launchSpeed >= speed0 && launchSpeed <= speed1) {
-                double rpm0 = CALIBRATION_DATA[i][0];
-                double rpm1 = CALIBRATION_DATA[i + 1][0];
-                double t = (launchSpeed - speed0) / (speed1 - speed0);
-                return rpm0 + t * (rpm1 - rpm0);
-            }
-        }
-
-        // Fallback
-        return 4000;
-    }
-
     // ================================================================
     // Presets
     // ================================================================

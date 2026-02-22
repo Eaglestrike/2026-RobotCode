@@ -8,7 +8,10 @@ import edu.wpi.first.units.measure.Angle;
 
 public final class ShooterConstants {
 
-    /** Maps ball velocity (in meters per second) to flywheel velocity (in rotations per second) */
+    /**
+     * Maps ball velocity (in meters per second) to flywheel velocity (in rotations
+     * per second)
+     */
     public static final InterpolatingDoubleTreeMap BALL_VEL_TO_FLYWHEEL_VEL = new InterpolatingDoubleTreeMap();
     static {
         BALL_VEL_TO_FLYWHEEL_VEL.put(1.7303, 10.0);
@@ -20,22 +23,40 @@ public final class ShooterConstants {
         BALL_VEL_TO_FLYWHEEL_VEL.put(10.1543, 70.0);
     }
 
+    /**
+     * Quadratic fit: flywheelRPS = 0.8593 * ballVel^2 - 3.2464 * ballVel + 13.6691
+     * Inverted to: ballVel = f(flywheelRPS)
+     */
+    private static final double A = 0.8593;
+    private static final double B = -3.2464;
+    private static final double C = 13.6691;
+
+    /**
+     * Convert flywheel velocity (rps) to ball velocity (m/s)
+     * using the inverted quadratic fit.
+     */
+    public static double flywheelRPSToBallVel(double flywheelRPS) {
+        double disc = B * B - 4.0 * A * (C - flywheelRPS);
+        if (disc < 0)
+            return 0;
+        return (-B + Math.sqrt(disc)) / (2.0 * A);
+    }
+
     public final class FlywheelConstants {
         public static final int MOTOR_ID = 0;
-        public static final double MAX_VOLTS = 8.0;
+        public static final double MAX_VOLTS = 5.0;
         /** In rotations per second */
-        public static final double MAX_VELOCITY = 0.0;
+        // public static final double MAX_VELOCITY = 0.0;
         /** In rotations per second (for when not shooting) */
         public static final double IDLE_VELOCITY = 0.0;
 
-        public static final double GEAR_RATIO = 10/9.0;
+        public static final double GEAR_RATIO = 10 / 9.0;
 
         /** In rotations per second */
         public static final double VELOCITY_TOLERANCE = 0.5;
 
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
-
 
         public static final double kP = 12.5;
         public static final double kI = 0.0;
@@ -52,20 +73,22 @@ public final class ShooterConstants {
     }
 
     public final class TurretConstants {
-        public static final int MOTOR_ID = 1;
+        public static final int MOTOR_ID = 19;
 
-        /** Offset of the turret center, relative to the robot's center point */
-        public static final Translation2d OFFSET = new Translation2d();
+        /**
+         * Offset of the turret center, relative to the robot's center point (meters)
+         */
+        public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
 
-        /** In rotations of the turret */
-        public static final double ENCODER_OFFSET = 0.0;
+        /** In rotations of the turret — zero sensor is at back, so offset by 180° */
+        public static final double ENCODER_OFFSET = 0.5;
 
-        /** In rotations of the turret */
-        public static final double STOW_POSITION = 0.0;
+        /** In rotations of the turret — stow at back (zero sensor position) */
+        public static final double STOW_POSITION = 0.5;
 
         public static final double GEAR_RATIO = 135.0 / 15.0;
 
-        public static final double MAX_VOLTS = 8.0;
+        public static final double MAX_VOLTS = 1.5;
         /** In rotations per second squared */
         public static final double MAX_ACCEL = 20;
         /** In rotations per second */
@@ -73,29 +96,34 @@ public final class ShooterConstants {
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
-        public static final double kP = 100;
+        public static final double kP = 60;
         public static final double kI = 0.0;
-        public static final double kD = 5.0;
+        public static final double kD = 3.0;
         public static final double kS = 0.0;
-        public static final double kV = 1.2;
+        public static final double kV = 0.0;
         public static final double kA = 0;
 
         public static final int PHOTOELECTRIC_DIO = 0;
     }
 
     public final class HoodConstants {
-        public static final int MOTOR_ID = 0;
-        public static final double GEAR_RATIO = 362.0 / 32.0;
-        /** In radians */
-        public final static double OFFSET = -1.36;
+        public static final int MOTOR_ID = 20;
+        public static final double GEAR_RATIO = 45.25;
+        /**
+         * Zero/hard-stop position in mechanism rotations (90° - 75.105201° =
+         * 14.894799°)
+         */
+        public final static double OFFSET = 14.894799 / 360.0;
 
-        public static final double MIN_ANGLE = 10;
-        public static final double MAX_ANGLE = 55;
+        /** In degrees — hood at hard stop, most horizontal */
+        public static final double MIN_ANGLE = 14.894799;
+        /** In degrees — hood fully raised, steepest */
+        public static final double MAX_ANGLE = 64;
 
-        /** In radians */
-        public static final double STOW_ANGLE = 0.0;
+        /** Stow angle in radians — go to hard stop (most horizontal) */
+        public static final double STOW_ANGLE = Math.toRadians(MIN_ANGLE);
 
-        public static final double MAX_VOLTS = 8.0;
+        public static final double MAX_VOLTS = 2.0;
         /** In rotations per second squared */
         public static final double MAX_ACCEL = 1;
         /** In rotations per second */
@@ -103,13 +131,13 @@ public final class ShooterConstants {
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
-        public static final double kP = 8.0;
+        public static final double kP = 300;
         public static final double kI = 0.0;
-        public static final double kD = 0.2;
+        public static final double kD = 5.0;
         public static final double kS = 0.0;
-        public static final double kV = 1.11;
-        public static final double kA = 0.04;
-        public static final double kG = 0.26;
+        public static final double kV = 0.0;
+        public static final double kA = 0.0;
+        public static final double kG = 0.0;
     }
 
 }

@@ -141,7 +141,7 @@ public class RobotContainer {
                 operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
                         System.out.println("Zeroing drive");
                         drivetrain.seedFieldCentric();
-                        drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
+                        drivetrain.resetPose(new Pose2d(0, 0, Rotation2d.fromDegrees(180)));
                 }).ignoringDisable(true));
 
                 drivetrain.registerTelemetry(logger::telemeterize);

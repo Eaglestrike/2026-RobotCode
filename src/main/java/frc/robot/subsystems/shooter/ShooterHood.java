@@ -7,7 +7,7 @@ import static edu.wpi.first.units.Units.Rotations;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 
@@ -24,7 +24,7 @@ import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterHood extends SubsystemBase {
     private final TalonFX motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-    private final MotionMagicVoltage mmreq = new MotionMagicVoltage(0).withEnableFOC(true);
+    private final PositionVoltage mmreq = new PositionVoltage(0).withEnableFOC(true);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Rotations.of(0);
 
