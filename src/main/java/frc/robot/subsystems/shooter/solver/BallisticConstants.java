@@ -206,64 +206,7 @@ public class BallisticConstants {
 
 
     // ================================================================
-    // Hood Angle Calibration (Hood Shooter Geometry)
-    // ================================================================
-    //
-    // Hood 角度定义:
-    //   Hood = 0°   → 水平发射 (发射角 0°)
-    //   Hood = -90° → 向下 90° (或机构限位)
-    //
-    // Hood Shooter 几何参数:
-    //   - 底部主轮直径: 4 inch
-    //   - 顶部出口滚轮: 2 inch
-    //   - 顶部压缩量: 0.95 inch
-    //   - 球直径: 5.91 inch (FRC 2026 Game Piece)
-    //
-    // 物理间隙 Gap = 5.91 - 0.95 = 4.96 inch
-    // 两轮圆心距离 L = 2" + 4.96" + 1" = 7.96"
-    //
-    // 发射角与Hood角度的映射关系:
-    //   发射角 = hood角度 + 3.5° (膨胀效应)
-    //   hood角度 = 发射角 - 3.5°
-    //
-    // 例如:
-    //   要发射 45° → hood角度 = 45° - 3.5° = 41.5°
-    //   要发射 30° → hood角度 = 30° - 3.5° = 26.5°
-
-    /**
-     * Hood角度到发射角的偏移量 (degrees)
-     * 
-     * Hood 0° = 水平发射，偏移量仅为膨胀效应 3.5°
-     * 
-     * 发射角 = hood角度 + 此偏移量
-     * hood角度 = 发射角 - 此偏移量
-     */
-    public static final double HOOD_LAUNCH_ANGLE_OFFSET = 3.5;
-
-    /**
-     * Convert launch angle (from solver) to hood angle (for mechanism)
-     * 
-     * @param launchAngleDeg 发射角（从水平面算起，弹道求解器输出）
-     * @return hood 角度（encoder 目标值）
-     */
-    public static double launchAngleToHoodAngle(double launchAngleDeg) {
-        return launchAngleDeg - HOOD_LAUNCH_ANGLE_OFFSET;
-    }
-
-    /**
-     * Convert hood angle (from encoder) to launch angle
-     * 
-     * @param hoodAngleDeg hood 角度（encoder 读数）
-     * @return 发射角（从水平面算起）
-     */
-    public static double hoodAngleToLaunchAngle(double hoodAngleDeg) {
-        return hoodAngleDeg + HOOD_LAUNCH_ANGLE_OFFSET;
-    }
-
-    // ================================================================
-    // Flywheel RPM ↔ Launch Speed Mapping (Experimental Data)
-    // ================================================================
-    // Presets
+    // Solver Presets
     // ================================================================
 
     /** Create default parameters for close-range shots */

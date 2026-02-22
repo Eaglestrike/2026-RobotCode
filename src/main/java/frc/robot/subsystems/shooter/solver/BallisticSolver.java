@@ -151,18 +151,16 @@ public class BallisticSolver implements ShooterSolver {
 
         // ---- 5. Convert solver output → ShotData ----
         if (result.success || Double.isFinite(result.theta)) {
-            double launchAngleDeg = Math.toDegrees(result.theta);
+            double shootingAngleDeg = Math.toDegrees(result.theta);
             double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(result.phi), -180, 180);
-            double hoodAngleDeg = BallisticConstants.launchAngleToHoodAngle(launchAngleDeg);
 
-            // Predicted target position at intercept time
             Translation3d predictedTarget = new Translation3d(
                     actualTarget.getX() + relVelX * result.tStar,
                     actualTarget.getY() + relVelY * result.tStar,
                     actualTarget.getZ());
 
             return new ShotData(
-                    Rotation2d.fromDegrees(hoodAngleDeg),
+                    Rotation2d.fromDegrees(shootingAngleDeg),
                     Rotation2d.fromDegrees(turretAngleDeg),
                     rpm,
                     predictedTarget,
@@ -172,12 +170,11 @@ public class BallisticSolver implements ShooterSolver {
         // ---- 6. Fallback: point directly at target with crude gravity compensation
         // ----
         double fallbackTurretDeg = Math.toDegrees(Math.atan2(relY, relX));
-        double fallbackLaunchDeg = Math.toDegrees(Math.atan2(relZ, horizontalDistance))
+        double fallbackShootingDeg = Math.toDegrees(Math.atan2(relZ, horizontalDistance))
                 + horizontalDistance * 1.5;
-        double fallbackHoodDeg = BallisticConstants.launchAngleToHoodAngle(fallbackLaunchDeg);
 
         return new ShotData(
-                Rotation2d.fromDegrees(fallbackHoodDeg),
+                Rotation2d.fromDegrees(fallbackShootingDeg),
                 Rotation2d.fromDegrees(MathUtil.inputModulus(fallbackTurretDeg, -180, 180)),
                 rpm,
                 actualTarget,
@@ -466,7 +463,7 @@ public class BallisticSolver implements ShooterSolver {
             double alpha = 1.0;
             boolean improved = false;
 
-            for (int ls = 0; ls < 10; ls++) {
+            for (int ls = 0; ls < 3; ls++) {
                 double newTheta = MathUtil.clamp(theta + alpha * dTheta, P.thetaMin, P.thetaMax);
                 double newPhi = wrapPi(phi + alpha * dPhi);
 

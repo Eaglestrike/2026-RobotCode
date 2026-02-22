@@ -68,7 +68,7 @@ public class ShooterTurret extends SubsystemBase {
 
         cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
-        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         this.motor.getConfigurator().apply(cfg);
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);

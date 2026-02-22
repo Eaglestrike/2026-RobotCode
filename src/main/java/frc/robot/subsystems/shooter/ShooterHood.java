@@ -2,15 +2,14 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Rotations;
 
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
@@ -25,11 +24,13 @@ import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
-    private final PositionVoltage request = new PositionVoltage(HoodConstants.BACKWARD_LIMIT);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
-    private Angle targetAngle = Rotations.of(0);
+    private final PositionVoltage request = new PositionVoltage(0);
+    private Angle targetAngle = Degrees.of(HoodConstants.DEFAULT_GOAL);
+    private boolean zeroed = false;
 
     public ShooterHood() {
+        this.motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
         cfg.Slot0.kP = HoodConstants.kP;
         cfg.Slot0.kD = HoodConstants.kD;
@@ -40,42 +41,48 @@ public class ShooterHood extends SubsystemBase {
 
         cfg.Voltage.PeakForwardVoltage = HoodConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -HoodConstants.MAX_VOLTS;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = HoodConstants.FORWARD_LIMIT;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = HoodConstants.MAX_ANGLE / 360.0;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.BACKWARD_LIMIT;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.MIN_ANGLE / 360.0;
 
         this.motor.getConfigurator().apply(cfg);
+        motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+        zeroed = true;
 
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
-        DogLog.tunable("ShooterHood/Request Degrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Rotations.of(x)));
+        DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
+            CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
     }
 
     /**
-     * @return Get the current angle of the hood as an <code>Angle</code>
+     * @return Current shooting angle
      */
     public Angle getAngle() {
         return motor.getPosition().getValue();
     }
 
-    public Command goToPos(Angle position) {
+    public Command goToPos(Angle shootingAngle) {
         return runOnce(() -> {
-            targetAngle = position;
-            setGoal(position);
+            targetAngle = shootingAngle;
+            setGoal(shootingAngle);
         });
     }
 
     /**
-     * Directly set the hood goal position (for use by ShooterController)
+     * Set goal in shooting angle (degrees from horizontal).
+     * 75.11° = most horizontal (hard stop), 26° = most tilted
      */
-    public void setGoal(Angle position) {
-        targetAngle = position;
-        motor.setControl(request.withPosition(position));
+    public void setGoal(Angle shootingAngle) {
+        if (!zeroed) return;
+        targetAngle = shootingAngle;
+        motor.setControl(request.withPosition(shootingAngle));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
@@ -93,28 +100,31 @@ public class ShooterHood extends SubsystemBase {
     public Command zero() {
         return runOnce(() -> {
             System.out.println("Zeroing Shooter Hood");
-            motor.setPosition(HoodConstants.OFFSET);
+            motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+            zeroed = true;
         });
+    }
+
+    public boolean isZeroed() {
+        return zeroed;
     }
 
     @Override
     public void periodic() {
-        DogLog.log("ShooterHood/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
+        DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
         DogLog.log("ShooterHood/AtTarget", atTarget() ? 1 : 0, "Boolean");
     }
 
     public boolean atTarget() {
-        return motor.getPosition().getValue().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
+        return getAngle().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
-        // offset of the hood relative to the turret frame (forward, lateral, up)
         double offsetX = 0.106;
         double offsetY = 0.0;
 
         var yaw = turretPose.getRotation().getZ();
 
-        // rotate the XY offset by the turret yaw to transform into field coordinates
         double cos = Math.cos(yaw);
         double sin = Math.sin(yaw);
         double fieldOffsetX = cos * offsetX - sin * offsetY;

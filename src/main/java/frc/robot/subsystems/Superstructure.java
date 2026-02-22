@@ -145,12 +145,12 @@ public class Superstructure extends SubsystemBase {
                 hopper.startKicking();
             } else {
                 feeder.stopMotor();
-                hopper.startMotor();
+                hopper.stopMotor();
             }
         } else {
             shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
-            hopper.startMotor();
+            hopper.stopMotor();
         }
     }
 

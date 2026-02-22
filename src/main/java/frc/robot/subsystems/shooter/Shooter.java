@@ -40,7 +40,7 @@ public class Shooter extends SubsystemBase {
 
     // Calculated targets (for on-target checks and logging)
     private double targetTurretAngleDeg = 0;
-    private double targetHoodAngleDeg = 0;
+    private double targetHoodAngleDeg = ShooterConstants.HoodConstants.DEFAULT_GOAL;
     private double targetFlywheelVel = ShooterConstants.FlywheelConstants.IDLE_VELOCITY;
     private double distanceToTarget = 0;
     private SpeedPreset currentSpeedPreset = SpeedPreset.MEDIUM;
@@ -48,6 +48,9 @@ public class Shooter extends SubsystemBase {
 
     // Predicted trajectory for AdvantageScope 3D visualization
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
+
+    private static final int SOLVER_PERIOD = 5; // run solver every N cycles (5 * 20ms = 100ms)
+    private int solverCounter = 0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -58,22 +61,17 @@ public class Shooter extends SubsystemBase {
         // Solver configuration
         ballisticParams.highArc = true; // high-arc: ball arrives on the descending phase (over the funnel)
         ballisticParams.g = 9.80665;
-        ballisticParams.dt = 0.005; // 5 ms RK4 step
-        ballisticParams.tMax = 3.0; // max 3 s flight
-        ballisticParams.tolMiss = 0.05; // 5 cm miss tolerance
-        ballisticParams.maxIter = 15;
+        ballisticParams.dt = 0.05; // 50 ms RK4 step (was 5ms, too slow for roboRIO)
+        ballisticParams.tMax = 2.0; // max 2 s flight
+        ballisticParams.tolMiss = 0.10; // 10 cm miss tolerance
+        ballisticParams.maxIter = 3;
 
         solver = new BallisticSolver(ballisticParams, BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
 
         // Constrain solver pitch (theta) to the hood's physical range.
-        // The solver works in launch-angle space; the hood has a mechanical
-        // range of [MIN_ANGLE, MAX_ANGLE] degrees, and there is a fixed offset
-        // between hood angle and true launch angle:
-        // launchAngle = hoodAngle + HOOD_LAUNCH_ANGLE_OFFSET
-        ballisticParams.thetaMin = Math.toRadians(
-                BallisticConstants.hoodAngleToLaunchAngle(ShooterConstants.HoodConstants.MIN_ANGLE));
-        ballisticParams.thetaMax = Math.toRadians(
-                BallisticConstants.hoodAngleToLaunchAngle(ShooterConstants.HoodConstants.MAX_ANGLE));
+        // MIN_ANGLE and MAX_ANGLE are already in shooting angle (= launch angle from horizontal).
+        ballisticParams.thetaMin = Math.toRadians(ShooterConstants.HoodConstants.MIN_ANGLE);
+        ballisticParams.thetaMax = Math.toRadians(ShooterConstants.HoodConstants.MAX_ANGLE);
     }
 
     /**
@@ -89,7 +87,7 @@ public class Shooter extends SubsystemBase {
     public Command stowShooter() {
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
-                hood.goToPos(Radians.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
@@ -148,43 +146,43 @@ public class Shooter extends SubsystemBase {
         Translation3d shooterPos = new Translation3d(
                 shooterPos2d.getX(), shooterPos2d.getY(),
                 BallisticConstants.SHOOTER_HEIGHT);
-        Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
 
-        ChassisSpeeds robotSpeeds = drive.getState().Speeds;
-        Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                .rotateBy(robotPose.getRotation());
-        ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
-                robotSpeeds.omegaRadiansPerSecond);
+        // Only run solver every SOLVER_PERIOD cycles
+        if (++solverCounter >= SOLVER_PERIOD) {
+            solverCounter = 0;
 
-        // ---- Solve ballistics via ShooterSolver interface ----
-        lastSolverResult = solver.calculateShot(
-                shooterPose, fieldSpeeds,
-                targetPose.getTranslation());
+            Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
+            ChassisSpeeds robotSpeeds = drive.getState().Speeds;
+            Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
+                    .rotateBy(robotPose.getRotation());
+            ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
+                    robotSpeeds.omegaRadiansPerSecond);
 
-        // ---- Extract results from ShotData ----
-        targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
-                ShooterConstants.HoodConstants.MIN_ANGLE,
-                ShooterConstants.HoodConstants.MAX_ANGLE);
-        targetTurretAngleDeg = MathUtil.inputModulus(
-                lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
-        targetFlywheelVel = lastSolverResult.rpm();
+            lastSolverResult = solver.calculateShot(
+                    shooterPose, fieldSpeeds,
+                    targetPose.getTranslation());
 
-        // Update distance for diagnostics
-        Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
-        distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
-                + deltaField.getY() * deltaField.getY());
-        currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
-        currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
+            targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
+                    ShooterConstants.HoodConstants.MIN_ANGLE,
+                    ShooterConstants.HoodConstants.MAX_ANGLE);
+            targetTurretAngleDeg = MathUtil.inputModulus(
+                    lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
+            targetFlywheelVel = lastSolverResult.rpm();
 
-        // ---- 8. Command subsystems directly (no Command scheduling in periodic) ----
+            Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
+            distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
+                    + deltaField.getY() * deltaField.getY());
+            currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
+            currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
+
+            buildTrajectoryVisualization(shooterPos, robotYawRad);
+        }
+
+        // Always command subsystems with cached results
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
         flywheels.setVelocity(targetFlywheelVel);
 
-        // ---- 9. Build predicted trajectory for 3D visualization ----
-        buildTrajectoryVisualization(shooterPos, robotYawRad);
-
-        // ---- 10. Log ----
         logValues();
     }
 
@@ -197,9 +195,8 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        // Recover launch angles from ShotData
-        double launchAngleRad = Math.toRadians(
-                BallisticConstants.hoodAngleToLaunchAngle(lastSolverResult.hoodAngle().getDegrees()));
+        // hoodAngle() is now shooting angle (= launch angle from horizontal)
+        double launchAngleRad = Math.toRadians(lastSolverResult.hoodAngle().getDegrees());
         double turretAngleRad = lastSolverResult.turretAngle().getRadians();
 
         // Estimate time of flight from distance / launch velocity

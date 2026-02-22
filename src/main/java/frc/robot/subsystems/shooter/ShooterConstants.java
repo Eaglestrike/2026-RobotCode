@@ -108,15 +108,18 @@ public final class ShooterConstants {
     public final class HoodConstants {
         public static final int MOTOR_ID = 20;
         public static final double GEAR_RATIO = 362.0 / 32.0 * 20.0 / 15.0 * 48.0 / 16.0;
-        /** In radians */
-        public final static double OFFSET = -0.2083;
 
-        /** In degrees — hood at hard stop, most horizontal */
-        public static final double MIN_ANGLE = 14.894799;
-        /** In degrees — hood fully raised, steepest */
-        public static final double MAX_ANGLE = 64;
+        /** Shooting angle at zero position (hard stop, hood most horizontal) */
+        public static final double MAX_ANGLE = 90.0 - 14.894799; // 75.11°
+        /** Shooting angle at max travel (hood most tilted) */
+        public static final double MIN_ANGLE = 90.0 - 64.0; // 26°
 
-        public static final double STOW_ANGLE = Math.toRadians(MIN_ANGLE);
+        /** Shooting angle at zero position (same as MAX_ANGLE) */
+        public static final double OFFSET = MAX_ANGLE; // 75.11°
+        /** Default goal = zero position shooting angle */
+        public static final double DEFAULT_GOAL = MAX_ANGLE; // 75.11°
+
+        public static final double STOW_ANGLE = MAX_ANGLE; // stow at hard stop
 
         public static final double MAX_VOLTS = 3.0;
 
@@ -130,8 +133,6 @@ public final class ShooterConstants {
         public static final double kA = 0.0;
         public static final double kG = 0.0;
 
-        public static final double FORWARD_LIMIT = -0.118;
-        public static final double BACKWARD_LIMIT = OFFSET;
     }
 
 }
