@@ -7,9 +7,11 @@ import static edu.wpi.first.units.Units.Rotations;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -21,74 +23,36 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
-
 public class ShooterHood extends SubsystemBase {
-    private final TalonFX motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-    private final PositionVoltage mmreq = new PositionVoltage(0).withEnableFOC(true);
+    private TalonFX motor;
+    private final PositionVoltage request = new PositionVoltage(HoodConstants.BACKWARD_LIMIT);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Rotations.of(0);
 
     public ShooterHood() {
         cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VELOCITY;
-        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACCEL;
         cfg.Slot0.kP = HoodConstants.kP;
         cfg.Slot0.kD = HoodConstants.kD;
         cfg.Slot0.kS = HoodConstants.kS;
         cfg.Slot0.kV = HoodConstants.kV;
         cfg.Slot0.kA = HoodConstants.kA;
         cfg.Slot0.kG = HoodConstants.kG;
-        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         cfg.Voltage.PeakForwardVoltage = HoodConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -HoodConstants.MAX_VOLTS;
 
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = HoodConstants.FORWARD_LIMIT;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.BACKWARD_LIMIT;
+
         this.motor.getConfigurator().apply(cfg);
 
-        DogLog.tunable("ShooterHood/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
-            System.out.println("Updating CruiseVelo to " + x);
-            cfg.MotionMagic.MotionMagicCruiseVelocity = x;
-            motor.getConfigurator().apply(cfg);
-        });
-        DogLog.tunable("ShooterHood/Acceleration", cfg.MotionMagic.MotionMagicAcceleration, x -> {
-            System.out.println("Updating Acceleration to " + x);
-            cfg.MotionMagic.MotionMagicAcceleration = x;
-            motor.getConfigurator().apply(cfg);
-        });
-
-        DogLog.tunable("ShooterHood/kP", cfg.Slot0.kP, x -> {
-            System.out.println("Updating kP to " + x);
-            cfg.Slot0.kP = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kD", cfg.Slot0.kD, x -> {
-            System.out.println("Updating kD to " + x);
-            cfg.Slot0.kD = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kS", cfg.Slot0.kS, x -> {
-            System.out.println("Updating kS to " + x);
-            cfg.Slot0.kS = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kV", cfg.Slot0.kV, x -> {
-            System.out.println("Updating kV to " + x);
-            cfg.Slot0.kV = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kA", cfg.Slot0.kA, x -> {
-            System.out.println("Updating kA to " + x);
-            cfg.Slot0.kA = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kG", cfg.Slot0.kG, x -> {
-            System.out.println("Updating kG to " + x);
-            cfg.Slot0.kG = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
         DogLog.tunable("ShooterHood/Request Degrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
+            CommandScheduler.getInstance().schedule(goToPos(Rotations.of(x)));
         });
     }
 
@@ -111,7 +75,7 @@ public class ShooterHood extends SubsystemBase {
      */
     public void setGoal(Angle position) {
         targetAngle = position;
-        motor.setControl(mmreq.withPosition(position));
+        motor.setControl(request.withPosition(position));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {

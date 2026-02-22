@@ -69,7 +69,7 @@ public class Shooter extends SubsystemBase {
         // The solver works in launch-angle space; the hood has a mechanical
         // range of [MIN_ANGLE, MAX_ANGLE] degrees, and there is a fixed offset
         // between hood angle and true launch angle:
-        //   launchAngle = hoodAngle + HOOD_LAUNCH_ANGLE_OFFSET
+        // launchAngle = hoodAngle + HOOD_LAUNCH_ANGLE_OFFSET
         ballisticParams.thetaMin = Math.toRadians(
                 BallisticConstants.hoodAngleToLaunchAngle(ShooterConstants.HoodConstants.MIN_ANGLE));
         ballisticParams.thetaMax = Math.toRadians(
@@ -107,7 +107,7 @@ public class Shooter extends SubsystemBase {
     private boolean isHoodOnTarget() {
         double cur = hood.getAngle().in(Degrees);
         return Math.abs(cur - targetHoodAngleDeg) < ShooterConstants.HoodConstants.ANGLE_TOLERANCE.in(Degrees);
-    }  
+    }
 
     private boolean isFlywheelReady() {
         return flywheels.atVelocity();
@@ -153,7 +153,8 @@ public class Shooter extends SubsystemBase {
         ChassisSpeeds robotSpeeds = drive.getState().Speeds;
         Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
                 .rotateBy(robotPose.getRotation());
-        ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(), robotSpeeds.omegaRadiansPerSecond);
+        ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
+                robotSpeeds.omegaRadiansPerSecond);
 
         // ---- Solve ballistics via ShooterSolver interface ----
         lastSolverResult = solver.calculateShot(
@@ -164,7 +165,8 @@ public class Shooter extends SubsystemBase {
         targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
                 ShooterConstants.HoodConstants.MIN_ANGLE,
                 ShooterConstants.HoodConstants.MAX_ANGLE);
-        targetTurretAngleDeg = MathUtil.inputModulus(lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
+        targetTurretAngleDeg = MathUtil.inputModulus(
+                lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
         targetFlywheelVel = lastSolverResult.rpm();
 
         // Update distance for diagnostics

@@ -43,8 +43,8 @@ public final class ShooterConstants {
     }
 
     public final class FlywheelConstants {
-        public static final int MOTOR_ID = 0;
-        public static final double MAX_VOLTS = 5.0;
+        public static final int MOTOR_ID = 67;
+        public static final double MAX_VOLTS = 8.0;
         /** In rotations per second */
         // public static final double MAX_VELOCITY = 0.0;
         /** In rotations per second (for when not shooting) */
@@ -86,58 +86,52 @@ public final class ShooterConstants {
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = 0.5;
 
-        public static final double GEAR_RATIO = 135.0 / 15.0;
+        public static final double GEAR_RATIO = 9.2;
 
-        public static final double MAX_VOLTS = 1.5;
-        /** In rotations per second squared */
-        public static final double MAX_ACCEL = 20;
-        /** In rotations per second */
-        public static final double MAX_VELOCITY = 20;
+        public static final double MAX_VOLTS = 2.0;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
-        public static final double kP = 60;
+        public static final double kP = 60.0;
         public static final double kI = 0.0;
         public static final double kD = 3.0;
         public static final double kS = 0.0;
         public static final double kV = 0.0;
         public static final double kA = 0;
 
+        public static final double FORWARD_LIMIT = 0.5;
+        public static final double BACKWARD_LIMIT = 0.0;
+
         public static final int PHOTOELECTRIC_DIO = 0;
     }
 
     public final class HoodConstants {
         public static final int MOTOR_ID = 20;
-        public static final double GEAR_RATIO = 45.25;
-        /**
-         * Zero/hard-stop position in mechanism rotations (90° - 75.105201° =
-         * 14.894799°)
-         */
-        public final static double OFFSET = 14.894799 / 360.0;
+        public static final double GEAR_RATIO = 362.0 / 32.0 * 20.0 / 15.0 * 48.0 / 16.0;
+        /** In radians */
+        public final static double OFFSET = -0.2083;
 
         /** In degrees — hood at hard stop, most horizontal */
         public static final double MIN_ANGLE = 14.894799;
         /** In degrees — hood fully raised, steepest */
         public static final double MAX_ANGLE = 64;
 
-        /** Stow angle in radians — go to hard stop (most horizontal) */
         public static final double STOW_ANGLE = Math.toRadians(MIN_ANGLE);
 
-        public static final double MAX_VOLTS = 2.0;
-        /** In rotations per second squared */
-        public static final double MAX_ACCEL = 1;
-        /** In rotations per second */
-        public static final double MAX_VELOCITY = 1;
+        public static final double MAX_VOLTS = 3.0;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
-        public static final double kP = 300;
+        public static final double kP = 300.0;
         public static final double kI = 0.0;
         public static final double kD = 5.0;
         public static final double kS = 0.0;
         public static final double kV = 0.0;
         public static final double kA = 0.0;
         public static final double kG = 0.0;
+
+        public static final double FORWARD_LIMIT = -0.118;
+        public static final double BACKWARD_LIMIT = OFFSET;
     }
 
 }
