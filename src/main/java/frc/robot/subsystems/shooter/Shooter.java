@@ -151,6 +151,13 @@ public class Shooter extends SubsystemBase {
         if (++solverCounter >= SOLVER_PERIOD) {
             solverCounter = 0;
 
+            Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
+            distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
+                    + deltaField.getY() * deltaField.getY());
+            currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
+            currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
+            ballisticParams.highArc = true;
+
             Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
             ChassisSpeeds robotSpeeds = drive.getState().Speeds;
             Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
@@ -168,12 +175,6 @@ public class Shooter extends SubsystemBase {
             targetTurretAngleDeg = MathUtil.inputModulus(
                     lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
             targetFlywheelVel = lastSolverResult.rpm();
-
-            Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
-            distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
-                    + deltaField.getY() * deltaField.getY());
-            currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
-            currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
 
             buildTrajectoryVisualization(shooterPos, robotYawRad);
         }

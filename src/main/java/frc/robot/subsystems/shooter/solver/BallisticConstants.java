@@ -75,7 +75,7 @@ public class BallisticConstants {
     public static final double MEDIUM_SPEED_RPM = 4500.0;
 
     /** High speed flywheel RPM - for long range shots */
-    public static final double HIGH_SPEED_RPM = 6000.0;
+    public static final double HIGH_SPEED_RPM = 7000.0;
 
     /** Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic fit */
     public static final double LOW_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(LOW_SPEED_RPM / 60.0);

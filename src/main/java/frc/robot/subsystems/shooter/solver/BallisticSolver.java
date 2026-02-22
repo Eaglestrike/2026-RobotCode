@@ -463,7 +463,7 @@ public class BallisticSolver implements ShooterSolver {
             double alpha = 1.0;
             boolean improved = false;
 
-            for (int ls = 0; ls < 3; ls++) {
+            for (int ls = 0; ls < 8; ls++) {
                 double newTheta = MathUtil.clamp(theta + alpha * dTheta, P.thetaMin, P.thetaMax);
                 double newPhi = wrapPi(phi + alpha * dPhi);
 
