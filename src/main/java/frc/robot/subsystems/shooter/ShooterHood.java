@@ -8,10 +8,9 @@ import static edu.wpi.first.units.Units.Volts;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
@@ -52,17 +51,19 @@ public class ShooterHood extends SubsystemBase {
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.BACKWARD_LIMIT;
 
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        
         this.motor.getConfigurator().apply(cfg);
 
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
-        DogLog.tunable("ShooterHood/Request Degrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Rotations.of(x)));
+        DogLog.tunable("ShooterHood/Request Rotations", 0.0, x -> {
+            CommandScheduler.getInstance().schedule(requestPosition(Rotations.of(x)));
         });
     }
 
-    public Command goToPos(Angle position) {
+    public Command requestPosition(Angle position) {
         return runOnce(() -> {
             targetAngle = position;
             motor.setControl(request.withPosition(position));

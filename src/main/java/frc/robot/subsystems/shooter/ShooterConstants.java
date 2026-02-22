@@ -84,11 +84,11 @@ public final class ShooterConstants {
     public final class HoodConstants {
         public static final int MOTOR_ID = 20;
         public static final double GEAR_RATIO = 362.0 / 32.0 * 20.0 / 15.0 * 48.0 / 16.0;
-        /** In radians */
+        /** In rotations */
         public final static double OFFSET = -0.2083;
 
-        /** In radians */
-        public static final double STOW_ANGLE = 0.0;
+        /** In rotations */
+        public static final double STOW_ANGLE = OFFSET;
 
         public static final double MAX_VOLTS = 3.0;
 

@@ -15,8 +15,6 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
-import frc.robot.FieldConstants.AprilTagLayoutType;
-import frc.robot.FieldConstants.FieldType;
 
 import java.io.IOException;
 import java.nio.file.Path;
