@@ -10,11 +10,15 @@
 
 package frc.robot.subsystems.shooter.solver;
 
+import java.io.IOException;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import frc.robot.subsystems.shooter.solver2.BallisticClient;
+import frc.robot.subsystems.shooter.solver2.BallisticClient.ServerSolverResult;
 
 /**
  * Ballistic Solver - Computes launch angles to intercept moving targets
@@ -101,23 +105,15 @@ public class BallisticSolver implements ShooterSolver {
     // ================================================================
     // Instance fields (configurable per-robot)
     // ================================================================
-    private final BallisticConstants params;
-    private final double dragCoeff;
-
-    /**
-     * Create a BallisticSolver with the given parameters.
-     *
-     * @param params    solver / physics parameters
-     * @param dragCoeff quadratic drag coefficient (kDrag)
-     */
-    public BallisticSolver(BallisticConstants params, double dragCoeff) {
-        this.params = params;
-        this.dragCoeff = dragCoeff;
-    }
+    private final BallisticClient ballisticClient;
 
     /** Create a BallisticSolver with default parameters. */
     public BallisticSolver() {
-        this(new BallisticConstants(), BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
+        try {
+            ballisticClient = new BallisticClient("10.1.14.11", 5805);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to connect to ballistic server", e);
+        }
     }
 
     // ================================================================
@@ -143,20 +139,20 @@ public class BallisticSolver implements ShooterSolver {
         double launchVelocity = BallisticConstants.getLaunchVelocityForPreset(preset);
         double rpm = BallisticConstants.getRPMForPreset(preset);
 
-        // ---- 4. Run ballistic solver ----
-        Vec3 relPos = new Vec3(relX, relY, relZ);
-        Vec3 relVel = new Vec3(relVelX, relVelY, 0);
-
-        SolverResult result = solve(relPos, relVel, launchVelocity, dragCoeff, params);
+        // SolverResult result = solve(relPos, relVel, launchVelocity, dragCoeff,
+        // params);
+        ServerSolverResult serverResult = ballisticClient
+                .sendSolve(new BallisticClient.ServerSolverParams(relX, relY, relZ, relVelX, relVelY, 0,
+                        launchVelocity, true));
 
         // ---- 5. Convert solver output → ShotData ----
-        if (result.success || Double.isFinite(result.theta)) {
-            double shootingAngleDeg = Math.toDegrees(result.theta);
-            double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(result.phi), -180, 180);
+        if (serverResult.success || Double.isFinite(serverResult.azimuth)) {
+            double shootingAngleDeg = Math.toDegrees(serverResult.elevation);
+            double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(serverResult.azimuth), -180, 180);
 
             Translation3d predictedTarget = new Translation3d(
-                    actualTarget.getX() + relVelX * result.tStar,
-                    actualTarget.getY() + relVelY * result.tStar,
+                    actualTarget.getX() + relVelX * serverResult.time,
+                    actualTarget.getY() + relVelY * serverResult.time,
                     actualTarget.getZ());
 
             return new ShotData(
@@ -164,7 +160,7 @@ public class BallisticSolver implements ShooterSolver {
                     Rotation2d.fromDegrees(turretAngleDeg),
                     rpm,
                     predictedTarget,
-                    result.success);
+                    serverResult.success);
         }
 
         // ---- 6. Fallback: point directly at target with crude gravity compensation
