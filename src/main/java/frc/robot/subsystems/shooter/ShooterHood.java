@@ -32,6 +32,7 @@ public class ShooterHood extends SubsystemBase {
     private final PositionVoltage request = new PositionVoltage(HoodConstants.BACKWARD_LIMIT);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Rotations.of(0);
+    private boolean zeroed = false;
 
     public ShooterHood() {
         motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -52,7 +53,7 @@ public class ShooterHood extends SubsystemBase {
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.BACKWARD_LIMIT;
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-        
+
         this.motor.getConfigurator().apply(cfg);
 
         var talonFXSim = motor.getSimState();
@@ -61,11 +62,17 @@ public class ShooterHood extends SubsystemBase {
         DogLog.tunable("ShooterHood/Request Rotations", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Rotations.of(x)));
         });
+
+        DogLog.log("ShooterHood/ShooterHoodZeroed", zeroed);
     }
 
     public Command requestPosition(Angle position) {
         return runOnce(() -> {
             targetAngle = position;
+            if (!zeroed) {
+                System.out.println("Hood not zeroed, ignoring request");
+                return;
+            }
             motor.setControl(request.withPosition(position));
         });
     }
@@ -85,6 +92,8 @@ public class ShooterHood extends SubsystemBase {
     public Command zero() {
         return runOnce(() -> {
             motor.setPosition(HoodConstants.OFFSET);
+            zeroed = true;
+            DogLog.log("ShooterHood/ShooterHoodZeroed", zeroed);
         });
     }
 

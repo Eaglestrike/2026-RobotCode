@@ -75,8 +75,8 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0;
 
-        public static final double FORWARD_LIMIT = 0.5;
-        public static final double BACKWARD_LIMIT = 0.0;
+        public static final double FORWARD_LIMIT = 320/360.0;
+        public static final double BACKWARD_LIMIT = -50/360.0;
 
         public static final int PHOTOELECTRIC_DIO = 0;
     }

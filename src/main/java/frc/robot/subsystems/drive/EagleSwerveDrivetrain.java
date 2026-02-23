@@ -66,7 +66,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
-    private static double alignKP = 3.114;
+    private static double alignKP = 2.114;
     private static double alignKI = 0.0;
     private static double alignKD = 0.114;
 

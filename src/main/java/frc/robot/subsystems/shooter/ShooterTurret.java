@@ -47,6 +47,7 @@ public class ShooterTurret extends SubsystemBase {
     private final DigitalInput photoelectric;
     private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
                                                                   // broken
+    private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -54,8 +55,8 @@ public class ShooterTurret extends SubsystemBase {
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = this.minRotation.in(Rotations);
 
         cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
@@ -71,7 +72,7 @@ public class ShooterTurret extends SubsystemBase {
         cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
         cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-        
+
         this.motor.getConfigurator().apply(cfg);
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
@@ -79,12 +80,18 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
+
+        DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
     }
 
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
             DogLog.log("ShooterTurret/RequestedPosition", pos.in(Rotations));
             System.out.println("request pos " + pos.in(Rotations));
+            if (!zeroed) {
+                System.out.println("Turret not zeroed, ignoring request");
+                return;
+            }
             this.targetAngle = pos;
             this.motor.setControl(this.position.withPosition(pos));
         });
@@ -97,8 +104,6 @@ public class ShooterTurret extends SubsystemBase {
                 .minus(pose.getRotation());
         // TODO: Check if this normalizes between -180 to 180 correctly
         targetAngle = Rotations.of(angle.getRotations());
-
-        // this.motor.setControl(this.position.withPosition(angle.getRotations()));
     }
 
     public Command stop() {
@@ -117,6 +122,8 @@ public class ShooterTurret extends SubsystemBase {
         return runOnce(() -> {
             System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
+            zeroed = true;
+            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         });
     }
 
