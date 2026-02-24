@@ -10,11 +10,15 @@
 
 package frc.robot.subsystems.shooter.solver;
 
+import java.io.IOException;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import frc.robot.subsystems.shooter.solver2.BallisticClient;
+import frc.robot.subsystems.shooter.solver2.BallisticClient.ServerSolverResult;
 
 /**
  * Ballistic Solver - Computes launch angles to intercept moving targets
@@ -99,25 +103,66 @@ public class BallisticSolver implements ShooterSolver {
     }
 
     // ================================================================
+    // Solver mode
+    // ================================================================
+    public enum SolverMode {
+        LOCAL,
+        CLIENT
+    }
+
+    // ================================================================
     // Instance fields (configurable per-robot)
     // ================================================================
     private final BallisticConstants params;
     private final double dragCoeff;
+    private SolverMode mode;
+    private BallisticClient ballisticClient;
 
-    /**
-     * Create a BallisticSolver with the given parameters.
-     *
-     * @param params    solver / physics parameters
-     * @param dragCoeff quadratic drag coefficient (kDrag)
-     */
-    public BallisticSolver(BallisticConstants params, double dragCoeff) {
-        this.params = params;
-        this.dragCoeff = dragCoeff;
+    /** Create a BallisticSolver with the specified mode. */
+    public BallisticSolver(SolverMode mode) {
+        this.params = new BallisticConstants();
+        this.dragCoeff = BallisticConstants.DEFAULT_DRAG_COEFFICIENT;
+        this.mode = mode;
+
+        if (mode == SolverMode.CLIENT) {
+            try {
+                ballisticClient = new BallisticClient("10.1.14.11", 5805);
+                System.out.println("[BallisticSolver] Connected to remote server (CLIENT mode)");
+            } catch (IOException e) {
+                System.err.println("[BallisticSolver] Failed to connect to server: " + e.getMessage());
+                System.err.println("[BallisticSolver] Falling back to LOCAL mode");
+                ballisticClient = null;
+                this.mode = SolverMode.LOCAL;
+            }
+        } else {
+            ballisticClient = null;
+            System.out.println("[BallisticSolver] Using LOCAL solver on roboRIO");
+        }
     }
 
-    /** Create a BallisticSolver with default parameters. */
+    /** Create a BallisticSolver defaulting to LOCAL mode. */
     public BallisticSolver() {
-        this(new BallisticConstants(), BallisticConstants.DEFAULT_DRAG_COEFFICIENT);
+        this(SolverMode.LOCAL);
+    }
+
+    public SolverMode getMode() {
+        return mode;
+    }
+
+    public void setMode(SolverMode newMode) {
+        if (newMode == mode) return;
+        if (newMode == SolverMode.CLIENT && ballisticClient == null) {
+            try {
+                ballisticClient = new BallisticClient("10.1.14.11", 5805);
+                mode = SolverMode.CLIENT;
+                System.out.println("[BallisticSolver] Switched to CLIENT mode");
+            } catch (IOException e) {
+                System.err.println("[BallisticSolver] Cannot switch to CLIENT: " + e.getMessage());
+            }
+        } else {
+            mode = newMode;
+            System.out.println("[BallisticSolver] Switched to " + mode + " mode");
+        }
     }
 
     // ================================================================
@@ -132,8 +177,7 @@ public class BallisticSolver implements ShooterSolver {
         double relY = deltaField.getY();
         double relZ = deltaField.getZ();
 
-        // ---- 2. Relative velocity of target w.r.t. launcher (target is stationary,
-        // so relative velocity = -(launcher velocity)) ----
+        // ---- 2. Relative velocity ----
         double relVelX = -fieldSpeeds.vxMetersPerSecond;
         double relVelY = -fieldSpeeds.vyMetersPerSecond;
 
@@ -143,13 +187,55 @@ public class BallisticSolver implements ShooterSolver {
         double launchVelocity = BallisticConstants.getLaunchVelocityForPreset(preset);
         double rpm = BallisticConstants.getRPMForPreset(preset);
 
-        // ---- 4. Run ballistic solver ----
+        // ---- 4. Solve based on mode ----
+        if (mode == SolverMode.CLIENT && ballisticClient != null) {
+            return solveViaClient(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget);
+        }
+        return solveLocally(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget, horizontalDistance);
+    }
+
+    private ShotData solveViaClient(double relX, double relY, double relZ,
+            double relVelX, double relVelY,
+            double launchVelocity, double rpm, Translation3d actualTarget) {
+        try {
+            ServerSolverResult serverResult = ballisticClient
+                    .sendSolve(new BallisticClient.ServerSolverParams(relX, relY, relZ, relVelX, relVelY, 0,
+                            launchVelocity, true));
+
+            if (serverResult.success || Double.isFinite(serverResult.azimuth)) {
+                double shootingAngleDeg = Math.toDegrees(serverResult.elevation);
+                double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(serverResult.azimuth), -180, 180);
+
+                Translation3d predictedTarget = new Translation3d(
+                        actualTarget.getX() + relVelX * serverResult.time,
+                        actualTarget.getY() + relVelY * serverResult.time,
+                        actualTarget.getZ());
+
+                return new ShotData(
+                        Rotation2d.fromDegrees(shootingAngleDeg),
+                        Rotation2d.fromDegrees(turretAngleDeg),
+                        rpm,
+                        predictedTarget,
+                        serverResult.success);
+            }
+        } catch (Exception e) {
+            System.err.println("[BallisticSolver] Client error, falling back to LOCAL: " + e.getMessage());
+            mode = SolverMode.LOCAL;
+        }
+
+        double horizontalDistance = Math.sqrt(relX * relX + relY * relY);
+        return solveLocally(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget, horizontalDistance);
+    }
+
+    private ShotData solveLocally(double relX, double relY, double relZ,
+            double relVelX, double relVelY,
+            double launchVelocity, double rpm, Translation3d actualTarget,
+            double horizontalDistance) {
         Vec3 relPos = new Vec3(relX, relY, relZ);
         Vec3 relVel = new Vec3(relVelX, relVelY, 0);
 
         SolverResult result = solve(relPos, relVel, launchVelocity, dragCoeff, params);
 
-        // ---- 5. Convert solver output → ShotData ----
         if (result.success || Double.isFinite(result.theta)) {
             double shootingAngleDeg = Math.toDegrees(result.theta);
             double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(result.phi), -180, 180);
@@ -167,8 +253,6 @@ public class BallisticSolver implements ShooterSolver {
                     result.success);
         }
 
-        // ---- 6. Fallback: point directly at target with crude gravity compensation
-        // ----
         double fallbackTurretDeg = Math.toDegrees(Math.atan2(relY, relX));
         double fallbackShootingDeg = Math.toDegrees(Math.atan2(relZ, horizontalDistance))
                 + horizontalDistance * 1.5;

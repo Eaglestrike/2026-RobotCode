@@ -45,6 +45,7 @@ import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
+import frc.robot.subsystems.shooter.solver.BallisticSolver.SolverMode;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
@@ -73,6 +74,9 @@ public class RobotContainer {
 
         // auto
         private final SendableChooser<Command> autoChooser;
+
+        // solver mode chooser
+        private final SendableChooser<SolverMode> solverModeChooser = new SendableChooser<>();
 
         // Button Board constants
         private final int CLIMB_BUTTON = 4;
@@ -119,6 +123,12 @@ public class RobotContainer {
                 autoChooser = AutoBuilder.buildAutoChooser("Tests");
                 SmartDashboard.putData("Auto Chooser", autoChooser);
 
+                solverModeChooser.setDefaultOption("LOCAL (roboRIO)", SolverMode.LOCAL);
+                solverModeChooser.addOption("CLIENT (server)", SolverMode.CLIENT);
+                SmartDashboard.putData("Solver Mode", solverModeChooser);
+                new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
+                                .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))
+                                                .ignoringDisable(true));
         }
 
         private void configureBindings() {
