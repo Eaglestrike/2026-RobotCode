@@ -102,7 +102,7 @@ public final class ShooterConstants {
         public static final Angle FORWARD_LIMIT = Degree.of(130.0);
         public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
 
-        public static final int PHOTOELECTRIC_DIO = 0;
+        public static final int PHOTOELECTRIC_DIO = 7;
     }
 
     public final class HoodConstants {

@@ -93,9 +93,19 @@ public class ShooterHood extends SubsystemBase {
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
-        });
+        return startRun(
+                () -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+                    motor.getConfigurator().apply(cfg);
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+                    motor.getConfigurator().apply(cfg);
+                });
     }
 
     public Command stop() {

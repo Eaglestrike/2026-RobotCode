@@ -81,16 +81,49 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
     }
 
+    /**
+     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
+     * nearest limit.
+     */
+    private static Angle normalizeToSafeRange(Angle angle) {
+        double deg = angle.in(Degrees);
+        double lo = TurretConstants.BACKWARD_LIMIT.in(Degrees);
+        double hi = TurretConstants.FORWARD_LIMIT.in(Degrees);
+
+        // Shift into range by adding/subtracting full rotations
+        while (deg > hi) {
+            deg -= 360.0;
+        }
+        while (deg < lo) {
+            deg += 360.0;
+        }
+
+        // If still out of range (shouldn't happen with a 360° window, but just in case)
+        if (deg > hi) {
+            deg = hi;
+        } else if (deg < lo) {
+            deg = lo;
+        }
+
+        return Degrees.of(deg);
+    }
+
+    /**
+     * Sets control for the turret to move to requested position
+     * Angle is measured from intake = 0 rotations, with clockwise positive
+     * @param pos Angle between -1 and 1 rotations
+     * @return runOnce command (does not wait for movement to terminate; use atTarget() for that)
+     */
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
-            DogLog.log("ShooterTurret/RequestedPosition", pos.in(Rotations));
-            System.out.println("request pos " + pos.in(Rotations));
+            Angle safePos = normalizeToSafeRange(pos);
             if (!zeroed) {
                 System.out.println("Turret not zeroed, ignoring request");
                 return;
             }
-            this.targetAngle = pos;
-            this.motor.setControl(this.position.withPosition(pos));
+            this.targetAngle = safePos;
+            this.motor.setControl(this.position.withPosition(safePos));
         });
     }
 
