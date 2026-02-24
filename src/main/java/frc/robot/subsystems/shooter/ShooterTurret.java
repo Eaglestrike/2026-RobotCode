@@ -79,6 +79,11 @@ public class ShooterTurret extends SubsystemBase {
         });
 
         DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) {
+            motor.setPosition(TurretConstants.ENCODER_OFFSET);
+            zeroed = true;
+        }
     }
 
     /**

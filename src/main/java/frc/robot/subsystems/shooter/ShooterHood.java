@@ -172,6 +172,6 @@ public class ShooterHood extends SubsystemBase {
                 turretPose.getX() + fieldOffsetX,
                 turretPose.getY() + fieldOffsetY,
                 turretPose.getZ() + 0.0713,
-                new Rotation3d(0, getAngle().in(Radians), yaw));
+                new Rotation3d(0, -getAngle().in(Radians), yaw));
     }
 }

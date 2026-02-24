@@ -17,9 +17,9 @@ import frc.robot.subsystems.shooter.solver.BallisticSolver.Vec3;
  * Constants and parameters for the ballistic solver
  * 
  * FRC 2026 Game Piece Specifications:
- *   - Diameter: 5.91 inches (15 cm)
- *   - Weight: 0.8 lbs (363 g)
- *   - Material: High-density foam (yellow, with FIRST/AndyMark logos)
+ * - Diameter: 5.91 inches (15 cm)
+ * - Weight: 0.8 lbs (363 g)
+ * - Material: High-density foam (yellow, with FIRST/AndyMark logos)
  */
 public class BallisticConstants {
 
@@ -30,7 +30,10 @@ public class BallisticConstants {
     /** Gravity acceleration (m/s^2) */
     public double g = 9.80665;
 
-    /** Wind vector (m/s) - positive X is forward, positive Y is left, positive Z is up */
+    /**
+     * Wind vector (m/s) - positive X is forward, positive Y is left, positive Z is
+     * up
+     */
     public Vec3 wind = new Vec3();
 
     // ================================================================
@@ -49,7 +52,10 @@ public class BallisticConstants {
     /** Game piece mass (kg) - 0.8 lbs ≈ 363g */
     public static final double GAME_PIECE_MASS = 0.363;
 
-    /** Drag coefficient for foam ball (slightly higher than smooth sphere due to surface texture) */
+    /**
+     * Drag coefficient for foam ball (slightly higher than smooth sphere due to
+     * surface texture)
+     */
     public static final double GAME_PIECE_CD = 0.50;
 
     /** Air density at sea level (kg/m³) */
@@ -69,15 +75,18 @@ public class BallisticConstants {
     }
 
     /** Low speed flywheel RPM - for close range shots */
-    public static final double LOW_SPEED_RPM = 3000.0;
+    public static final double LOW_SPEED_RPM = 3500.0;
 
     /** Medium speed flywheel RPM - for mid range shots */
-    public static final double MEDIUM_SPEED_RPM = 4500.0;
+    public static final double MEDIUM_SPEED_RPM = 6000.0;
 
     /** High speed flywheel RPM - for long range shots */
     public static final double HIGH_SPEED_RPM = 7000.0;
 
-    /** Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic fit */
+    /**
+     * Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic
+     * fit
+     */
     public static final double LOW_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(LOW_SPEED_RPM / 60.0);
 
     /** Medium speed launch velocity (m/s) */
@@ -90,7 +99,7 @@ public class BallisticConstants {
     public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
 
     /** Distance threshold for MEDIUM -> HIGH transition (meters) */
-    public static final double MEDIUM_TO_HIGH_DISTANCE = 5.0;
+    public static final double MEDIUM_TO_HIGH_DISTANCE = 6.0;
 
     /**
      * Get the appropriate speed preset based on distance to target
@@ -153,19 +162,19 @@ public class BallisticConstants {
     /** Default launch speed for solver (m/s) - uses MEDIUM preset */
     public static final double DEFAULT_LAUNCH_SPEED = MEDIUM_SPEED_LAUNCH_VEL;
 
-    /** 
+    /**
      * Quadratic drag coefficient for FRC 2026 game piece
      * 
      * kDrag = 0.5 * Cd * rho * A / m
      * 
      * Calculation:
-     *   Cd = 0.50 (foam ball, rough surface)
-     *   rho = 1.225 kg/m³
-     *   A = π × (0.075)² = 0.01767 m²
-     *   m = 0.363 kg
+     * Cd = 0.50 (foam ball, rough surface)
+     * rho = 1.225 kg/m³
+     * A = π × (0.075)² = 0.01767 m²
+     * m = 0.363 kg
      * 
-     *   kDrag = 0.5 × 0.50 × 1.225 × 0.01767 / 0.363
-     *         = 0.0149 ≈ 0.015
+     * kDrag = 0.5 × 0.50 × 1.225 × 0.01767 / 0.363
+     * = 0.0149 ≈ 0.015
      */
     public static final double DEFAULT_DRAG_COEFFICIENT = 0.015;
 
@@ -203,7 +212,6 @@ public class BallisticConstants {
 
     /** Height of shooter exit point above ground (meters) — 17.580041 in */
     public static final double SHOOTER_HEIGHT = 0.44673;
-
 
     // ================================================================
     // Solver Presets

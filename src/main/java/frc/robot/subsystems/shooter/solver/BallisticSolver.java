@@ -121,6 +121,7 @@ public class BallisticSolver implements ShooterSolver {
     /** Create a BallisticSolver with the specified mode. */
     public BallisticSolver(SolverMode mode) {
         this.params = new BallisticConstants();
+        this.params.highArc = true;
         this.dragCoeff = BallisticConstants.DEFAULT_DRAG_COEFFICIENT;
         this.mode = mode;
 

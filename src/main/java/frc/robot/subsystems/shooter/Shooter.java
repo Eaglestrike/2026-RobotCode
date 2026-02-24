@@ -9,6 +9,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -155,7 +156,6 @@ public class Shooter extends SubsystemBase {
                 + deltaField.getY() * deltaField.getY());
         currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
         currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
-        ballisticParams.highArc = true;
 
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
         ChassisSpeeds robotSpeeds = drive.getState().Speeds;
@@ -171,8 +171,7 @@ public class Shooter extends SubsystemBase {
         targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
                 ShooterConstants.HoodConstants.MIN_ANGLE,
                 ShooterConstants.HoodConstants.MAX_ANGLE);
-        targetTurretAngleDeg = MathUtil.inputModulus(
-                lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
+        targetTurretAngleDeg = -(lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         targetFlywheelVel = lastSolverResult.rpm();
 
         buildTrajectoryVisualization(shooterPos, robotYawRad);
@@ -250,7 +249,9 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/SpeedPreset", currentSpeedPreset.name());
         DogLog.log("Shooter/LaunchVelocity_mps", currentLaunchVelocity);
         DogLog.log("Shooter/TargetTurretAngle_deg", targetTurretAngleDeg);
+        DogLog.log("Shooter/ActualTurretAngle_deg", turret.getAngle().in(Degrees));
         DogLog.log("Shooter/TargetHoodAngle_deg", targetHoodAngleDeg);
+        DogLog.log("Shooter/ActualHoodAngle_deg", hood.getAngle().in(Degrees));
         DogLog.log("Shooter/TargetFlywheelVel_rps", targetFlywheelVel);
         DogLog.log("Shooter/TurretOnTarget", isTurretOnTarget());
         DogLog.log("Shooter/HoodOnTarget", isHoodOnTarget());
@@ -266,7 +267,16 @@ public class Shooter extends SubsystemBase {
             DogLog.log("Shooter/Solver/RPM", lastSolverResult.rpm());
         }
 
-        // 3D visualization poses
+        // 3D visualization poses (field-absolute, with odom)
+        Pose2d robotPose = drive.getState().Pose;
+        Pose3d robotPose3d = new Pose3d(
+                robotPose.getX(), robotPose.getY(), 0,
+                new Rotation3d(0, 0, robotPose.getRotation().getRadians()));
+        Pose3d turretLocal = turret.getComponentPose3d();
+        Pose3d hoodLocal = hood.getComponentPose3d(turretLocal);
+        DogLog.log("Shooter/TurretPose3d", new Pose3d[] { robotPose3d.transformBy(toTransform(turretLocal)) });
+        DogLog.log("Shooter/HoodPose3d", new Pose3d[] { robotPose3d.transformBy(toTransform(hoodLocal)) });
+
         if (targetPose != null) {
             DogLog.log("Shooter/TargetPose3d",
                     new Pose3d[] { targetPose });
@@ -274,5 +284,9 @@ public class Shooter extends SubsystemBase {
         if (predictedTrajectoryPoses.length > 0) {
             DogLog.log("Shooter/PredictedTrajectory", predictedTrajectoryPoses);
         }
+    }
+
+    private static Transform3d toTransform(Pose3d pose) {
+        return new Transform3d(pose.getTranslation(), pose.getRotation());
     }
 }
