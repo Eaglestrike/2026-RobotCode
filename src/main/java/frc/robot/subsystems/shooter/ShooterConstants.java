@@ -88,7 +88,7 @@ public final class ShooterConstants {
 
         public static final double GEAR_RATIO = 9.2;
 
-        public static final double MAX_VOLTS = 2.0;
+        public static final double MAX_VOLTS = 0.5;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 
@@ -99,8 +99,8 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0;
 
-        public static final double FORWARD_LIMIT = 0.0;
-        public static final double BACKWARD_LIMIT = -0.5;
+        public static final double FORWARD_LIMIT = 0.125;   // 45°
+        public static final double BACKWARD_LIMIT = -0.125; // -45°
 
         public static final int PHOTOELECTRIC_DIO = 0;
     }

@@ -172,8 +172,10 @@ public class Shooter extends SubsystemBase {
             targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
                     ShooterConstants.HoodConstants.MIN_ANGLE,
                     ShooterConstants.HoodConstants.MAX_ANGLE);
-            targetTurretAngleDeg = MathUtil.inputModulus(
-                    lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
+            targetTurretAngleDeg = MathUtil.clamp(
+                    MathUtil.inputModulus(
+                            lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180),
+                    -45, 45);
             targetFlywheelVel = lastSolverResult.rpm();
 
             buildTrajectoryVisualization(shooterPos, robotYawRad);
@@ -191,7 +193,7 @@ public class Shooter extends SubsystemBase {
     // Trajectory visualization (for AdvantageScope 3D Field)
     // ================================================================
     private void buildTrajectoryVisualization(Translation3d shooterPos, double robotYawRad) {
-        if (lastSolverResult == null || !lastSolverResult.validShot()) {
+        if (lastSolverResult == null) {
             predictedTrajectoryPoses = new Pose3d[0];
             return;
         }

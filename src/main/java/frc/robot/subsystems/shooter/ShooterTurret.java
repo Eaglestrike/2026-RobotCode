@@ -40,8 +40,8 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final Angle minRotation = Degrees.of(-180);
-    private final Angle maxRotation = Degrees.of(0);
+    private final Angle minRotation = Degrees.of(-45);
+    private final Angle maxRotation = Degrees.of(45);
 
     private boolean zeroed = false;
 

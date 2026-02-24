@@ -132,17 +132,17 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (currentMode == ShootMode.FERRY) {
+            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
+        } else {
+            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+        }
+
         if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
             isShooting = false;
             feeder.stopMotor();
             hopper.stopMotor();
             return;
-        }
-
-        if (currentMode == ShootMode.FERRY) {
-            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
-        } else {
-            shooter.setFacing(FieldConstants.getAllianceHubPosition());
         }
 
         if (isShooting) {

@@ -95,7 +95,8 @@ public class RobotContainer {
         private final Vision vision = new Vision(drivetrain);
 
         public RobotContainer() {
-                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, 0.5, Rotation2d.fromDegrees(0)));
+                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
+                                Rotation2d.fromDegrees(180)));
                 configureBindings();
 
                 NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
@@ -144,7 +145,8 @@ public class RobotContainer {
                         System.out.println("Zeroing drive");
                         drivetrain.seedFieldCentric();
                         drivetrain.resetPose(
-                                        new Pose2d(FieldConstants.fieldLength - 0.5, 0.5, Rotation2d.fromDegrees(0)));
+                                        new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
+                                                        Rotation2d.fromDegrees(180)));
                 }).ignoringDisable(true));
 
                 drivetrain.registerTelemetry(logger::telemeterize);

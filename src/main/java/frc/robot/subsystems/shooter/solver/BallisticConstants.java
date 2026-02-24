@@ -90,7 +90,7 @@ public class BallisticConstants {
     public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
 
     /** Distance threshold for MEDIUM -> HIGH transition (meters) */
-    public static final double MEDIUM_TO_HIGH_DISTANCE = 7.0;
+    public static final double MEDIUM_TO_HIGH_DISTANCE = 5.0;
 
     /**
      * Get the appropriate speed preset based on distance to target
