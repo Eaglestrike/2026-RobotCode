@@ -41,9 +41,6 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final Angle minRotation = Rotations.of(TurretConstants.BACKWARD_LIMIT);
-    private final Angle maxRotation = Rotations.of(TurretConstants.FORWARD_LIMIT);
-
     private final DigitalInput photoelectric;
     private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
                                                                   // broken
@@ -56,8 +53,8 @@ public class ShooterTurret extends SubsystemBase {
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
-        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = this.minRotation.in(Rotations);
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = TurretConstants.FORWARD_LIMIT.in(Rotations);
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.BACKWARD_LIMIT.in(Rotations);
 
         cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
 
@@ -113,9 +110,19 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
-        });
+        return startRun(
+                () -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+                    motor.getConfigurator().apply(cfg);
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+                    motor.getConfigurator().apply(cfg);
+                });
     }
 
     public Command zero() {
@@ -139,8 +146,8 @@ public class ShooterTurret extends SubsystemBase {
     @Override
     public void periodic() {
         DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get() ? 1 : 0, "Boolean");
-        DogLog.log("ShooterTurret/AtTarget", atTarget() ? 1 : 0, "Boolean");
+        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
+        DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
 
     /* sim */

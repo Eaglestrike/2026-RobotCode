@@ -24,7 +24,7 @@ public class Shooter extends SubsystemBase {
     public Command stowShooter() {
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
-                hood.requestPosition(Radians.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                hood.goToPos(Radians.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 flywheel.startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
     }
 
