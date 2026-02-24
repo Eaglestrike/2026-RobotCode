@@ -57,8 +57,11 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getConfigurator().apply(slot0Configs);
     });
 
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel (rotations/s^2)",
-            FlywheelConstants.MAX_ACCEL);
+    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
+            FlywheelConstants.MAX_ACCEL, newTargetAccel -> {
+                slot0Configs.kD = newTargetAccel;
+                motor.getConfigurator().apply(slot0Configs);
+            });
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;

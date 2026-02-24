@@ -45,6 +45,8 @@ public class IntakeWrist extends SubsystemBase {
     private State state = State.IDLE;
     private Angle goal = Radians.of(0.0);
 
+    private boolean zeroed = false;
+
     public IntakeWrist() {
         enc = motor.getEncoder();
 
@@ -76,6 +78,8 @@ public class IntakeWrist extends SubsystemBase {
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
+
+        DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
     }
 
     // encoder gives value in radians
@@ -103,6 +107,9 @@ public class IntakeWrist extends SubsystemBase {
             goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when
                                                                  // enabling
             state = State.IDLE;
+            zeroed = true;
+
+            DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
         });
     }
 
@@ -141,11 +148,11 @@ public class IntakeWrist extends SubsystemBase {
     public void periodic() {
         DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
 
-        if (!DriverStation.isEnabled()) {
+        if(!DriverStation.isEnabled() || !zeroed) {
             motor.setVoltage(0.0);
             return;
         }
-
+        
         if (state == State.JIGGLING) {
             double jiggleAngle = (Timer.getFPGATimestamp()
                     % IntakeConstants.Wrist.JIGGLE_FREQ_SEC < IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2)
@@ -158,6 +165,7 @@ public class IntakeWrist extends SubsystemBase {
             DogLog.log("IntakeWrist/GoalRad", goal);
             pid.setGoal(goal.in(Radians));
         }
+    
 
         double pidVolts = pid.calculate(getAngle().in(Radians));
         DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");

@@ -13,6 +13,7 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -40,14 +41,10 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final Angle minRotation = Degrees.of(-45);
-    private final Angle maxRotation = Degrees.of(45);
-
-    private boolean zeroed = false;
-
     private final DigitalInput photoelectric;
     private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
                                                                   // broken
+    private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -55,9 +52,9 @@ public class ShooterTurret extends SubsystemBase {
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = this.maxRotation.in(Rotations);
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = this.minRotation.in(Rotations);
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = TurretConstants.FORWARD_LIMIT.in(Rotations);
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.BACKWARD_LIMIT.in(Rotations);
 
         cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
 
@@ -71,6 +68,8 @@ public class ShooterTurret extends SubsystemBase {
         cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
         cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
         this.motor.getConfigurator().apply(cfg);
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
@@ -78,27 +77,70 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
+
+        DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
     }
 
+    /**
+     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
+     * nearest limit.
+     */
+    private static Angle normalizeToSafeRange(Angle angle) {
+        double deg = angle.in(Degrees);
+        double lo = TurretConstants.BACKWARD_LIMIT.in(Degrees);
+        double hi = TurretConstants.FORWARD_LIMIT.in(Degrees);
+
+        // Shift into range by adding/subtracting full rotations
+        while (deg > hi) {
+            deg -= 360.0;
+        }
+        while (deg < lo) {
+            deg += 360.0;
+        }
+
+        // If still out of range (shouldn't happen with a 360° window, but just in case)
+        if (deg > hi) {
+            deg = hi;
+        } else if (deg < lo) {
+            deg = lo;
+        }
+
+        return Degrees.of(deg);
+    }
+
+    /**
+     * Sets control for the turret to move to requested position
+     * Angle is measured from intake = 0 rotations, with clockwise positive
+     * @param pos Angle between -1 and 1 rotations
+     * @return runOnce command (does not wait for movement to terminate; use atTarget() for that)
+     */
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
-            if (!zeroed)
+            Angle safePos = normalizeToSafeRange(pos);
+            if (!zeroed) {
+                System.out.println("Turret not zeroed, ignoring request");
                 return;
-            DogLog.log("ShooterTurret/RequestedPosition", pos.in(Rotations));
-            System.out.println("request pos " + pos.in(Rotations));
-            this.targetAngle = pos;
-            this.motor.setControl(this.position.withPosition(pos));
+            }
+            this.targetAngle = safePos;
+            this.motor.setControl(this.position.withPosition(safePos));
         });
     }
 
     /**
-     * Directly set the turret target angle (for use by Shooter in periodic())
+     * Directly set the turret target angle (for use by Shooter in periodic()).
+     * Uses normalizeToSafeRange to wrap into valid turret range.
      */
     public void setAngle(Angle pos) {
         if (!zeroed)
             return;
-        this.targetAngle = pos;
-        this.motor.setControl(this.position.withPosition(pos));
+        Angle safePos = normalizeToSafeRange(pos);
+        this.targetAngle = safePos;
+        this.motor.setControl(this.position.withPosition(safePos));
+    }
+
+    public Angle getAngle() {
+        return motor.getPosition().getValue();
     }
 
     public void setFacing(Pose2d to) {
@@ -108,8 +150,6 @@ public class ShooterTurret extends SubsystemBase {
                 .minus(pose.getRotation());
         // TODO: Check if this normalizes between -180 to 180 correctly
         targetAngle = Rotations.of(angle.getRotations());
-
-        // this.motor.setControl(this.position.withPosition(angle.getRotations()));
     }
 
     public Command stop() {
@@ -119,9 +159,19 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
-        });
+        return startRun(
+                () -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+                    motor.getConfigurator().apply(cfg);
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+                    motor.getConfigurator().apply(cfg);
+                });
     }
 
     public Command zero() {
@@ -129,32 +179,24 @@ public class ShooterTurret extends SubsystemBase {
             System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
+            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         });
+    }
+
+    public boolean isZeroSensorGreen() {
+        boolean raw = photoelectric.get();
+        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
     }
 
     public boolean atTarget() {
         return motor.getPosition().getValue().isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE);
     }
 
-    public Angle getAngle() {
-        return motor.getPosition().getValue();
-    }
-
-    public boolean isZeroed() {
-        return zeroed;
-    }
-
     @Override
     public void periodic() {
         DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get() ? 1 : 0, "Boolean");
-        DogLog.log("ShooterTurret/AtTarget", atTarget() ? 1 : 0, "Boolean");
-        DogLog.log("ShooterTurret/Zeroed", zeroed);
-    }
-
-    public boolean isZeroSensorGreen() {
-        boolean raw = photoelectric.get();
-        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
+        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
+        DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
 
     /* sim */

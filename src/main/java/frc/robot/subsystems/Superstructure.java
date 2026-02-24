@@ -87,6 +87,7 @@ public class Superstructure extends SubsystemBase {
                 intakeWrist.requestPosition(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
+                runOnce(() -> isShooting = false),
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 

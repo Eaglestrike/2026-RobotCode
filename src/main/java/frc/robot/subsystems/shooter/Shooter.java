@@ -171,10 +171,8 @@ public class Shooter extends SubsystemBase {
         targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
                 ShooterConstants.HoodConstants.MIN_ANGLE,
                 ShooterConstants.HoodConstants.MAX_ANGLE);
-        targetTurretAngleDeg = MathUtil.clamp(
-                MathUtil.inputModulus(
-                        lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180),
-                -45, 45);
+        targetTurretAngleDeg = MathUtil.inputModulus(
+                lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees(), -180, 180);
         targetFlywheelVel = lastSolverResult.rpm();
 
         buildTrajectoryVisualization(shooterPos, robotYawRad);

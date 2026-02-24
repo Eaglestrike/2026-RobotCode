@@ -65,7 +65,7 @@ public class Climb extends SubsystemBase {
     });
 
     private ClimbConstants.ClimbState currentState = ClimbConstants.ClimbState.STOWED;
-
+    private boolean zeroed = false;
 
     public Climb() {
         // left motor config
@@ -96,6 +96,8 @@ public class Climb extends SubsystemBase {
         left.getConfigurator().apply(leftMotorConfigs);
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
+
+        DogLog.log("Climb/ClimbZeroed", zeroed);
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
@@ -144,6 +146,10 @@ public class Climb extends SubsystemBase {
     private Command moveTo(double position, TalonFX motor) {
         return runOnce(
                 () -> {
+                    if(!zeroed) {
+                        System.out.println("Climb not zeroed, ignoring moveTo command");
+                        return;
+                    }
                     motor.setControl(mmReq.withPosition(position).withSlot(0));
                 }).until(
                     () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
@@ -156,6 +162,8 @@ public class Climb extends SubsystemBase {
                     System.out.println("Zeroing Climb");
                     left.setPosition(ClimbConstants.LEFT_OFFSET);
                     right.setPosition(ClimbConstants.RIGHT_OFFSET);
+                    zeroed = true;
+                    DogLog.log("Climb/ClimbZeroed", zeroed);
                 });
     }
 

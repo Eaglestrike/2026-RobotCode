@@ -80,11 +80,11 @@ public final class ShooterConstants {
          */
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
 
-        /** In rotations of the turret — zero sensor is at back, so offset by 180° */
-        public static final double ENCODER_OFFSET = 0.5;
+        /** In rotations of the turret — zero sensor is at back, so offset by -180° */
+        public static final double ENCODER_OFFSET = -0.5;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
-        public static final double STOW_POSITION = 0.5;
+        public static final double STOW_POSITION = -0.5;
 
         public static final double GEAR_RATIO = 9.2;
 
@@ -99,10 +99,10 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0;
 
-        public static final double FORWARD_LIMIT = 0.125;   // 45°
-        public static final double BACKWARD_LIMIT = -0.125; // -45°
+        public static final Angle FORWARD_LIMIT = Degree.of(130.0);
+        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
 
-        public static final int PHOTOELECTRIC_DIO = 0;
+        public static final int PHOTOELECTRIC_DIO = 7;
     }
 
     public final class HoodConstants {
