@@ -19,7 +19,8 @@ import frc.robot.subsystems.shooter.solver.BallisticSolver.Vec3;
  * FRC 2026 Game Piece (FUEL) Specifications:
  * - Diameter: 5.91 inches (15 cm)
  * - Weight: 0.448–0.5 lbs (203–227 g)
- * - Material: High Density Polyurethane Foam (yellow, with FIRST/AndyMark logos)
+ * - Material: High Density Polyurethane Foam (yellow, with FIRST/AndyMark
+ * logos)
  */
 public class BallisticConstants {
 
@@ -75,13 +76,13 @@ public class BallisticConstants {
     }
 
     /** Low speed flywheel RPM - for close range shots */
-    public static final double LOW_SPEED_RPM = 3000.0;
+    public static final double LOW_SPEED_RPM = 1800.0;
 
     /** Medium speed flywheel RPM - for mid range shots */
-    public static final double MEDIUM_SPEED_RPM = 4000.0;
+    public static final double MEDIUM_SPEED_RPM = 3500.0;
 
     /** High speed flywheel RPM - for long range shots */
-    public static final double HIGH_SPEED_RPM = 5000.0;
+    public static final double HIGH_SPEED_RPM = 4500.0;
 
     /**
      * Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic
