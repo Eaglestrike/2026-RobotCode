@@ -136,7 +136,7 @@ public class BallisticClient {
         boolean success = payloadBuffer.get() != 0;
 
         double durationMs = (endTime - startTime) / 1_000_000.0;
-        System.out.printf("Response received in %.2f ms:\n", durationMs);
+        // System.out.printf("Response received in %.2f ms:\n", durationMs);
         // System.out.printf(" Azimuth: %.2f\n", azimuth);
         // System.out.printf(" Elevation: %.2f\n", elevation);
         // System.out.printf(" Time: %.2f\n", time);

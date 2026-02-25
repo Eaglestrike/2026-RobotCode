@@ -14,15 +14,16 @@ public class Vision extends SubsystemBase {
 
     private final Camera[] cameras = {
             new Camera(VisionConstants.LEFT_BACK_NAME,
-            VisionConstants.LEFT_BACK_TRANSFORM,
-            this::addVisionMeasurement),
+                    VisionConstants.LEFT_BACK_TRANSFORM,
+                    this::addVisionMeasurement),
             new Camera(VisionConstants.LEFT_LEFT_NAME,
-            VisionConstants.LEFT_LEFT_TRANSFORM,
-            this::addVisionMeasurement),
+                    VisionConstants.LEFT_LEFT_TRANSFORM,
+                    this::addVisionMeasurement),
             new Camera(VisionConstants.RIGHT_BACK_NAME, VisionConstants.RIGHT_BACK_TRANSFORM,
-                this::addVisionMeasurement),
-            new Camera(VisionConstants.RIGHT_RIGHT_NAME, VisionConstants.RIGHT_RIGHT_TRANSFORM,
-                this::addVisionMeasurement)
+                    this::addVisionMeasurement),
+            // new Camera(VisionConstants.RIGHT_RIGHT_NAME,
+            // VisionConstants.RIGHT_RIGHT_TRANSFORM,
+            // this::addVisionMeasurement)
     };
 
     public Vision(EagleSwerveDrivetrain drive) {

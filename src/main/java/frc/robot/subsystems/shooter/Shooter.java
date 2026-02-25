@@ -54,7 +54,6 @@ public class Shooter extends SubsystemBase {
     // Predicted trajectory for AdvantageScope 3D visualization
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
 
-
     // Background solver thread
     private final Thread solverThread;
     private volatile boolean solverRunning = true;
@@ -198,7 +197,7 @@ public class Shooter extends SubsystemBase {
             pendingSolverInput.set(null);
             lastSolverResult = null;
             predictedTrajectoryPoses = new Pose3d[0];
-            logValues();
+            // logValues();
             return;
         }
 
@@ -241,14 +240,14 @@ public class Shooter extends SubsystemBase {
         targetTurretAngleDeg = -(cachedFieldTurretDeg - robotPose.getRotation().getDegrees());
 
         // Build trajectory from CURRENT shooter position with CURRENT robot velocity
-        buildTrajectoryVisualization(shooterPos, fieldSpeeds);
+        // buildTrajectoryVisualization(shooterPos, fieldSpeeds);
 
         // Always command subsystems with cached results
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
         flywheels.setVelocity(targetFlywheelVel);
 
-        logValues();
+        // logValues();
     }
 
     // ================================================================
