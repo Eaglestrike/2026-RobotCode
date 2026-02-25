@@ -18,12 +18,21 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -46,7 +55,11 @@ import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.shooter.solver.BallisticSolver.SolverMode;
+import frc.robot.subsystems.vision.GamePieceDetector;
 import frc.robot.subsystems.vision.Vision;
+import frc.robot.commands.AutoCollectCommand;
+
+import com.pathplanner.lib.path.PathConstraints;
 
 public class RobotContainer {
         public static final double AXIS_DEADBAND = 0.02;
@@ -98,9 +111,31 @@ public class RobotContainer {
                         feeder, hopper);
         private final Vision vision = new Vision(drivetrain);
 
+        // TODO: Update camera name and class ID to match PhotonVision GUI
+        private static final String GAME_PIECE_CAMERA_NAME = "FrontCamera";
+        private static final int FUEL_CLASS_ID = 0;
+
+        private final GamePieceDetector gamePieceDetector = new GamePieceDetector(
+                        GAME_PIECE_CAMERA_NAME, FUEL_CLASS_ID);
+
+        // AutoCollect target — web dashboard writes, robot reads
+        private final NetworkTable collectTable = NetworkTableInstance.getDefault().getTable("AutoCollect");
+        private final DoubleSubscriber collectTargetX = collectTable.getDoubleTopic("TargetX")
+                        .subscribe(8.27);
+        private final DoubleSubscriber collectTargetY = collectTable.getDoubleTopic("TargetY")
+                        .subscribe(4.0);
+        private final DoublePublisher robotPoseXPub = collectTable.getDoubleTopic("RobotX").publish();
+        private final DoublePublisher robotPoseYPub = collectTable.getDoubleTopic("RobotY").publish();
+        private final DoublePublisher robotHeadingPub = collectTable.getDoubleTopic("RobotHeading").publish();
+        private final DoubleArrayPublisher ballsXPub = collectTable.getDoubleArrayTopic("BallsX").publish();
+        private final DoubleArrayPublisher ballsYPub = collectTable.getDoubleArrayTopic("BallsY").publish();
+        private final BooleanSubscriber goSub = collectTable.getBooleanTopic("Go").subscribe(false);
+        private final BooleanPublisher goPub = collectTable.getBooleanTopic("Go").publish();
+
         public RobotContainer() {
-                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-                                Rotation2d.fromDegrees(180)));
+                gamePieceDetector.setRobotPoseSupplier(() -> drivetrain.getState().Pose);
+
+                drivetrain.resetPose(new Pose2d(14.0, 4.0, Rotation2d.fromDegrees(180)));
                 configureBindings();
 
                 NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
@@ -119,16 +154,28 @@ public class RobotContainer {
                                 drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
                 NamedCommands.registerCommand("AlignRightTower",
                                 drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
+                NamedCommands.registerCommand("AutoCollect",
+                                autoCollect(new Pose2d(8.27, 4.0, Rotation2d.fromDegrees(0))));
+
+                // Dashboard "Go" button → start AutoCollect
+                new Trigger(() -> goSub.get())
+                                .onTrue(Commands.runOnce(() -> {
+                                        goPub.set(false);
+                                        CommandScheduler.getInstance().schedule(autoCollectFromDashboard());
+                                }));
 
                 autoChooser = AutoBuilder.buildAutoChooser("Tests");
                 SmartDashboard.putData("Auto Chooser", autoChooser);
 
-                solverModeChooser.setDefaultOption("CLIENT (server)", SolverMode.CLIENT);
-                solverModeChooser.addOption("LOCAL (roboRIO)", SolverMode.LOCAL);
-                SmartDashboard.putData("Solver Mode", solverModeChooser);
-                new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
-                                .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))
-                                                .ignoringDisable(true));
+                if (!RobotBase.isSimulation()) {
+                        solverModeChooser.setDefaultOption("CLIENT (server)", SolverMode.CLIENT);
+                        solverModeChooser.addOption("LOCAL (roboRIO)", SolverMode.LOCAL);
+                        SmartDashboard.putData("Solver Mode", solverModeChooser);
+                        new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
+                                        .onTrue(Commands.runOnce(() -> shooter.setSolverMode(
+                                                        solverModeChooser.getSelected()))
+                                                        .ignoringDisable(true));
+                }
         }
 
         private void configureBindings() {
@@ -270,6 +317,49 @@ public class RobotContainer {
 
         public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
                 return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);
+        }
+
+        /**
+         * Publishes robot pose to NT for the web dashboard.
+         * Call this from robotPeriodic or a default command.
+         */
+        public void publishDashboardData() {
+                gamePieceDetector.periodic();
+
+                Pose2d pose = drivetrain.getState().Pose;
+                robotPoseXPub.set(pose.getX());
+                robotPoseYPub.set(pose.getY());
+                robotHeadingPub.set(pose.getRotation().getDegrees());
+
+                List<Translation2d> balls = gamePieceDetector.getDetectedPositions();
+                double[] bx = new double[balls.size()];
+                double[] by = new double[balls.size()];
+                for (int i = 0; i < balls.size(); i++) {
+                        bx[i] = balls.get(i).getX();
+                        by[i] = balls.get(i).getY();
+                }
+                ballsXPub.set(bx);
+                ballsYPub.set(by);
+        }
+
+        /**
+         * Creates an AutoCollect command using the target point set from the
+         * web dashboard (via NetworkTables).
+         */
+        public Command autoCollectFromDashboard() {
+                Pose2d target = new Pose2d(
+                                collectTargetX.get(),
+                                collectTargetY.get(),
+                                new Rotation2d());
+                return new AutoCollectCommand(drivetrain, gamePieceDetector, superstructure, target);
+        }
+
+        public Command autoCollect(Pose2d targetPose) {
+                return new AutoCollectCommand(drivetrain, gamePieceDetector, superstructure, targetPose);
+        }
+
+        public Command autoCollect(Pose2d targetPose, PathConstraints constraints) {
+                return new AutoCollectCommand(drivetrain, gamePieceDetector, superstructure, targetPose, constraints);
         }
 
         public Command getAutonomousCommand() {

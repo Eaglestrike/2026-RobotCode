@@ -15,6 +15,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -80,12 +81,16 @@ public class Shooter extends SubsystemBase {
         turret = new ShooterTurret(drive);
         hood = new ShooterHood();
         flywheels = new ShooterFlywheels();
-        solver = new BallisticSolver(solverMode);
 
-        solverThread = new Thread(this::solverLoop, "BallisticSolver");
-        solverThread.setDaemon(true);
-        solverThread.start();
-
+        if (RobotBase.isSimulation()) {
+            solver = new BallisticSolver(SolverMode.LOCAL);
+            solverThread = null;
+        } else {
+            solver = new BallisticSolver(solverMode);
+            solverThread = new Thread(this::solverLoop, "BallisticSolver");
+            solverThread.setDaemon(true);
+            solverThread.start();
+        }
     }
 
     private static final long RECONNECT_INTERVAL_MS = 3000;
@@ -193,6 +198,8 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (RobotBase.isSimulation()) return;
+
         if (targetPose == null) {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             pendingSolverInput.set(null);

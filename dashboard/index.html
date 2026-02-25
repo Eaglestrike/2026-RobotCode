@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoCollect Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f0f1a;color:#e0e0e0;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.toolbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#1a1a2e;border-bottom:1px solid #2a2a4a;flex-shrink:0;flex-wrap:wrap}
+.toolbar label{font-size:13px;color:#888}
+.toolbar input{background:#0f0f1a;border:1px solid #3a3a5a;color:#e0e0e0;padding:5px 10px;border-radius:4px;font-size:13px;width:160px}
+.toolbar button{padding:5px 14px;border:none;border-radius:4px;font-size:13px;cursor:pointer;font-weight:600;transition:background .2s}
+.btn-connect{background:#2563eb;color:#fff}
+.btn-connect:hover{background:#1d4ed8}
+.btn-connect.connected{background:#dc2626}
+.btn-connect.connected:hover{background:#b91c1c}
+.btn-clear{background:#4a4a6a;color:#e0e0e0}
+.btn-clear:hover{background:#5a5a7a}
+.btn-go{background:#16a34a;color:#fff;padding:6px 20px;font-size:14px}
+.btn-go:hover{background:#15803d}
+.btn-go:disabled{background:#374151;color:#6b7280;cursor:not-allowed}
+.btn-stop{background:#dc2626;color:#fff;padding:6px 20px;font-size:14px}
+.btn-stop:hover{background:#b91c1c}
+.status{font-size:12px;padding:3px 10px;border-radius:10px;font-weight:600}
+.status.disconnected{background:#7f1d1d;color:#fca5a5}
+.status.connected{background:#14532d;color:#86efac}
+.status.connecting{background:#78350f;color:#fde68a}
+.info-panel{display:flex;gap:20px;font-size:12px;color:#aaa;margin-left:auto}
+.info-panel .val{color:#e0e0e0;font-weight:600;font-family:'SF Mono',monospace}
+.canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
+canvas{background:#1a3a1a;border-radius:8px;cursor:crosshair;box-shadow:0 0 30px rgba(0,0,0,.5)}
+.footer{display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:#1a1a2e;border-top:1px solid #2a2a4a;font-size:11px;color:#666;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <label>Host:</label>
+  <input id="hostInput" value="localhost" placeholder="e.g. 10.TE.AM.2">
+  <button id="connectBtn" class="btn-connect" onclick="toggleConnection()">连接</button>
+  <span id="statusBadge" class="status disconnected">未连接</span>
+
+  <button id="goBtn" class="btn-go" onclick="startCollect()" disabled>▶ 启动导航</button>
+
+  <div class="info-panel">
+    <span>机器人: <span class="val" id="robotInfo">-</span></span>
+    <span>球数: <span class="val" id="ballInfo">0</span></span>
+    <span>目标: <span class="val" id="targetInfo">点击场地设置</span></span>
+  </div>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="field"></canvas>
+</div>
+
+<div class="footer">
+  <span>AutoCollect Dashboard — NT4 WebSocket | 鼠标坐标: <span id="mouseCoords">-</span></span>
+  <button class="btn-clear" onclick="clearTarget()">清除目标点</button>
+</div>
+
+<script>
+// ============================================================
+// Minimal MessagePack Encoder / Decoder (NT4 subset)
+// ============================================================
+const MsgPack = (() => {
+  function decode(buf, offset = 0) {
+    const view = new DataView(buf instanceof ArrayBuffer ? buf : buf.buffer, buf.byteOffset || 0);
+    let pos = offset;
+
+    function read() {
+      const b = view.getUint8(pos++);
+      if (b <= 0x7f) return b;
+      if (b >= 0xe0) return b - 256;
+      if (b >= 0x90 && b <= 0x9f) { const n=b&0xf,a=[]; for(let i=0;i<n;i++) a.push(read()); return a; }
+      if (b >= 0x80 && b <= 0x8f) { const n=b&0xf,m={}; for(let i=0;i<n;i++){m[read()]=read();} return m; }
+      if (b >= 0xa0 && b <= 0xbf) { const n=b&0x1f; const s=new TextDecoder().decode(new Uint8Array(view.buffer,view.byteOffset+pos,n)); pos+=n; return s; }
+      switch(b){
+        case 0xc0: return null;
+        case 0xc2: return false;
+        case 0xc3: return true;
+        case 0xca: { const v=view.getFloat32(pos); pos+=4; return v; }
+        case 0xcb: { const v=view.getFloat64(pos); pos+=8; return v; }
+        case 0xcc: return view.getUint8(pos++);
+        case 0xcd: { const v=view.getUint16(pos); pos+=2; return v; }
+        case 0xce: { const v=view.getUint32(pos); pos+=4; return v; }
+        case 0xcf: { const hi=view.getUint32(pos),lo=view.getUint32(pos+4); pos+=8; return hi*0x100000000+lo; }
+        case 0xd0: return view.getInt8(pos++);
+        case 0xd1: { const v=view.getInt16(pos); pos+=2; return v; }
+        case 0xd2: { const v=view.getInt32(pos); pos+=4; return v; }
+        case 0xd3: { const hi=view.getInt32(pos),lo=view.getUint32(pos+4); pos+=8; return hi*0x100000000+lo; }
+        case 0xd9: { const n=view.getUint8(pos++); const s=new TextDecoder().decode(new Uint8Array(view.buffer,view.byteOffset+pos,n)); pos+=n; return s; }
+        case 0xda: { const n=view.getUint16(pos); pos+=2; const s=new TextDecoder().decode(new Uint8Array(view.buffer,view.byteOffset+pos,n)); pos+=n; return s; }
+        case 0xdb: { const n=view.getUint32(pos); pos+=4; const s=new TextDecoder().decode(new Uint8Array(view.buffer,view.byteOffset+pos,n)); pos+=n; return s; }
+        case 0xdc: { const n=view.getUint16(pos); pos+=2; const a=[]; for(let i=0;i<n;i++) a.push(read()); return a; }
+        case 0xdd: { const n=view.getUint32(pos); pos+=4; const a=[]; for(let i=0;i<n;i++) a.push(read()); return a; }
+        case 0xde: { const n=view.getUint16(pos); pos+=2; const m={}; for(let i=0;i<n;i++){m[read()]=read();} return m; }
+        case 0xdf: { const n=view.getUint32(pos); pos+=4; const m={}; for(let i=0;i<n;i++){m[read()]=read();} return m; }
+        case 0xc4: { const n=view.getUint8(pos++); const d=new Uint8Array(view.buffer,view.byteOffset+pos,n); pos+=n; return d; }
+        case 0xc5: { const n=view.getUint16(pos); pos+=2; const d=new Uint8Array(view.buffer,view.byteOffset+pos,n); pos+=n; return d; }
+        default: return undefined;
+      }
+    }
+    const result = read();
+    return { value: result, offset: pos };
+  }
+
+  function decodeMulti(buf) {
+    const results = [];
+    const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    let off = 0;
+    while (off < bytes.length) {
+      const r = decode(bytes, off);
+      results.push(r.value);
+      off = r.offset;
+    }
+    return results;
+  }
+
+  function encode(value) {
+    const parts = [];
+    function write(v) {
+      if (v === null || v === undefined) { parts.push(new Uint8Array([0xc0])); return; }
+      if (v === true) { parts.push(new Uint8Array([0xc3])); return; }
+      if (v === false) { parts.push(new Uint8Array([0xc2])); return; }
+      if (typeof v === 'number') {
+        if (Number.isInteger(v) && v >= 0 && v <= 127) {
+          parts.push(new Uint8Array([v]));
+        } else if (Number.isInteger(v) && v >= -32 && v < 0) {
+          parts.push(new Uint8Array([(v + 256) & 0xff]));
+        } else if (Number.isInteger(v) && v >= 0 && v <= 0xffff) {
+          const b = new ArrayBuffer(3); const d = new DataView(b);
+          d.setUint8(0, 0xcd); d.setUint16(1, v);
+          parts.push(new Uint8Array(b));
+        } else if (Number.isInteger(v) && v >= 0 && v <= 0xffffffff) {
+          const b = new ArrayBuffer(5); const d = new DataView(b);
+          d.setUint8(0, 0xce); d.setUint32(1, v);
+          parts.push(new Uint8Array(b));
+        } else {
+          const b = new ArrayBuffer(9); const d = new DataView(b);
+          d.setUint8(0, 0xcb); d.setFloat64(1, v);
+          parts.push(new Uint8Array(b));
+        }
+        return;
+      }
+      if (typeof v === 'string') {
+        const enc = new TextEncoder().encode(v);
+        if (enc.length <= 31) {
+          parts.push(new Uint8Array([0xa0 | enc.length]));
+        } else if (enc.length <= 0xff) {
+          parts.push(new Uint8Array([0xd9, enc.length]));
+        } else {
+          const b = new ArrayBuffer(3); const d = new DataView(b);
+          d.setUint8(0, 0xda); d.setUint16(1, enc.length);
+          parts.push(new Uint8Array(b));
+        }
+        parts.push(enc);
+        return;
+      }
+      if (Array.isArray(v)) {
+        if (v.length <= 15) {
+          parts.push(new Uint8Array([0x90 | v.length]));
+        } else {
+          const b = new ArrayBuffer(3); const d = new DataView(b);
+          d.setUint8(0, 0xdc); d.setUint16(1, v.length);
+          parts.push(new Uint8Array(b));
+        }
+        for (const item of v) write(item);
+        return;
+      }
+      if (typeof v === 'object') {
+        const keys = Object.keys(v);
+        if (keys.length <= 15) {
+          parts.push(new Uint8Array([0x80 | keys.length]));
+        } else {
+          const b = new ArrayBuffer(3); const d = new DataView(b);
+          d.setUint8(0, 0xde); d.setUint16(1, keys.length);
+          parts.push(new Uint8Array(b));
+        }
+        for (const k of keys) { write(k); write(v[k]); }
+      }
+    }
+    write(value);
+    let total = 0;
+    for (const p of parts) total += p.length;
+    const result = new Uint8Array(total);
+    let off = 0;
+    for (const p of parts) { result.set(p, off); off += p.length; }
+    return result;
+  }
+
+  return { decode, decodeMulti, encode };
+})();
+
+// ============================================================
+// NT4 WebSocket Client
+// ============================================================
+const NT4_SUBPROTOCOL = 'v4.1.networktables.first.wpi.edu';
+const NT4_TYPE_BOOLEAN = 0;
+const NT4_TYPE_DOUBLE = 1;
+const NT4_TYPE_DOUBLE_ARRAY = 17;
+
+let ws = null;
+let connected = false;
+let topicIdToName = {};
+let nextSubUid = 1;
+let nextPubUid = 100;
+const pubUids = {};
+
+// NT state
+const ntState = {
+  robotX: 0, robotY: 0, robotHeading: 0,
+  ballsX: [], ballsY: [],
+  targetX: null, targetY: null,
+};
+
+function toggleConnection() {
+  if (connected || (ws && ws.readyState === WebSocket.CONNECTING)) {
+    disconnect();
+  } else {
+    connect();
+  }
+}
+
+function connect() {
+  const host = document.getElementById('hostInput').value.trim() || 'localhost';
+  const url = `ws://${host}:5810/nt/ws`;
+
+  setStatus('connecting', '连接中...');
+
+  try {
+    ws = new WebSocket(url, [NT4_SUBPROTOCOL]);
+  } catch (e) {
+    setStatus('disconnected', '连接失败');
+    return;
+  }
+
+  ws.binaryType = 'arraybuffer';
+
+  ws.onopen = () => {
+    connected = true;
+    topicIdToName = {};
+    setStatus('connected', '已连接');
+
+    // Subscribe to all AutoCollect topics (prefix match)
+    ws.send(JSON.stringify([{
+      method: 'subscribe',
+      params: {
+        topics: ['/AutoCollect/'],
+        subuid: nextSubUid++,
+        options: { periodic: 0.05, prefix: true }
+      }
+    }]));
+
+    // Declare publications for TargetX and TargetY
+    pubUids.targetX = nextPubUid++;
+    pubUids.targetY = nextPubUid++;
+
+    pubUids.go = nextPubUid++;
+
+    ws.send(JSON.stringify([
+      { method: 'publish', params: { name: '/AutoCollect/TargetX', pubuid: pubUids.targetX, type: 'double', properties: {} } },
+      { method: 'publish', params: { name: '/AutoCollect/TargetY', pubuid: pubUids.targetY, type: 'double', properties: {} } },
+      { method: 'publish', params: { name: '/AutoCollect/Go', pubuid: pubUids.go, type: 'boolean', properties: {} } },
+    ]));
+
+    if (ntState.targetX !== null) {
+      publishTarget(ntState.targetX, ntState.targetY);
+    }
+    updateGoButton();
+  };
+
+  ws.onmessage = (event) => {
+    if (typeof event.data === 'string') {
+      const msgs = JSON.parse(event.data);
+      console.log('[NT4 text]', msgs);
+      handleTextMessage(msgs);
+    } else {
+      handleBinaryMessage(event.data);
+    }
+  };
+
+  ws.onclose = () => {
+    connected = false;
+    setStatus('disconnected', '未连接');
+  };
+
+  ws.onerror = () => {
+    connected = false;
+    setStatus('disconnected', '连接错误');
+  };
+}
+
+function disconnect() {
+  if (ws) {
+    ws.close();
+    ws = null;
+  }
+  connected = false;
+  setStatus('disconnected', '未连接');
+  updateGoButton();
+}
+
+function handleTextMessage(messages) {
+  for (const msg of messages) {
+    if (msg.method === 'announce') {
+      const p = msg.params;
+      topicIdToName[p.id] = p.name;
+    } else if (msg.method === 'unannounce') {
+      delete topicIdToName[msg.params.id];
+    }
+  }
+}
+
+function handleBinaryMessage(data) {
+  let entries;
+  try {
+    entries = MsgPack.decodeMulti(new Uint8Array(data));
+  } catch (e) {
+    console.error('[NT4 decode error]', e);
+    return;
+  }
+
+  for (const entry of entries) {
+    if (!Array.isArray(entry) || entry.length < 4) continue;
+    const [topicId, , , value] = entry;
+    const name = topicIdToName[topicId];
+    if (!name) continue;
+
+    const key = name.replace('/AutoCollect/', '');
+    switch (key) {
+      case 'RobotX': ntState.robotX = value; break;
+      case 'RobotY': ntState.robotY = value; break;
+      case 'RobotHeading': ntState.robotHeading = value; break;
+      case 'BallsX': ntState.ballsX = Array.isArray(value) ? value : []; break;
+      case 'BallsY': ntState.ballsY = Array.isArray(value) ? value : []; break;
+    }
+  }
+}
+
+function publishTarget(x, y) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  // [pubuid, timestamp_us, type_index, value]
+  const msgX = MsgPack.encode([pubUids.targetX, 0, NT4_TYPE_DOUBLE, x]);
+  const msgY = MsgPack.encode([pubUids.targetY, 0, NT4_TYPE_DOUBLE, y]);
+  const combined = new Uint8Array(msgX.length + msgY.length);
+  combined.set(msgX, 0);
+  combined.set(msgY, msgX.length);
+  ws.send(combined.buffer);
+}
+
+function clearTarget() {
+  ntState.targetX = null;
+  ntState.targetY = null;
+  document.getElementById('targetInfo').textContent = '点击场地设置';
+  updateGoButton();
+}
+
+function startCollect() {
+  if (!connected || ntState.targetX === null) return;
+  const msg = MsgPack.encode([pubUids.go, 0, NT4_TYPE_BOOLEAN, true]);
+  ws.send(msg.buffer);
+}
+
+function updateGoButton() {
+  const btn = document.getElementById('goBtn');
+  btn.disabled = !connected || ntState.targetX === null;
+}
+
+// ============================================================
+// Field Rendering
+// ============================================================
+const FIELD_W = 16.54;
+const FIELD_H = 8.21;
+const ROBOT_SIZE = 0.45;
+const BALL_RADIUS_PX = 6;
+
+const canvas = document.getElementById('field');
+const ctx = canvas.getContext('2d');
+let scale = 1;
+let offsetX = 0, offsetY = 0;
+
+function resizeCanvas() {
+  const wrap = canvas.parentElement;
+  const maxW = wrap.clientWidth - 24;
+  const maxH = wrap.clientHeight - 24;
+  const aspect = FIELD_W / FIELD_H;
+
+  let w, h;
+  if (maxW / maxH > aspect) {
+    h = maxH;
+    w = h * aspect;
+  } else {
+    w = maxW;
+    h = w / aspect;
+  }
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  scale = (w * dpr) / FIELD_W;
+  offsetX = 0;
+  offsetY = 0;
+}
+
+function fieldToCanvas(fx, fy) {
+  return [fx * scale + offsetX, (FIELD_H - fy) * scale + offsetY];
+}
+
+function canvasToField(cx, cy) {
+  const dpr = window.devicePixelRatio || 1;
+  return [cx * dpr / scale, FIELD_H - (cy * dpr / scale)];
+}
+
+function drawField() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Field background
+  ctx.fillStyle = '#1e4d2b';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid lines (1m spacing)
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= FIELD_W; x++) {
+    const [cx] = fieldToCanvas(x, 0);
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+  }
+  for (let y = 0; y <= FIELD_H; y++) {
+    const [, cy] = fieldToCanvas(0, y);
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(w, cy); ctx.stroke();
+  }
+
+  // Field border
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, w - 2, h - 2);
+
+  // Center line
+  const [cx] = fieldToCanvas(FIELD_W / 2, 0);
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, h); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Coordinate labels
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = `${Math.max(10, scale * 0.3)}px monospace`;
+  ctx.textAlign = 'center';
+  for (let x = 0; x <= FIELD_W; x += 2) {
+    const [px, py] = fieldToCanvas(x, 0);
+    ctx.fillText(x + 'm', px, py - 4);
+  }
+  ctx.textAlign = 'left';
+  for (let y = 0; y <= FIELD_H; y += 2) {
+    const [px, py] = fieldToCanvas(0, y);
+    ctx.fillText(y + 'm', px + 4, py);
+  }
+}
+
+function drawRobot(x, y, headingDeg) {
+  const [cx, cy] = fieldToCanvas(x, y);
+  const headingRad = -headingDeg * Math.PI / 180; // canvas Y is inverted
+  const size = ROBOT_SIZE * scale;
+  const half = size / 2;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(headingRad);
+
+  // Robot body
+  ctx.fillStyle = 'rgba(37,99,235,0.6)';
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 2;
+  ctx.fillRect(-half, -half, size, size);
+  ctx.strokeRect(-half, -half, size, size);
+
+  // Heading arrow
+  ctx.fillStyle = '#60a5fa';
+  ctx.beginPath();
+  ctx.moveTo(half + 6, 0);
+  ctx.lineTo(half - 4, -8);
+  ctx.lineTo(half - 4, 8);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawBalls(ballsX, ballsY) {
+  const count = Math.min(ballsX.length, ballsY.length);
+  for (let i = 0; i < count; i++) {
+    const [cx, cy] = fieldToCanvas(ballsX[i], ballsY[i]);
+
+    // Glow
+    ctx.beginPath();
+    ctx.arc(cx, cy, BALL_RADIUS_PX + 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(251,146,60,0.25)';
+    ctx.fill();
+
+    // Ball
+    ctx.beginPath();
+    ctx.arc(cx, cy, BALL_RADIUS_PX, 0, Math.PI * 2);
+    ctx.fillStyle = '#fb923c';
+    ctx.strokeStyle = '#fdba74';
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawTarget(x, y) {
+  const [cx, cy] = fieldToCanvas(x, y);
+  const r = 12;
+
+  // Crosshair
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+
+  ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r); ctx.stroke();
+
+  // Circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.7, 0, Math.PI * 2);
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Inner dot
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = '#ef4444';
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle = '#fca5a5';
+  ctx.font = `${Math.max(11, scale * 0.3)}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(`(${x.toFixed(2)}, ${y.toFixed(2)})`, cx, cy - r - 6);
+}
+
+function drawPathLine(x1, y1, x2, y2) {
+  const [cx1, cy1] = fieldToCanvas(x1, y1);
+  const [cx2, cy2] = fieldToCanvas(x2, y2);
+
+  ctx.strokeStyle = 'rgba(239,68,68,0.3)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath();
+  ctx.moveTo(cx1, cy1);
+  ctx.lineTo(cx2, cy2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function render() {
+  drawField();
+
+  // Path from robot to target
+  if (ntState.targetX !== null) {
+    drawPathLine(ntState.robotX, ntState.robotY, ntState.targetX, ntState.targetY);
+  }
+
+  // Detected balls
+  drawBalls(ntState.ballsX, ntState.ballsY);
+
+  // Robot
+  drawRobot(ntState.robotX, ntState.robotY, ntState.robotHeading);
+
+  // Target
+  if (ntState.targetX !== null) {
+    drawTarget(ntState.targetX, ntState.targetY);
+  }
+
+  // Update info panels
+  document.getElementById('robotInfo').textContent =
+    `(${ntState.robotX.toFixed(2)}, ${ntState.robotY.toFixed(2)}) ${ntState.robotHeading.toFixed(1)}°`;
+  document.getElementById('ballInfo').textContent =
+    Math.min(ntState.ballsX.length, ntState.ballsY.length).toString();
+
+  requestAnimationFrame(render);
+}
+
+function setStatus(state, text) {
+  const badge = document.getElementById('statusBadge');
+  const btn = document.getElementById('connectBtn');
+  badge.className = 'status ' + state;
+  badge.textContent = text;
+  btn.className = 'btn-connect' + (state === 'connected' ? ' connected' : '');
+  btn.textContent = state === 'connected' ? '断开' : '连接';
+}
+
+// ============================================================
+// Event Handlers
+// ============================================================
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const [fx, fy] = canvasToField(e.clientX - rect.left, e.clientY - rect.top);
+
+  if (fx >= 0 && fx <= FIELD_W && fy >= 0 && fy <= FIELD_H) {
+    ntState.targetX = Math.round(fx * 100) / 100;
+    ntState.targetY = Math.round(fy * 100) / 100;
+    document.getElementById('targetInfo').textContent =
+      `(${ntState.targetX.toFixed(2)}, ${ntState.targetY.toFixed(2)})`;
+    publishTarget(ntState.targetX, ntState.targetY);
+    updateGoButton();
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const [fx, fy] = canvasToField(e.clientX - rect.left, e.clientY - rect.top);
+  if (fx >= 0 && fx <= FIELD_W && fy >= 0 && fy <= FIELD_H) {
+    document.getElementById('mouseCoords').textContent =
+      `(${fx.toFixed(2)}, ${fy.toFixed(2)})`;
+  } else {
+    document.getElementById('mouseCoords').textContent = '-';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  document.getElementById('mouseCoords').textContent = '-';
+});
+
+window.addEventListener('resize', resizeCanvas);
+
+// ============================================================
+// Init
+// ============================================================
+resizeCanvas();
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

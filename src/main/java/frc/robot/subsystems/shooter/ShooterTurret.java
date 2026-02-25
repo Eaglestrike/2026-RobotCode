@@ -202,6 +202,7 @@ public class ShooterTurret extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return;
         DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
         DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
         DogLog.log("ShooterTurret/AtTarget", atTarget());
@@ -219,20 +220,6 @@ public class ShooterTurret extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-        var talonFXSim = motor.getSimState();
-        talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
-        var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-        DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
-
-        sim.setInputVoltage(motorVoltage.in(Volts));
-        sim.update(0.020);
-
-        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
-        talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterTurret/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
-
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-
     }
 
     public Pose3d getComponentPose3d() {

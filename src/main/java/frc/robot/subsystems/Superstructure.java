@@ -133,6 +133,8 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return;
+
         if (currentMode == ShootMode.FERRY) {
             shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
         } else {
@@ -163,12 +165,5 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-        DogLog.log("Sim/ComponentPoses", new Pose3d[] {
-                new Pose3d(0, 0, 0, new Rotation3d()),
-                shooter.getTurret().getComponentPose3d(),
-                shooter.getHood().getComponentPose3d(shooter.getTurret().getComponentPose3d()),
-                new Pose3d(0, 0, 0, new Rotation3d()),
-                new Pose3d(0, 0, 0, new Rotation3d()),
-        });
     }
 }

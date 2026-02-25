@@ -131,6 +131,7 @@ public class ShooterHood extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return;
         DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
         DogLog.log("ShooterHood/AtTarget", atTarget() ? 1 : 0, "Boolean");
     }
@@ -149,16 +150,6 @@ public class ShooterHood extends SubsystemBase {
 
     @Override
     public void simulationPeriodic() {
-        var talonFXSim = motor.getSimState();
-        talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
-        var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-
-        sim.setInputVoltage(motorVoltage.in(Volts));
-        sim.update(0.020);
-
-        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET));
-        talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {

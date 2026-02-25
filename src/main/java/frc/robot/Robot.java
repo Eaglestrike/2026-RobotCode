@@ -18,6 +18,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
+import com.pathplanner.lib.commands.PathfindingCommand;
+
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
@@ -32,6 +34,7 @@ public class Robot extends TimedRobot {
         .withLogExtras(false));
     cleanupOldLogs();
     m_robotContainer = new RobotContainer();
+    PathfindingCommand.warmupCommand().schedule();
   }
 
   private void cleanupOldLogs() {
@@ -59,6 +62,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+    m_robotContainer.publishDashboardData();
   }
 
   @Override

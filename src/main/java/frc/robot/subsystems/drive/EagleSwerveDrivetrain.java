@@ -240,25 +240,33 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         try {
             var config = RobotConfig.fromGUISettings();
             AutoBuilder.configure(
-                    () -> getState().Pose, // Supplier of current robot pose
-                    this::resetPose, // Consumer for seeding pose against auto
-                    () -> getState().Speeds, // Supplier of current robot speeds
-                    // Consumer of ChassisSpeeds and feedforwards to drive the robot
-                    (speeds, feedforwards) -> setControl(
-                            m_pathApplyRobotSpeeds.withSpeeds(speeds)
-                                    .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
-                                    .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons())),
+                    () -> getState().Pose,
+                    this::resetPose,
+                    () -> getState().Speeds,
+                    (speeds, feedforwards) -> {
+                        DogLog.log("AutoPath/vx", speeds.vxMetersPerSecond);
+                        DogLog.log("AutoPath/vy", speeds.vyMetersPerSecond);
+                        DogLog.log("AutoPath/omega", speeds.omegaRadiansPerSecond);
+                        setControl(
+                                m_pathApplyRobotSpeeds.withSpeeds(speeds)
+                                        .withWheelForceFeedforwardsX(feedforwards.robotRelativeForcesXNewtons())
+                                        .withWheelForceFeedforwardsY(feedforwards.robotRelativeForcesYNewtons()));
+                    },
                     new PPHolonomicDriveController(
-                            // PID constants for translation
                             new PIDConstants(5, 0, 0),
-                            // PID constants for rotation
                             new PIDConstants(3, 0, 0)),
                     config,
-                    // Assume the path needs to be flipped for Red vs Blue, this is normally the
-                    // case
                     () -> DriverStation.getAlliance().orElse(Alliance.Blue) == Alliance.Red,
-                    this // Subsystem for requirements
+                    this
             );
+
+            com.pathplanner.lib.util.PathPlannerLogging.setLogActivePathCallback(poses -> {
+                Pose2d[] arr = poses.toArray(new Pose2d[0]);
+                DogLog.log("AutoPath/ActivePath", arr);
+            });
+            com.pathplanner.lib.util.PathPlannerLogging.setLogTargetPoseCallback(pose -> {
+                DogLog.log("AutoPath/TargetPose", new Pose2d[] { pose });
+            });
         } catch (Exception ex) {
             DriverStation.reportError("Failed to load PathPlanner config and configure AutoBuilder",
                     ex.getStackTrace());
