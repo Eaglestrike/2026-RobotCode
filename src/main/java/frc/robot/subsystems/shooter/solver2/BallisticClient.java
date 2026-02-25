@@ -60,8 +60,13 @@ public class BallisticClient {
     private SocketChannel channel;
 
     public BallisticClient(String hostname, int port) throws IOException {
-        channel = SocketChannel.open(new InetSocketAddress(hostname, port));
+        this(hostname, port, 2000);
+    }
+
+    public BallisticClient(String hostname, int port, int timeoutMs) throws IOException {
+        channel = SocketChannel.open();
         channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+        channel.socket().connect(new InetSocketAddress(hostname, port), timeoutMs);
         System.out.println("Connected to ballistic server at " + hostname + ":" + port);
     }
 

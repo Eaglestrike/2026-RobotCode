@@ -126,15 +126,7 @@ public class BallisticSolver implements ShooterSolver {
         this.mode = mode;
 
         if (mode == SolverMode.CLIENT) {
-            try {
-                ballisticClient = new BallisticClient("10.1.14.11", 5805);
-                System.out.println("[BallisticSolver] Connected to remote server (CLIENT mode)");
-            } catch (IOException e) {
-                System.err.println("[BallisticSolver] Failed to connect to server: " + e.getMessage());
-                System.err.println("[BallisticSolver] Falling back to LOCAL mode");
-                ballisticClient = null;
-                this.mode = SolverMode.LOCAL;
-            }
+            tryConnectClient();
         } else {
             ballisticClient = null;
             System.out.println("[BallisticSolver] Using LOCAL solver on roboRIO");
@@ -151,19 +143,39 @@ public class BallisticSolver implements ShooterSolver {
     }
 
     public void setMode(SolverMode newMode) {
-        if (newMode == mode) return;
-        if (newMode == SolverMode.CLIENT && ballisticClient == null) {
-            try {
-                ballisticClient = new BallisticClient("10.1.14.11", 5805);
-                mode = SolverMode.CLIENT;
-                System.out.println("[BallisticSolver] Switched to CLIENT mode");
-            } catch (IOException e) {
-                System.err.println("[BallisticSolver] Cannot switch to CLIENT: " + e.getMessage());
-            }
+        if (newMode == mode)
+            return;
+        mode = newMode;
+        System.out.println("[BallisticSolver] Mode set to " + mode);
+        if (newMode == SolverMode.CLIENT) {
+            tryConnectClient();
         } else {
-            mode = newMode;
-            System.out.println("[BallisticSolver] Switched to " + mode + " mode");
+            closeClient();
         }
+    }
+
+    /**
+     * Attempt to connect the TCP client. Called from setMode and reconnect logic.
+     */
+    public void tryConnectClient() {
+        if (ballisticClient != null)
+            return;
+        try {
+            ballisticClient = new BallisticClient("10.1.14.12", 5805);
+            System.out.println("[BallisticSolver] Connected to remote server");
+        } catch (IOException e) {
+            ballisticClient = null;
+            System.err.println("[BallisticSolver] Cannot connect to server: " + e.getMessage());
+        }
+    }
+
+    private void closeClient() {
+        ballisticClient = null;
+    }
+
+    /** Returns true if mode is CLIENT but the TCP connection is not established. */
+    public boolean needsReconnect() {
+        return mode == SolverMode.CLIENT && ballisticClient == null;
     }
 
     // ================================================================
@@ -189,8 +201,11 @@ public class BallisticSolver implements ShooterSolver {
         double rpm = BallisticConstants.getRPMForPreset(preset);
 
         // ---- 4. Solve based on mode ----
-        if (mode == SolverMode.CLIENT && ballisticClient != null) {
-            return solveViaClient(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget);
+        if (mode == SolverMode.CLIENT) {
+            if (ballisticClient != null) {
+                return solveViaClient(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget);
+            }
+            return ShotData.INVALID;
         }
         return solveLocally(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget, horizontalDistance);
     }
@@ -207,25 +222,19 @@ public class BallisticSolver implements ShooterSolver {
                 double shootingAngleDeg = Math.toDegrees(serverResult.elevation);
                 double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(serverResult.azimuth), -180, 180);
 
-                Translation3d predictedTarget = new Translation3d(
-                        actualTarget.getX() + relVelX * serverResult.time,
-                        actualTarget.getY() + relVelY * serverResult.time,
-                        actualTarget.getZ());
-
                 return new ShotData(
                         Rotation2d.fromDegrees(shootingAngleDeg),
                         Rotation2d.fromDegrees(turretAngleDeg),
                         rpm,
-                        predictedTarget,
+                        actualTarget,
                         serverResult.success);
             }
         } catch (Exception e) {
-            System.err.println("[BallisticSolver] Client error, falling back to LOCAL: " + e.getMessage());
-            mode = SolverMode.LOCAL;
+            System.err.println("[BallisticSolver] Client error, will reconnect: " + e.getMessage());
+            ballisticClient = null;
         }
 
-        double horizontalDistance = Math.sqrt(relX * relX + relY * relY);
-        return solveLocally(relX, relY, relZ, relVelX, relVelY, launchVelocity, rpm, actualTarget, horizontalDistance);
+        return ShotData.INVALID;
     }
 
     private ShotData solveLocally(double relX, double relY, double relZ,
@@ -241,16 +250,11 @@ public class BallisticSolver implements ShooterSolver {
             double shootingAngleDeg = Math.toDegrees(result.theta);
             double turretAngleDeg = MathUtil.inputModulus(Math.toDegrees(result.phi), -180, 180);
 
-            Translation3d predictedTarget = new Translation3d(
-                    actualTarget.getX() + relVelX * result.tStar,
-                    actualTarget.getY() + relVelY * result.tStar,
-                    actualTarget.getZ());
-
             return new ShotData(
                     Rotation2d.fromDegrees(shootingAngleDeg),
                     Rotation2d.fromDegrees(turretAngleDeg),
                     rpm,
-                    predictedTarget,
+                    actualTarget,
                     result.success);
         }
 

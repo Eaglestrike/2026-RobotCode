@@ -78,6 +78,9 @@ public class ShooterFlywheels extends SubsystemBase {
 
         motor = new TalonFX(FlywheelConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         motor.getConfigurator().apply(config);
+        motor.getVelocity().setUpdateFrequency(50);
+        motor.getPosition().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
     }
 
     /**

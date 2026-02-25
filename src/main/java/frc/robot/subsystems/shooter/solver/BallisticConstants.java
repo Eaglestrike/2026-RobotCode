@@ -186,19 +186,19 @@ public class BallisticConstants {
     public boolean highArc = false;
 
     /** RK4 integration time step (seconds) */
-    public double dt = 0.005;
+    public double dt = 0.02;
 
     /** Maximum simulation time (seconds) */
     public double tMax = 3.0;
 
     /** Miss tolerance for success (meters) */
-    public double tolMiss = 0.05;
+    public double tolMiss = 0.08;
 
     /** Target offset correction factor */
     public double beta = 1.0;
 
     /** Maximum solver iterations */
-    public int maxIter = 15;
+    public int maxIter = 5;
 
     /** Minimum pitch angle (radians) — 45° to force high-arc solutions */
     public double thetaMin = Math.PI / 4.0;

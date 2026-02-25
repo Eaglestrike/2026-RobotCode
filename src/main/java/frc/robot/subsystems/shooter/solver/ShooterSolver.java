@@ -14,5 +14,9 @@ public interface ShooterSolver {
             double rpm,
             Translation3d predictedTarget,
             boolean validShot) {
+
+        public static final ShotData INVALID = new ShotData(
+                Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0),
+                0, new Translation3d(), false);
     };
 }

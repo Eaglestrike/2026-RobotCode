@@ -18,6 +18,7 @@ public class IntakeRollers extends SubsystemBase {
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        motor.optimizeBusUtilization();
     }
 
     public Command start() {

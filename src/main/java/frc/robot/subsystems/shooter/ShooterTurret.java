@@ -71,6 +71,9 @@ public class ShooterTurret extends SubsystemBase {
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         this.motor.getConfigurator().apply(cfg);
+        motor.getPosition().setUpdateFrequency(50);
+        motor.getVelocity().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 

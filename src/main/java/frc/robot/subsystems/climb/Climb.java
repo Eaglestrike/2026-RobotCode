@@ -97,6 +97,9 @@ public class Climb extends SubsystemBase {
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
 
+        left.optimizeBusUtilization();
+        right.optimizeBusUtilization();
+
         DogLog.log("Climb/ClimbZeroed", zeroed);
     }
 

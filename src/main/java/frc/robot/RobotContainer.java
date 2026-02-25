@@ -123,8 +123,8 @@ public class RobotContainer {
                 autoChooser = AutoBuilder.buildAutoChooser("Tests");
                 SmartDashboard.putData("Auto Chooser", autoChooser);
 
-                solverModeChooser.setDefaultOption("LOCAL (roboRIO)", SolverMode.LOCAL);
-                solverModeChooser.addOption("CLIENT (server)", SolverMode.CLIENT);
+                solverModeChooser.setDefaultOption("CLIENT (server)", SolverMode.CLIENT);
+                solverModeChooser.addOption("LOCAL (roboRIO)", SolverMode.LOCAL);
                 SmartDashboard.putData("Solver Mode", solverModeChooser);
                 new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
                                 .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))

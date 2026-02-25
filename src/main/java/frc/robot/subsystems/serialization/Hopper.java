@@ -25,6 +25,7 @@ public class Hopper extends SubsystemBase {
         var cfg = new TalonFXConfiguration();
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         motor.getConfigurator().apply(cfg);
+        motor.optimizeBusUtilization();
         motor.stopMotor();
     }
 
