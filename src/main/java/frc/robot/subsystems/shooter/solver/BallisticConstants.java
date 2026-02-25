@@ -16,10 +16,10 @@ import frc.robot.subsystems.shooter.solver.BallisticSolver.Vec3;
 /**
  * Constants and parameters for the ballistic solver
  * 
- * FRC 2026 Game Piece Specifications:
+ * FRC 2026 Game Piece (FUEL) Specifications:
  * - Diameter: 5.91 inches (15 cm)
- * - Weight: 0.8 lbs (363 g)
- * - Material: High-density foam (yellow, with FIRST/AndyMark logos)
+ * - Weight: 0.448–0.5 lbs (203–227 g)
+ * - Material: High Density Polyurethane Foam (yellow, with FIRST/AndyMark logos)
  */
 public class BallisticConstants {
 
@@ -49,8 +49,8 @@ public class BallisticConstants {
     /** Game piece cross-sectional area (m²) = π × r² */
     public static final double GAME_PIECE_AREA = Math.PI * GAME_PIECE_RADIUS * GAME_PIECE_RADIUS;
 
-    /** Game piece mass (kg) - 0.8 lbs ≈ 363g */
-    public static final double GAME_PIECE_MASS = 0.363;
+    /** Game piece mass (kg) - 0.448–0.5 lbs ≈ 203–227g, midpoint ~215g */
+    public static final double GAME_PIECE_MASS = 0.215;
 
     /**
      * Drag coefficient for foam ball (slightly higher than smooth sphere due to
@@ -171,12 +171,12 @@ public class BallisticConstants {
      * Cd = 0.50 (foam ball, rough surface)
      * rho = 1.225 kg/m³
      * A = π × (0.075)² = 0.01767 m²
-     * m = 0.363 kg
+     * m = 0.215 kg (official: 0.448–0.5 lbs)
      * 
-     * kDrag = 0.5 × 0.50 × 1.225 × 0.01767 / 0.363
-     * = 0.0149 ≈ 0.015
+     * kDrag = 0.5 × 0.50 × 1.225 × 0.01767 / 0.215
+     * = 0.0252 ≈ 0.025
      */
-    public static final double DEFAULT_DRAG_COEFFICIENT = 0.015;
+    public static final double DEFAULT_DRAG_COEFFICIENT = 0.025;
 
     // ================================================================
     // Solver parameters

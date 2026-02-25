@@ -14,7 +14,7 @@
 #include <functional>
 
 const double GRAVITY = 9.81;           // m/s²
-const double DRAG_COEFFICIENT = 0.015;
+const double DRAG_COEFFICIENT = 0.025; // 0.5*Cd*rho*A/m, m=0.215kg (official 0.448-0.5 lbs)
 
 // The magic number to identify the start of a packet
 const uint32_t MAGIC_NUMBER = 0xABCDABCD;
