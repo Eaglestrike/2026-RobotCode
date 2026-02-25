@@ -138,6 +138,7 @@ public class ShooterHood extends SubsystemBase {
 
     /* sim */
     private static final double gearRatio = HoodConstants.GEAR_RATIO;
+    private static final edu.wpi.first.units.measure.Angle SIM_OFFSET = Degrees.of(HoodConstants.OFFSET);
     private final DCMotor gearbox = DCMotor.getKrakenX44(1);
     private final DCMotorSim sim = new DCMotorSim(
             LinearSystemId.createDCMotorSystem(gearbox, 0.001, gearRatio),
@@ -152,9 +153,9 @@ public class ShooterHood extends SubsystemBase {
         sim.setInputVoltage(motorVoltage.in(Volts));
         sim.update(0.020);
 
-        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
+        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
+        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {

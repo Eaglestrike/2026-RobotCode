@@ -51,6 +51,10 @@ public class Shooter extends SubsystemBase {
     // Predicted trajectory for AdvantageScope 3D visualization
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
 
+    // Solver throttle: LOCAL mode runs every N loops to avoid overruns
+    private static final int LOCAL_SOLVER_PERIOD = 5;
+    private int solverCounter = 0;
+
     public Shooter(EagleSwerveDrivetrain drive) {
         this(drive, SolverMode.LOCAL);
     }
@@ -164,17 +168,22 @@ public class Shooter extends SubsystemBase {
         ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
                 robotSpeeds.omegaRadiansPerSecond);
 
-        lastSolverResult = solver.calculateShot(
-                shooterPose, fieldSpeeds,
-                targetPose.getTranslation());
+        boolean shouldSolve = (getSolverMode() == SolverMode.CLIENT)
+                || (++solverCounter >= LOCAL_SOLVER_PERIOD);
+        if (shouldSolve) {
+            solverCounter = 0;
+            lastSolverResult = solver.calculateShot(
+                    shooterPose, fieldSpeeds,
+                    targetPose.getTranslation());
 
-        targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
-                ShooterConstants.HoodConstants.MIN_ANGLE,
-                ShooterConstants.HoodConstants.MAX_ANGLE);
-        targetTurretAngleDeg = -(lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
-        targetFlywheelVel = lastSolverResult.rpm();
+            targetHoodAngleDeg = MathUtil.clamp(lastSolverResult.hoodAngle().getDegrees(),
+                    ShooterConstants.HoodConstants.MIN_ANGLE,
+                    ShooterConstants.HoodConstants.MAX_ANGLE);
+            targetTurretAngleDeg = -(lastSolverResult.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
+            targetFlywheelVel = lastSolverResult.rpm();
 
-        buildTrajectoryVisualization(shooterPos, robotYawRad);
+            buildTrajectoryVisualization(shooterPos, robotYawRad);
+        }
 
         // Always command subsystems with cached results
         turret.setAngle(Degrees.of(targetTurretAngleDeg));

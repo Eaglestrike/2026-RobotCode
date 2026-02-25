@@ -75,13 +75,13 @@ public class BallisticConstants {
     }
 
     /** Low speed flywheel RPM - for close range shots */
-    public static final double LOW_SPEED_RPM = 3500.0;
+    public static final double LOW_SPEED_RPM = 3000.0;
 
     /** Medium speed flywheel RPM - for mid range shots */
-    public static final double MEDIUM_SPEED_RPM = 6000.0;
+    public static final double MEDIUM_SPEED_RPM = 4000.0;
 
     /** High speed flywheel RPM - for long range shots */
-    public static final double HIGH_SPEED_RPM = 7000.0;
+    public static final double HIGH_SPEED_RPM = 5000.0;
 
     /**
      * Low speed launch velocity (m/s) — converted from flywheel RPM via quadratic
@@ -200,8 +200,8 @@ public class BallisticConstants {
     /** Maximum solver iterations */
     public int maxIter = 15;
 
-    /** Minimum pitch angle (radians) */
-    public double thetaMin = -Math.PI / 2.0;
+    /** Minimum pitch angle (radians) — 45° to force high-arc solutions */
+    public double thetaMin = Math.PI / 4.0;
 
     /** Maximum pitch angle (radians) */
     public double thetaMax = Math.PI / 2.0;
