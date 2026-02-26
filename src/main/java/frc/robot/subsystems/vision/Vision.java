@@ -46,6 +46,7 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (edu.wpi.first.wpilibj.RobotBase.isSimulation()) return;
         for (var camera : cameras) {
             camera.periodic();
         }

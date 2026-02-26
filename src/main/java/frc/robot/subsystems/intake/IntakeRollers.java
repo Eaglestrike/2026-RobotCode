@@ -55,7 +55,6 @@ public class IntakeRollers extends SubsystemBase {
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            System.out.println("Rollers Joystick pos: " + joystickPosition.getAsDouble());
             motor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
         });
     }

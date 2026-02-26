@@ -161,7 +161,7 @@ public class BallisticSolver implements ShooterSolver {
         if (ballisticClient != null)
             return;
         try {
-            ballisticClient = new BallisticClient("10.1.14.12", 5805);
+            ballisticClient = new BallisticClient("10.1.14.11", 5805);
             System.out.println("[BallisticSolver] Connected to remote server");
         } catch (IOException e) {
             ballisticClient = null;
@@ -170,7 +170,10 @@ public class BallisticSolver implements ShooterSolver {
     }
 
     private void closeClient() {
-        ballisticClient = null;
+        if (ballisticClient != null) {
+            ballisticClient.close();
+            ballisticClient = null;
+        }
     }
 
     /** Returns true if mode is CLIENT but the TCP connection is not established. */
@@ -231,7 +234,7 @@ public class BallisticSolver implements ShooterSolver {
             }
         } catch (Exception e) {
             System.err.println("[BallisticSolver] Client error, will reconnect: " + e.getMessage());
-            ballisticClient = null;
+            closeClient();
         }
 
         return ShotData.INVALID;

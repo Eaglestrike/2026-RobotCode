@@ -1,7 +1,6 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,6 +59,13 @@ public class Shooter extends SubsystemBase {
     private final AtomicReference<SolverInput> pendingSolverInput = new AtomicReference<>(null);
     private final AtomicReference<SolverOutput> latestSolverOutput = new AtomicReference<>(null);
 
+    private static final int SOLVER_SUBMIT_PERIOD = 3; // submit every N periodic() calls (~60ms)
+    private int periodicCounter = 0;
+
+    private boolean armed = false;
+    private Translation3d cachedShooterPos = new Translation3d();
+    private ChassisSpeeds cachedFieldSpeeds = new ChassisSpeeds();
+
     private record SolverInput(
             Pose3d shooterPose, ChassisSpeeds fieldSpeeds,
             Translation3d target, Pose2d robotPose) {
@@ -105,7 +111,7 @@ public class Shooter extends SubsystemBase {
             SolverInput input = pendingSolverInput.getAndSet(null);
             if (input == null) {
                 try {
-                    Thread.sleep(5);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -145,6 +151,10 @@ public class Shooter extends SubsystemBase {
      */
     public void setFacing(Pose3d targetPose) {
         this.targetPose = targetPose;
+    }
+
+    public void setArmed(boolean armed) {
+        this.armed = armed;
     }
 
     /** Stow turret/hood/flywheel (command for auto / teleop transitions). */
@@ -197,37 +207,14 @@ public class Shooter extends SubsystemBase {
             pendingSolverInput.set(null);
             lastSolverResult = null;
             predictedTrajectoryPoses = new Pose3d[0];
-            // logValues();
+            periodicCounter = 0;
+            logValues();
             return;
         }
 
         Pose2d robotPose = drive.getState().Pose;
 
-        Translation2d offsetField = ShooterConstants.TurretConstants.OFFSET
-                .rotateBy(robotPose.getRotation());
-        Translation2d shooterPos2d = robotPose.getTranslation().plus(offsetField);
-        Translation3d shooterPos = new Translation3d(
-                shooterPos2d.getX(), shooterPos2d.getY(),
-                BallisticConstants.SHOOTER_HEIGHT);
-
-        Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
-        distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
-                + deltaField.getY() * deltaField.getY());
-        currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
-        currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
-
-        Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
-        ChassisSpeeds robotSpeeds = drive.getState().Speeds;
-        Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond)
-                .rotateBy(robotPose.getRotation());
-        ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
-                robotSpeeds.omegaRadiansPerSecond);
-
-        // Submit work to background thread (non-blocking)
-        pendingSolverInput.set(new SolverInput(shooterPose, fieldSpeeds,
-                targetPose.getTranslation(), robotPose));
-
-        // Read latest result from background thread (non-blocking)
+        // Read latest result from background thread (non-blocking, every cycle)
         SolverOutput output = latestSolverOutput.getAndSet(null);
         if (output != null) {
             lastSolverResult = output.shotData();
@@ -236,18 +223,51 @@ public class Shooter extends SubsystemBase {
             targetFlywheelVel = output.targetRpm();
         }
 
-        // Convert field-relative turret angle to robot-relative using CURRENT heading
+        // Convert field-relative turret angle to robot-relative using CURRENT heading (every cycle)
         targetTurretAngleDeg = -(cachedFieldTurretDeg - robotPose.getRotation().getDegrees());
 
-        // Build trajectory from CURRENT shooter position with CURRENT robot velocity
-        // buildTrajectoryVisualization(shooterPos, fieldSpeeds);
+        // Throttle: only submit solver input every N cycles (~60ms)
+        if (++periodicCounter >= SOLVER_SUBMIT_PERIOD) {
+            periodicCounter = 0;
 
-        // Always command subsystems with cached results
+            // Only submit if the previous input was consumed
+            if (pendingSolverInput.get() == null) {
+                Translation2d offsetField = ShooterConstants.TurretConstants.OFFSET
+                        .rotateBy(robotPose.getRotation());
+                Translation2d shooterPos2d = robotPose.getTranslation().plus(offsetField);
+                Translation3d shooterPos = new Translation3d(
+                        shooterPos2d.getX(), shooterPos2d.getY(),
+                        BallisticConstants.SHOOTER_HEIGHT);
+
+                Translation3d deltaField = targetPose.getTranslation().minus(shooterPos);
+                distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
+                        + deltaField.getY() * deltaField.getY());
+                currentSpeedPreset = BallisticConstants.getSpeedPresetForDistance(distanceToTarget);
+                currentLaunchVelocity = BallisticConstants.getLaunchVelocityForPreset(currentSpeedPreset);
+
+                Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
+                ChassisSpeeds robotSpeeds = drive.getState().Speeds;
+                Translation2d fieldVel = new Translation2d(robotSpeeds.vxMetersPerSecond,
+                        robotSpeeds.vyMetersPerSecond)
+                        .rotateBy(robotPose.getRotation());
+                ChassisSpeeds fieldSpeeds = new ChassisSpeeds(fieldVel.getX(), fieldVel.getY(),
+                        robotSpeeds.omegaRadiansPerSecond);
+
+                cachedShooterPos = shooterPos;
+                cachedFieldSpeeds = fieldSpeeds;
+
+                pendingSolverInput.set(new SolverInput(shooterPose, fieldSpeeds,
+                        targetPose.getTranslation(), robotPose));
+            }
+        }
+
+        // Always command subsystems with cached results (every cycle for smooth motion)
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
-        flywheels.setVelocity(targetFlywheelVel);
+        flywheels.setVelocity(armed ? targetFlywheelVel : ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
 
-        // logValues();
+        buildTrajectoryVisualization(cachedShooterPos, cachedFieldSpeeds);
+        logValues();
     }
 
     // ================================================================

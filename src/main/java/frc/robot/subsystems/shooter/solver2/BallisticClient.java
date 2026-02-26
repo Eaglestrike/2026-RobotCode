@@ -70,42 +70,26 @@ public class BallisticClient {
         System.out.println("Connected to ballistic server at " + hostname + ":" + port);
     }
 
-    public ServerSolverResult sendSolve(ServerSolverParams params) {
+    public ServerSolverResult sendSolve(ServerSolverParams params) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(HEADER_SIZE + SHOOTER_REQUEST_SIZE);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(MAGIC_NUMBER);
         buffer.put(SOLVE_REQUEST);
         buffer.putInt(SHOOTER_REQUEST_SIZE);
-        // RelPos0
         buffer.putDouble(params.relPos0X);
         buffer.putDouble(params.relPos0Y);
         buffer.putDouble(params.relPos0Z);
-        // RelVel
         buffer.putDouble(params.relVelX);
         buffer.putDouble(params.relVelY);
         buffer.putDouble(params.relVelZ);
-        // v0
         buffer.putDouble(params.v0);
-        buffer.put((byte) (params.archModeHigh ? 1 : 0)); // 0 archModeLow, 1 archModeHigh
+        buffer.put((byte) (params.archModeHigh ? 1 : 0));
         buffer.flip();
 
-        long startTime = System.nanoTime();
-        try {
-            channel.write(buffer);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        // System.out.println("Shooter request sent.");
+        channel.write(buffer);
 
-        // Read response header
         ByteBuffer headerBuffer = ByteBuffer.allocate(HEADER_SIZE);
-        try {
-            readFully(channel, headerBuffer);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        readFully(channel, headerBuffer);
         headerBuffer.flip();
         headerBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -114,19 +98,11 @@ public class BallisticClient {
         int length = headerBuffer.getInt();
 
         if (magic != MAGIC_NUMBER || type != SOLVE_RESPONSE || length != SHOOTER_RESPONSE_SIZE) {
-            System.out.println("Error: Invalid header in solve response. " + magic + " " + type + " " + length);
-            return new ServerSolverResult(0, 0, 0, false);
+            throw new IOException("Invalid header: magic=" + magic + " type=" + type + " length=" + length);
         }
 
-        // Read response payload
         ByteBuffer payloadBuffer = ByteBuffer.allocate(SHOOTER_RESPONSE_SIZE);
-        try {
-            readFully(channel, payloadBuffer);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        long endTime = System.nanoTime();
+        readFully(channel, payloadBuffer);
         payloadBuffer.flip();
         payloadBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -135,13 +111,16 @@ public class BallisticClient {
         double time = payloadBuffer.getDouble();
         boolean success = payloadBuffer.get() != 0;
 
-        double durationMs = (endTime - startTime) / 1_000_000.0;
-        // System.out.printf("Response received in %.2f ms:\n", durationMs);
-        // System.out.printf(" Azimuth: %.2f\n", azimuth);
-        // System.out.printf(" Elevation: %.2f\n", elevation);
-        // System.out.printf(" Time: %.2f\n", time);
-        // System.out.printf(" Success: %s\n", success);
         return new ServerSolverResult(azimuth, elevation, time, success);
+    }
+
+    public void close() {
+        try {
+            if (channel != null && channel.isOpen()) {
+                channel.close();
+            }
+        } catch (IOException ignored) {
+        }
     }
 
     private static void readFully(SocketChannel channel, ByteBuffer buffer) throws IOException {

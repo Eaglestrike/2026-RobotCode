@@ -88,7 +88,7 @@ public final class ShooterConstants {
 
         public static final double GEAR_RATIO = 9.2;
 
-        public static final double MAX_VOLTS = 2.0;
+        public static final double MAX_VOLTS = 0.5;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
 

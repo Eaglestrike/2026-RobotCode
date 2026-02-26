@@ -5,7 +5,6 @@ import static edu.wpi.first.units.Units.Degrees;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -18,8 +17,6 @@ import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.ShooterConstants;
-import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -50,7 +47,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command initialize() {
-        return runOnce(() -> shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
+        return runOnce(() -> shooter.setArmed(false));
     }
 
     /**
@@ -141,10 +138,13 @@ public class Superstructure extends SubsystemBase {
 
         if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
             isShooting = false;
+            shooter.setArmed(false);
             feeder.stopMotor();
             hopper.stopMotor();
             return;
         }
+
+        shooter.setArmed(isShooting);
 
         if (isShooting) {
             if (shooter.isReady()) {
@@ -155,7 +155,6 @@ public class Superstructure extends SubsystemBase {
                 hopper.stopMotor();
             }
         } else {
-            shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             feeder.stopMotor();
             hopper.stopMotor();
         }

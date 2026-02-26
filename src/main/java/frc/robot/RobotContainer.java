@@ -257,9 +257,8 @@ public class RobotContainer {
         }
 
                 public Command climbL1(BooleanSupplier left) {
-                        return Commands.sequence( // TODO: Redo superstructure.climb
-							// superstructure.climb(ClimbConstants.ClimbState.L1),
-							new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
+                        return Commands.sequence(
+							Commands.runOnce(() -> System.out.println("Aligning to " + left.getAsBoolean() + " tower")),
 							drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
 							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
 							Commands.waitSeconds(0.5),

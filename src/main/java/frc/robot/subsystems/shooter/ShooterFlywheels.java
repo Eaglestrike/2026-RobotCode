@@ -7,7 +7,6 @@ import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -22,7 +21,7 @@ import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
     private TalonFX motor;
-    private VelocityTorqueCurrentFOC motionMagic = new VelocityTorqueCurrentFOC(0);
+    private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
@@ -89,7 +88,7 @@ public class ShooterFlywheels extends SubsystemBase {
      */
     public void setVelocity(double targetVel) {
         this.targetVel = AngularVelocity.ofBaseUnits(targetVel/60, RotationsPerSecond);
-        motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+        motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
@@ -108,5 +107,12 @@ public class ShooterFlywheels extends SubsystemBase {
         return this.runOnce(() -> {
             motor.stopMotor();
         });
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterFlywheels/Velocity_rps", motor.getVelocity().getValueAsDouble());
+        DogLog.log("ShooterFlywheels/TargetVelocity_rps", targetVel.in(RotationsPerSecond));
+        DogLog.log("ShooterFlywheels/AtVelocity", atVelocity());
     }
 }
