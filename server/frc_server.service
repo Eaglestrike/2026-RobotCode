@@ -1,0 +1,14 @@
+[Unit]
+Description=Ballistic Solver Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi
+ExecStart=/home/pi/frc_server
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
