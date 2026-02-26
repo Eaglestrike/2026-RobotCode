@@ -63,6 +63,7 @@ public class Shooter extends SubsystemBase {
     private int periodicCounter = 0;
 
     private boolean armed = false;
+    private volatile boolean directTurret = false;
     private Translation3d cachedShooterPos = new Translation3d();
     private ChassisSpeeds cachedFieldSpeeds = new ChassisSpeeds();
 
@@ -122,7 +123,14 @@ public class Shooter extends SubsystemBase {
             double hoodDeg = MathUtil.clamp(result.hoodAngle().getDegrees(),
                     ShooterConstants.HoodConstants.MIN_ANGLE,
                     ShooterConstants.HoodConstants.MAX_ANGLE);
-            double fieldTurretDeg = result.turretAngle().getDegrees();
+            double fieldTurretDeg;
+            if (directTurret) {
+                double dx = input.target.getX() - input.shooterPose.getX();
+                double dy = input.target.getY() - input.shooterPose.getY();
+                fieldTurretDeg = Math.toDegrees(Math.atan2(dy, dx));
+            } else {
+                fieldTurretDeg = result.turretAngle().getDegrees();
+            }
             latestSolverOutput.set(new SolverOutput(
                     result, hoodDeg, fieldTurretDeg, result.rpm()));
         }
@@ -134,6 +142,15 @@ public class Shooter extends SubsystemBase {
 
     public void setSolverMode(SolverMode mode) {
         ((BallisticSolver) solver).setMode(mode);
+    }
+
+    public boolean isDirectTurret() {
+        return directTurret;
+    }
+
+    public void setDirectTurret(boolean direct) {
+        this.directTurret = direct;
+        System.out.println("[Shooter] Direct turret mode: " + direct);
     }
 
     public Command switchToClientMode() {

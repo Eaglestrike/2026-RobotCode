@@ -129,6 +129,13 @@ public class RobotContainer {
                 new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
                                 .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))
                                                 .ignoringDisable(true));
+
+                SmartDashboard.putBoolean("Direct Turret", false);
+                new Trigger(() -> SmartDashboard.getBoolean("Direct Turret", false) != shooter.isDirectTurret())
+                                .onTrue(Commands.runOnce(
+                                                () -> shooter.setDirectTurret(
+                                                                SmartDashboard.getBoolean("Direct Turret", false)))
+                                                .ignoringDisable(true));
         }
 
         private void configureBindings() {

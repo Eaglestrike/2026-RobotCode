@@ -78,7 +78,7 @@ public final class ShooterConstants {
         /**
          * Offset of the turret center, relative to the robot's center point (meters)
          */
-        public static final Translation2d OFFSET = new Translation2d(-0.12827, -0.05080);
+        public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
 
         /** In rotations of the turret — zero sensor is at back, so offset by -180° */
         public static final double ENCODER_OFFSET = -0.5;
