@@ -45,243 +45,232 @@ import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
-import frc.robot.subsystems.shooter.solver.BallisticSolver.SolverMode;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-        public static final double AXIS_DEADBAND = 0.02;
-        public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
-        private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
-        private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
+	public static final double AXIS_DEADBAND = 0.02;
+	public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
+	private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+	private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
 
-        // swerve
-        private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
-                        .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
-                        .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
-                        .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
-                        .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+	// swerve
+	private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
+			.withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
+			.withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
+			.withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+			.withSteerRequestType(SteerRequestType.MotionMagicExpo);
 
-        private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
-        private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+	private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
+	private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-        private boolean slowModeOn = false;
+	private boolean slowModeOn = false;
 
-        // controllers
-        private final CommandJoystick leftJoystick = new CommandJoystick(0);
-        private final CommandJoystick rightJoystick = new CommandJoystick(1);
-        private final CommandXboxController operatorController = new CommandXboxController(2);
-        private final CommandXboxController buttonBoard = new CommandXboxController(3);
+	// controllers
+	private final CommandJoystick leftJoystick = new CommandJoystick(0);
+	private final CommandJoystick rightJoystick = new CommandJoystick(1);
+	private final CommandXboxController operatorController = new CommandXboxController(2);
+	private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
-        // auto
-        private final SendableChooser<Command> autoChooser;
+	// auto
+	private final SendableChooser<Command> autoChooser;
 
-        // solver mode chooser
-        private final SendableChooser<SolverMode> solverModeChooser = new SendableChooser<>();
+	// Button Board constants
+	private final int CLIMB_BUTTON = 4;
+	private final int INTAKE_BUTTON = 5;
+	private final int HOOD_BUTTON = 2;
+	private final int TURRET_BUTTON = 1;
+	private final int SERIALIZER_BUTTON = 3;
 
-        // Button Board constants
-        private final int CLIMB_BUTTON = 4;
-        private final int INTAKE_BUTTON = 5;
-        private final int HOOD_BUTTON = 2;
-        private final int TURRET_BUTTON = 1;
-        private final int SERIALIZER_BUTTON = 3;
+	// subsystems
+	private final Shooter shooter = new Shooter(drivetrain);
+	private final ShooterTurret turret = shooter.getTurret();
+	private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
+	private final IntakeRollers intakeRollers = new IntakeRollers();
+	private final IntakeWrist intakeWrist = new IntakeWrist();
+	private final Feeder feeder = new Feeder();
+	private final Hopper hopper = new Hopper();
+	private final Climb climb = new Climb();
+	private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
+			feeder, hopper);
+	private final Vision vision = new Vision(drivetrain);
 
-        // subsystems
-        private final Shooter shooter = new Shooter(drivetrain);
-        private final ShooterTurret turret = shooter.getTurret();
-        private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
-        private final IntakeRollers intakeRollers = new IntakeRollers();
-        private final IntakeWrist intakeWrist = new IntakeWrist();
-        private final Feeder feeder = new Feeder();
-        private final Hopper hopper = new Hopper();
-        private final Climb climb = new Climb();
-        private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-                        feeder, hopper);
-        private final Vision vision = new Vision(drivetrain);
+	public RobotContainer() {
+		drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
+				Rotation2d.fromDegrees(180)));
+		configureBindings();
 
-        public RobotContainer() {
-                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-                                Rotation2d.fromDegrees(180)));
-                configureBindings();
+		NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
+		NamedCommands.registerCommand("SetModeFerry",
+				Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
+		NamedCommands.registerCommand("SetModeShoot",
+				Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
+		NamedCommands.registerCommand("StartShooting",
+				Commands.runOnce(() -> superstructure.setShooting(true)));
+		NamedCommands.registerCommand("StopShooting",
+				Commands.runOnce(() -> superstructure.setShooting(false)));
+		NamedCommands.registerCommand("Intake", superstructure.intake());
+		NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
+		NamedCommands.registerCommand("Stow", superstructure.stow());
+		NamedCommands.registerCommand("AlignLeftTower",
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
+		NamedCommands.registerCommand("AlignRightTower",
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
-                NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
-                NamedCommands.registerCommand("SetModeFerry",
-                                Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
-                NamedCommands.registerCommand("SetModeShoot",
-                                Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
-                NamedCommands.registerCommand("StartShooting",
-                                Commands.runOnce(() -> superstructure.setShooting(true)));
-                NamedCommands.registerCommand("StopShooting",
-                                Commands.runOnce(() -> superstructure.setShooting(false)));
-                NamedCommands.registerCommand("Intake", superstructure.intake());
-                NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
-                NamedCommands.registerCommand("Stow", superstructure.stow());
-                NamedCommands.registerCommand("AlignLeftTower",
-                                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
-                NamedCommands.registerCommand("AlignRightTower",
-                                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
+		autoChooser = AutoBuilder.buildAutoChooser("Tests");
+		SmartDashboard.putData("Auto Chooser", autoChooser);
+	}
 
-                autoChooser = AutoBuilder.buildAutoChooser("Tests");
-                SmartDashboard.putData("Auto Chooser", autoChooser);
+	private void configureBindings() {
+		drivetrain.setDefaultCommand(
+				drivetrain.applyRequest(() -> {
+					var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
+					return drive
+							.withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
+									* driveMult)
+							.withRotationalDeadband(MaxAngularRate
+									* DriveConstants.DRIVE_DEADBAND_MULT
+									* driveMult)
+							.withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
+							.withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
+							.withRotationalRate(-rightJoystick.getX() * MaxAngularRate
+									* driveMult);
+				}));
 
-                solverModeChooser.setDefaultOption("CLIENT (server)", SolverMode.CLIENT);
-                solverModeChooser.addOption("LOCAL (roboRIO)", SolverMode.LOCAL);
-                SmartDashboard.putData("Solver Mode", solverModeChooser);
-                new Trigger(() -> solverModeChooser.getSelected() != shooter.getSolverMode())
-                                .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))
-                                                .ignoringDisable(true));
-        }
+		rightJoystick.button(2)
+				.onTrue(Commands.runOnce(() -> slowModeOn = true))
+				.onFalse(Commands.runOnce(() -> slowModeOn = false));
 
-        private void configureBindings() {
-                drivetrain.setDefaultCommand(
-                                drivetrain.applyRequest(() -> {
-                                        var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
-                                        return drive
-                                                        .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
-                                                                        * driveMult)
-                                                        .withRotationalDeadband(MaxAngularRate
-                                                                        * DriveConstants.DRIVE_DEADBAND_MULT
-                                                                        * driveMult)
-                                                        .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                                                        .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                                                        .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
-                                                                        * driveMult);
-                                }));
+		operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
+			System.out.println("Zeroing drive");
+			drivetrain.seedFieldCentric();
+			drivetrain.resetPose(
+					new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
+							Rotation2d.fromDegrees(180)));
+		}).ignoringDisable(true));
 
-                rightJoystick.button(2)
-                                .onTrue(Commands.runOnce(() -> slowModeOn = true))
-                                .onFalse(Commands.runOnce(() -> slowModeOn = false));
+		drivetrain.registerTelemetry(logger::telemeterize);
 
-                operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
-                        System.out.println("Zeroing drive");
-                        drivetrain.seedFieldCentric();
-                        drivetrain.resetPose(
-                                        new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-                                                        Rotation2d.fromDegrees(180)));
-                }).ignoringDisable(true));
+		operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
+				.onTrue(climb.zero().ignoringDisable(true));
 
-                drivetrain.registerTelemetry(logger::telemeterize);
+		operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
+				.onTrue(intakeWrist.zero().ignoringDisable(true));
 
-                operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
-                                .onTrue(climb.zero().ignoringDisable(true));
+		operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
+				.onTrue(shooter.getHood().zero().ignoringDisable(true));
 
-                operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
-                                .onTrue(intakeWrist.zero().ignoringDisable(true));
+		operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
+				.onTrue(shooter.getTurret().zero().ignoringDisable(true));
 
-                operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
-                                .onTrue(shooter.getHood().zero().ignoringDisable(true));
+		// -------- FOR TESTING ONLY --------
+		operatorController.button(7).and(operatorController.x())
+				.onTrue(intakeWrist.zero().ignoringDisable(true));
 
-                operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
-                                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+		operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+				.onFalse(intakeRollers.setManualVoltage(() -> 0));
+		operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+				.onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-                // -------- FOR TESTING ONLY --------
-                operatorController.button(7).and(operatorController.x())
-                                .onTrue(intakeWrist.zero().ignoringDisable(true));
+		operatorController.a()
+				.whileTrue(climb.setManualVoltage(operatorController::getLeftY,
+						operatorController::getRightY))
+				.onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
-                operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
-                                .onFalse(intakeRollers.setManualVoltage(() -> 0));
-                operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
-                                .onFalse(intakeWrist.setManualVoltage(() -> 0));
+		// rightJoystick.button(3)
+		// .onTrue(drivetrain.alignPID(() ->
+		// FieldConstants.getAllianceTowerPosition(true)));
+		rightJoystick.button(4)
+				.onTrue(climbL1(() -> false))
+				.onFalse(drivetrain.applyRequest(() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+		// ---------------------------------
 
-                operatorController.a()
-                                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                                                operatorController::getRightY))
-                                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
+		rightJoystick.trigger().onTrue(superstructure.intake());
+		leftJoystick.trigger().onTrue(superstructure.stopIntakeRollers());
+		// eject intake
+		leftJoystick.button(3).onTrue(superstructure.ejectIntake());
+		// stow all
+		leftJoystick.button(2).onTrue(superstructure.stow());
+		// jiggle intake
+		rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
-                // rightJoystick.button(3)
-                // .onTrue(drivetrain.alignPID(() ->
-                // FieldConstants.getAllianceTowerPosition(true)));
-                rightJoystick.button(4)
-					.onTrue(climbL1(() -> false))
-					.onFalse(drivetrain.applyRequest(() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
-                // ---------------------------------
+		// Manual Commands
+		buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
+				.whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+				.onFalse(intakeRollers.setManualVoltage(() -> 0));
 
-                rightJoystick.trigger().onTrue(superstructure.intake());
-                leftJoystick.trigger().onTrue(superstructure.stopIntakeRollers());
-                // eject intake
-                leftJoystick.button(3).onTrue(superstructure.ejectIntake());
-                // stow all
-                leftJoystick.button(2).onTrue(superstructure.stow());
-                // jiggle intake
-                rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
+		buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+				.whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+				.onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-                // Manual Commands
-                buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                                .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
-                                .onFalse(intakeRollers.setManualVoltage(() -> 0));
+		buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+				.whileTrue(climb.setManualVoltage(operatorController::getLeftY,
+						operatorController::getRightY))
+				.onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
-                buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                                .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
-                                .onFalse(intakeWrist.setManualVoltage(() -> 0));
+		buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+				.whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+				.onFalse(turret.setManualVoltage(() -> 0));
 
-                buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                                                operatorController::getRightY))
-                                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
+		buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
+				.whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
+				.onFalse(shooterFlywheels.setManualVoltage(() -> 0));
 
-                buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
-                                .onFalse(turret.setManualVoltage(() -> 0));
+		buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+				.whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
+				.onFalse(shooter.getHood().setManualVoltage(() -> 0));
 
-                buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
-                                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+		buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
+				.whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
+				.onFalse(hopper.setManualVoltage(() -> 0));
 
-                buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
-                                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+		operatorController.leftBumper()
+				.onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
+		// Should the kicker and flywheels be on the same button, like hood getRightY or
+		// serializer getRightY? Since they need to spin simultaneously to launch
+	}
 
-                buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                                .whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
-                                .onFalse(hopper.setManualVoltage(() -> 0));
+	public Command getOffTower() {
+		if (superstructure.getClimbState() == null
+				|| superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
+			return Commands.print("Not currently climbing, cannot get off tower");
+		}
 
-                operatorController.leftBumper()
-                                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
-                // Should the kicker and flywheels be on the same button, like hood getRightY or
-                // serializer getRightY? Since they need to spin simultaneously to launch
-        }
+		int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
+		return Commands.sequence(
+				superstructure.climb(ClimbConstants.ClimbState.STOWED),
+				Commands.runOnce(() -> drivetrain.setControl(
+						drive.withVelocityY(MaxSpeed * direction
+								* DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
+				Commands.waitSeconds(0.5),
+				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
+	}
 
-        public Command getOffTower() {
-                if (superstructure.getClimbState() == null
-                                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
-                        return Commands.print("Not currently climbing, cannot get off tower");
-                }
+	public Command climbL1(BooleanSupplier left) {
+		return Commands.sequence(
+				Commands.runOnce(() -> System.out.println("Aligning to " + left.getAsBoolean() + " tower")),
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
+				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
+				Commands.waitSeconds(0.5),
+				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
+		// superstructure.climb(ClimbConstants.ClimbState.STOWED)
+		);
+	}
 
-                int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
-                return Commands.sequence(
-                                superstructure.climb(ClimbConstants.ClimbState.STOWED),
-                                Commands.runOnce(() -> drivetrain.setControl(
-                                                drive.withVelocityY(MaxSpeed * direction
-                                                                * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
-                                Commands.waitSeconds(0.5),
-                                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
-        }
+	public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
+		return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);
+	}
 
-                public Command climbL1(BooleanSupplier left) {
-                        return Commands.sequence(
-							Commands.runOnce(() -> System.out.println("Aligning to " + left.getAsBoolean() + " tower")),
-							drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
-							Commands.waitSeconds(0.5),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-							// superstructure.climb(ClimbConstants.ClimbState.STOWED)
-                        );	
-                }
+	public Command getAutonomousCommand() {
+		return Commands.sequence(
+				superstructure.initialize(),
+				autoChooser.getSelected());
+	}
 
-        public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
-                return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);
-        }
+	public Command getTeleopCommand() {
+		return superstructure.initialize();
+	}
 
-        public Command getAutonomousCommand() {
-                return Commands.sequence(
-                                superstructure.initialize(),
-                                autoChooser.getSelected());
-        }
-
-        public Command getTeleopCommand() {
-                return superstructure.initialize();
-        }
-
-        public EagleSwerveDrivetrain getDrivetrain() {
-                return drivetrain;
-        }
+	public EagleSwerveDrivetrain getDrivetrain() {
+		return drivetrain;
+	}
 }
