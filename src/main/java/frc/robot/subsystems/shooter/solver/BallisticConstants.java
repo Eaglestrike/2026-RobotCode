@@ -75,7 +75,7 @@ public class BallisticConstants {
     }
 
     /** Low speed flywheel RPM - for close range shots */
-    public static final double LOW_SPEED_RPM = 1800.0;
+    public static final double LOW_SPEED_RPM = 2500.0;
 
     /** Medium speed flywheel RPM - for mid range shots */
     public static final double MEDIUM_SPEED_RPM = 3500.0;

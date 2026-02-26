@@ -14,7 +14,7 @@
 #include <functional>
 
 const double GRAVITY = 9.81;           // m/s²
-const double DRAG_COEFFICIENT = 0.024; // 0.5*Cd*rho*A/m, Cd=0.47, m=0.215kg
+const double DRAG_COEFFICIENT = 0.024; // 0.5*Cd*rho*A/m, Cd=0.47, m=0.215kg (was 0.025)
 
 // The magic number to identify the start of a packet
 const uint32_t MAGIC_NUMBER = 0xABCDABCD;
@@ -64,7 +64,7 @@ struct FRCShooterParams : public BallisticParams
 
         maxIter = 20;
 
-        thetaMin = (90.0 - 64.0) * M_PI / 180.0; // 26° minimum elevation
+        thetaMin = 45.0 * M_PI / 180.0; // 45° minimum elevation
         thetaMax = (90.0 - 14.894799) * M_PI / 180.0; // 75.11° maximum elevation
     }
 };
