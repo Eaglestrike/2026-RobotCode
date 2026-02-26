@@ -147,13 +147,8 @@ public class Superstructure extends SubsystemBase {
         shooter.setArmed(isShooting);
 
         if (isShooting) {
-            if (shooter.isReady()) {
-                feeder.startMotor();
-                hopper.startKicking();
-            } else {
-                feeder.stopMotor();
-                hopper.stopMotor();
-            }
+            feeder.startMotor();
+            hopper.startKicking();
         } else {
             feeder.stopMotor();
             hopper.stopMotor();

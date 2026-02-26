@@ -53,7 +53,7 @@ public final class ShooterConstants {
         public static final double GEAR_RATIO = 10 / 9.0;
 
         /** In rotations per second */
-        public static final double VELOCITY_TOLERANCE = 0.5;
+        public static final double VELOCITY_TOLERANCE = 2.0;
 
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
@@ -90,12 +90,12 @@ public final class ShooterConstants {
 
         public static final double MAX_VOLTS = 0.5;
 
-        public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
+        public static final Angle ANGLE_TOLERANCE = Degree.of(0.5);
 
         public static final double kP = 60.0;
-        public static final double kI = 0.0;
+        public static final double kI = 15.0;
         public static final double kD = 3.0;
-        public static final double kS = 0.0;
+        public static final double kS = 0.15;
         public static final double kV = 0.0;
         public static final double kA = 0;
 
@@ -121,9 +121,9 @@ public final class ShooterConstants {
 
         public static final double STOW_ANGLE = MAX_ANGLE; // stow at hard stop
 
-        public static final double MAX_VOLTS = 0.5;
+        public static final double MAX_VOLTS = 1.5;
 
-        public static final Angle ANGLE_TOLERANCE = Degree.of(2.0);
+        public static final Angle ANGLE_TOLERANCE = Degree.of(0.5);
 
         public static final double kP = 300.0;
         public static final double kI = 0.0;

@@ -54,10 +54,9 @@ public class BallisticConstants {
     public static final double GAME_PIECE_MASS = 0.215;
 
     /**
-     * Drag coefficient for foam ball (slightly higher than smooth sphere due to
-     * surface texture)
+     * Drag coefficient for foam ball (community-tested value for similar FRC balls)
      */
-    public static final double GAME_PIECE_CD = 0.50;
+    public static final double GAME_PIECE_CD = 0.47;
 
     /** Air density at sea level (kg/m³) */
     public static final double AIR_DENSITY = 1.225;
@@ -169,15 +168,15 @@ public class BallisticConstants {
      * kDrag = 0.5 * Cd * rho * A / m
      * 
      * Calculation:
-     * Cd = 0.50 (foam ball, rough surface)
+     * Cd = 0.47 (community-tested foam ball value)
      * rho = 1.225 kg/m³
      * A = π × (0.075)² = 0.01767 m²
      * m = 0.215 kg (official: 0.448–0.5 lbs)
      * 
-     * kDrag = 0.5 × 0.50 × 1.225 × 0.01767 / 0.215
-     * = 0.0252 ≈ 0.025
+     * kDrag = 0.5 × 0.47 × 1.225 × 0.01767 / 0.215
+     * = 0.02366 ≈ 0.024
      */
-    public static final double DEFAULT_DRAG_COEFFICIENT = 0.025;
+    public static final double DEFAULT_DRAG_COEFFICIENT = 0.024;
 
     // ================================================================
     // Solver parameters
@@ -211,8 +210,8 @@ public class BallisticConstants {
     // Shooter geometry (MEASURE THESE)
     // ================================================================
 
-    /** Height of shooter exit point above ground (meters) — 17.580041 in */
-    public static final double SHOOTER_HEIGHT = 0.44673;
+    /** Height of shooter exit point above ground (meters) */
+    public static final double SHOOTER_HEIGHT = 0.59673;
 
     // ================================================================
     // Solver Presets

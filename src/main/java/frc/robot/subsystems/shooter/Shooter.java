@@ -223,7 +223,8 @@ public class Shooter extends SubsystemBase {
             targetFlywheelVel = output.targetRpm();
         }
 
-        // Convert field-relative turret angle to robot-relative using CURRENT heading (every cycle)
+        // Convert field-relative turret angle to robot-relative using CURRENT heading
+        // (every cycle)
         targetTurretAngleDeg = -(cachedFieldTurretDeg - robotPose.getRotation().getDegrees());
 
         // Throttle: only submit solver input every N cycles (~60ms)
@@ -264,7 +265,16 @@ public class Shooter extends SubsystemBase {
         // Always command subsystems with cached results (every cycle for smooth motion)
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
-        flywheels.setVelocity(armed ? targetFlywheelVel : ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+
+        boolean solverReady = lastSolverResult != null && lastSolverResult.validShot()
+                && targetFlywheelVel > 0;
+        boolean aimReady = isTurretOnTarget() && isHoodOnTarget();
+
+        if (solverReady && aimReady) {
+            flywheels.setVelocity(targetFlywheelVel);
+        } else {
+            flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+        }
 
         buildTrajectoryVisualization(cachedShooterPos, cachedFieldSpeeds);
         logValues();

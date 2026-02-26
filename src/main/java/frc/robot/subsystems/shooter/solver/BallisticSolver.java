@@ -178,7 +178,8 @@ public class BallisticSolver implements ShooterSolver {
 
     /** Returns true if mode is CLIENT but the TCP connection is not established. */
     public boolean needsReconnect() {
-        return mode == SolverMode.CLIENT && ballisticClient == null;
+        // mode == SolverMode.CLIENT && 
+        return ballisticClient == null;
     }
 
     // ================================================================
