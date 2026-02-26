@@ -345,6 +345,10 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/LaunchVelocity_mps", currentLaunchVelocity);
         DogLog.log("Shooter/TargetTurretAngle_deg", targetTurretAngleDeg);
         DogLog.log("Shooter/ActualTurretAngle_deg", turret.getAngle().in(Degrees));
+        DogLog.log("Shooter/TurretError_deg",
+                MathUtil.inputModulus(turret.getAngle().in(Degrees) - targetTurretAngleDeg, -180, 180));
+        DogLog.log("Shooter/FieldTurretAngle_deg", cachedFieldTurretDeg);
+        DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetHoodAngle_deg", targetHoodAngleDeg);
         DogLog.log("Shooter/ActualHoodAngle_deg", hood.getAngle().in(Degrees));
         DogLog.log("Shooter/TargetFlywheelVel_rps", targetFlywheelVel);
