@@ -9,51 +9,65 @@ import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 
 /**
- * Desmos-derived ballistic solver — gravity-only (no drag) closed-form solution.
+ * Desmos-derived ballistic solver — gravity-only (no drag) closed-form
+ * solution.
  *
  * <h2>What it computes</h2>
- * Given the launcher's 3D field pose, the robot's field-relative velocity, and a 3D
+ * Given the launcher's 3D field pose, the robot's field-relative velocity, and
+ * a 3D
  * target position, this solver computes:
  * <ul>
- *   <li><b>Hood angle (pitch)</b> — the vertical launch angle, biased steep
- *       (⅓ apex angle + ⅔ × 90°) to ensure a high-arc trajectory with steep descent.</li>
- *   <li><b>Turret angle (yaw)</b> — the horizontal launch direction in field frame,
- *       accounting for robot motion during flight (lead angle).</li>
- *   <li><b>Launch velocity v₀</b> — the required ball exit speed (m/s), converted to
- *       flywheel RPM via {@link ShooterConstants#ballVelToFlywheelRPS}.</li>
- *   <li><b>Flight time t</b> — the time for the ball to reach the target.</li>
+ * <li><b>Hood angle (pitch)</b> — the vertical launch angle, biased steep
+ * (⅓ apex angle + ⅔ × 90°) to ensure a high-arc trajectory with steep
+ * descent.</li>
+ * <li><b>Turret angle (yaw)</b> — the horizontal launch direction in field
+ * frame,
+ * accounting for robot motion during flight (lead angle).</li>
+ * <li><b>Launch velocity v₀</b> — the required ball exit speed (m/s), converted
+ * to
+ * flywheel RPM via {@link ShooterConstants#ballVelToFlywheelRPS}.</li>
+ * <li><b>Flight time t</b> — the time for the ball to reach the target.</li>
  * </ul>
  *
  * <h2>Algorithm overview</h2>
  * <ol>
- *   <li>Compute the "apex solution" — the launch angles that place the target exactly
- *       at the parabola's apex (v_z = 0).  This gives a reference pitch angle.</li>
- *   <li>Choose the actual hood angle as a weighted blend toward 90° (steep shot).</li>
- *   <li>With the hood angle fixed, use bisection to find flight time t₁ such that the
- *       ball's parabolic height matches the target height at horizontal range ℓ(t₁).</li>
- *   <li>Compute the turret yaw to the lead-corrected target position at t₁.</li>
- *   <li>Recover v₀ from the horizontal displacement equation.</li>
+ * <li>Compute the "apex solution" — the launch angles that place the target
+ * exactly
+ * at the parabola's apex (v_z = 0). This gives a reference pitch angle.</li>
+ * <li>Choose the actual hood angle as a weighted blend toward 90° (steep
+ * shot).</li>
+ * <li>With the hood angle fixed, use bisection to find flight time t₁ such that
+ * the
+ * ball's parabolic height matches the target height at horizontal range
+ * ℓ(t₁).</li>
+ * <li>Compute the turret yaw to the lead-corrected target position at t₁.</li>
+ * <li>Recover v₀ from the horizontal displacement equation.</li>
  * </ol>
  *
  * <h2>Known limitations / notes</h2>
  * <ul>
- *   <li>No air drag — suitable as a fast initial estimate or for short-range shots.</li>
- *   <li>{@code weird_atan2} has a known discrepancy when x &lt; 0 and y &lt; 0
- *       (adds −π/2 instead of −π).  Left as-is pending field testing.</li>
+ * <li>No air drag — suitable as a fast initial estimate or for short-range
+ * shots.</li>
+ * <li>{@code weird_atan2} has a known discrepancy when x &lt; 0 and y &lt; 0
+ * (adds −π/2 instead of −π). Left as-is pending field testing.</li>
  * </ul>
  *
  * <h2>Integration plan (Shooter / ShooterConstants)</h2>
  * <ul>
- *   <li>{@link ShooterConstants#ballVelToFlywheelRPS} converts the computed v₀ (m/s) →
- *       flywheel RPS → RPM for the {@link ShotData} record.</li>
- *   <li>{@code Shooter.periodic()} can call {@code calculateShot()} every cycle (or on a
- *       background thread like the existing {@code BallisticSolver}) and feed the
- *       resulting hood angle, turret angle, and RPM to the subsystem commands.</li>
- *   <li>Hood angle is clamped to [{@link ShooterConstants.HoodConstants#MIN_ANGLE},
- *       {@link ShooterConstants.HoodConstants#MAX_ANGLE}] inside Shooter.</li>
- *   <li>Future: pass this solver as the {@code ShooterSolver} implementation in the
- *       {@code Shooter} constructor to swap between Desmos and BallisticSolver at
- *       runtime.</li>
+ * <li>{@link ShooterConstants#ballVelToFlywheelRPS} converts the computed v₀
+ * (m/s) →
+ * flywheel RPS → RPM for the {@link ShotData} record.</li>
+ * <li>{@code Shooter.periodic()} can call {@code calculateShot()} every cycle
+ * (or on a
+ * background thread like the existing {@code BallisticSolver}) and feed the
+ * resulting hood angle, turret angle, and RPM to the subsystem commands.</li>
+ * <li>Hood angle is clamped to
+ * [{@link ShooterConstants.HoodConstants#MIN_ANGLE},
+ * {@link ShooterConstants.HoodConstants#MAX_ANGLE}] inside Shooter.</li>
+ * <li>Future: pass this solver as the {@code ShooterSolver} implementation in
+ * the
+ * {@code Shooter} constructor to swap between Desmos and BallisticSolver at
+ * runtime.</li>
  * </ul>
  */
 public class DesmosSolver implements ShooterSolver {
@@ -67,11 +81,12 @@ public class DesmosSolver implements ShooterSolver {
     /**
      * Bundle of trajectory parameters passed between internal methods.
      * <ul>
-     *   <li>g  — gravitational acceleration (m/s²)</li>
-     *   <li>hx, hy, hz — target position relative to launcher (meters)</li>
-     *   <li>vx, vy — robot field-relative velocity (m/s), subtracted from target motion</li>
-     *   <li>a — hood (pitch) angle in degrees</li>
-     *   <li>b — turret (yaw) angle in degrees</li>
+     * <li>g — gravitational acceleration (m/s²)</li>
+     * <li>hx, hy, hz — target position relative to launcher (meters)</li>
+     * <li>vx, vy — robot field-relative velocity (m/s), subtracted from target
+     * motion</li>
+     * <li>a — hood (pitch) angle in degrees</li>
+     * <li>b — turret (yaw) angle in degrees</li>
      * </ul>
      */
     private static class Params {
@@ -123,7 +138,8 @@ public class DesmosSolver implements ShooterSolver {
         }
 
         if (fLo * fHi > 0.0) {
-            System.out.printf("[DesmosSolver] Root not bracketed: f(%.2f)=%.4f, f(%.2f)=%.4f, a=%.2f°, hz=%.3f, hx=%.3f, hy=%.3f%n",
+            System.out.printf(
+                    "[DesmosSolver] Root not bracketed: f(%.2f)=%.4f, f(%.2f)=%.4f, a=%.2f°, hz=%.3f, hx=%.3f, hy=%.3f%n",
                     tLo, fLo, tHi, fHi, p.a, p.hz, p.hx, p.hy);
             return -1;
         }
@@ -163,18 +179,22 @@ public class DesmosSolver implements ShooterSolver {
      * Computes the launch angles and velocity that place the target exactly at the
      * parabola's apex (vertical velocity = 0 at target).
      *
-     * <p>At the apex: t_apex = √(2 hz / g), so the ball rises exactly hz meters.
+     * <p>
+     * At the apex: t_apex = √(2 hz / g), so the ball rises exactly hz meters.
      * The pitch angle depends only on the vertical rise (hz) and horizontal range
      * to the lead-corrected target at t_apex. Yaw points toward that lead-corrected
-     * position.</p>
+     * position.
+     * </p>
      *
-     * <p><b>Key insight:</b> pitch must always be in [0°, 90°] (launch upward).
+     * <p>
+     * <b>Key insight:</b> pitch must always be in [0°, 90°] (launch upward).
      * We compute it from the always-positive horizontal distance and vertical
-     * velocity, avoiding sign issues when the target is in a "negative" quadrant.</p>
+     * velocity, avoiding sign issues when the target is in a "negative" quadrant.
+     * </p>
      */
     private static Apex findApexAngle(Params p) {
-        double k = Math.sqrt(p.g / (2 * p.hz));  // 1 / t_apex
-        double tApex = 1.0 / k;                   // = sqrt(2 hz / g)
+        double k = Math.sqrt(p.g / (2 * p.hz)); // 1 / t_apex
+        double tApex = 1.0 / k; // = sqrt(2 hz / g)
 
         // Lead-corrected target position at t_apex (horizontal components)
         double dxApex = p.hx - p.vx * tApex;
@@ -185,11 +205,11 @@ public class DesmosSolver implements ShooterSolver {
 
         // Horizontal range (always positive) and vertical velocity at launch
         double lApex = Math.sqrt(dxApex * dxApex + dyApex * dyApex);
-        double vzApex = Math.sqrt(2 * p.hz * p.g);  // vertical speed needed to reach hz
+        double vzApex = Math.sqrt(2 * p.hz * p.g); // vertical speed needed to reach hz
 
         // Pitch: angle between horizontal and launch velocity vector
         // atan2(vz, v_horiz) — both positive, so result is in [0, π/2]
-        double vHoriz = lApex / tApex;  // horizontal speed needed
+        double vHoriz = lApex / tApex; // horizontal speed needed
         double a_apex = Math.atan2(vzApex, vHoriz);
 
         Apex a = new Apex();
@@ -220,8 +240,6 @@ public class DesmosSolver implements ShooterSolver {
     // Custom atan2 variant
     // ================================================================
 
-    
-
     // ================================================================
     // Core solver
     // ================================================================
@@ -238,9 +256,12 @@ public class DesmosSolver implements ShooterSolver {
      * @return solver results (angles, velocity, flight time)
      */
     public static Results findLaunchParams(double vx, double vy, double tx, double ty, double hz) {
-        // Guard: apex-based approach requires the target to be above the launcher (hz > 0).
-        // If the target is at or below launcher height, we cannot place it at the parabola's
-        // apex (sqrt of negative).  Return an invalid result so calculateShot returns INVALID.
+        // Guard: apex-based approach requires the target to be above the launcher (hz >
+        // 0).
+        // If the target is at or below launcher height, we cannot place it at the
+        // parabola's
+        // apex (sqrt of negative). Return an invalid result so calculateShot returns
+        // INVALID.
         if (hz <= 0.0) {
             Results r = new Results();
             r.t = -1;
@@ -259,7 +280,8 @@ public class DesmosSolver implements ShooterSolver {
         p.vx = vx;
         p.vy = vy;
 
-        // Step 1: Find the "apex solution" — launch angles that place target at parabola apex
+        // Step 1: Find the "apex solution" — launch angles that place target at
+        // parabola apex
         Apex apex = findApexAngle(p);
 
         // Step 2: Blend hood angle toward 90° for a steep descent trajectory
@@ -303,17 +325,25 @@ public class DesmosSolver implements ShooterSolver {
     // ShooterSolver interface implementation
     // ================================================================
 
+    private static int CACHE_ITERS = 5;
+    private ShotData cachedResult;
+    private int cacheIter = CACHE_ITERS;
+
     /**
      * Computes a shot solution conforming to the {@link ShooterSolver} interface.
      *
-     * <p>Coordinate convention: the target and launcher are in WPILib's field frame
+     * <p>
+     * Coordinate convention: the target and launcher are in WPILib's field frame
      * (X forward, Y left, Z up). The solver works in a relative frame where
      * (tx, ty) is the horizontal displacement from launcher to target, and hz is
      * the vertical displacement (target Z - launcher Z). Robot velocity is passed
-     * through so the solver accounts for the robot's motion during flight.</p>
+     * through so the solver accounts for the robot's motion during flight.
+     * </p>
      *
-     * <p>v0 is converted to flywheel RPM via
-     * {@link ShooterConstants#ballVelToFlywheelRPS(double)} * 60.</p>
+     * <p>
+     * v0 is converted to flywheel RPM via
+     * {@link ShooterConstants#ballVelToFlywheelRPS(double)} * 60.
+     * </p>
      *
      * @param launcherPose 3D field-relative pose of the ball exit point
      * @param fieldSpeeds  field-relative chassis speeds (vx, vy in m/s)
@@ -323,6 +353,11 @@ public class DesmosSolver implements ShooterSolver {
      */
     @Override
     public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget) {
+        if (cacheIter++ == CACHE_ITERS) {
+            cacheIter = 1;
+            return cachedResult;
+        }
+
         // Relative position: target w.r.t. launcher
         double tx = actualTarget.getX() - launcherPose.getX();
         double ty = actualTarget.getY() - launcherPose.getY();
@@ -337,7 +372,7 @@ public class DesmosSolver implements ShooterSolver {
 
         // Check for solver failure (bisection returned -1)
         if (r.t < 0 || !Double.isFinite(r.v0) || r.v0 <= 0) {
-            return ShotData.INVALID;
+            return cachedResult = ShotData.INVALID;
         }
 
         DogLog.log("Shooter/Launch velocity", r.v0);
@@ -346,7 +381,7 @@ public class DesmosSolver implements ShooterSolver {
         double flywheelRPS = ShooterConstants.ballVelToFlywheelRPS(r.v0);
         double rpm = flywheelRPS * 60.0;
 
-        return new ShotData(
+        return cachedResult = new ShotData(
                 Rotation2d.fromDegrees(r.hoodAngle),
                 Rotation2d.fromDegrees(r.turretAngle),
                 rpm,
