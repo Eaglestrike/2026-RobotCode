@@ -49,6 +49,8 @@ import frc.robot.subsystems.shooter.solver.BallisticSolver.SolverMode;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
+        private static final boolean ENABLE_CLIMB_COMMAND = true;
+
         public static final double AXIS_DEADBAND = 0.02;
         public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
         private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
@@ -103,7 +105,9 @@ public class RobotContainer {
                                 Rotation2d.fromDegrees(180)));
                 configureBindings();
 
-                NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
+                NamedCommands.registerCommand("ClimbL1",
+                                ENABLE_CLIMB_COMMAND ? superstructure.climb(ClimbConstants.ClimbState.L1)
+                                                : Commands.none());
                 NamedCommands.registerCommand("SetModeFerry",
                                 Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
                 NamedCommands.registerCommand("SetModeShoot",
@@ -198,8 +202,9 @@ public class RobotContainer {
                 // .onTrue(drivetrain.alignPID(() ->
                 // FieldConstants.getAllianceTowerPosition(true)));
                 rightJoystick.button(4)
-					.onTrue(climbL1(() -> false))
-					.onFalse(drivetrain.applyRequest(() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+                                .onTrue(climbL1(() -> false))
+                                .onFalse(drivetrain.applyRequest(
+                                                () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
                 // ---------------------------------
 
                 rightJoystick.trigger().onTrue(superstructure.intake());

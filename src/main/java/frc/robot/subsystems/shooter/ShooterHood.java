@@ -67,6 +67,8 @@ public class ShooterHood extends SubsystemBase {
         DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
             CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
+
+        DogLog.log("ShooterHood/isZeroed", zeroed);
     }
 
     /**
@@ -77,10 +79,7 @@ public class ShooterHood extends SubsystemBase {
     }
 
     public Command goToPos(Angle shootingAngle) {
-        return runOnce(() -> {
-            targetAngle = shootingAngle;
-            setGoal(shootingAngle);
-        });
+        return runOnce(() -> setGoal(shootingAngle));
     }
 
     /**
@@ -121,17 +120,14 @@ public class ShooterHood extends SubsystemBase {
             System.out.println("Zeroing Shooter Hood");
             motor.setPosition(Degrees.of(HoodConstants.OFFSET));
             zeroed = true;
+            DogLog.log("ShooterHood/isZeroed", zeroed);
         });
-    }
-
-    public boolean isZeroed() {
-        return zeroed;
     }
 
     @Override
     public void periodic() {
         DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
-        DogLog.log("ShooterHood/AtTarget", atTarget() ? 1 : 0, "Boolean");
+        DogLog.log("ShooterHood/AtTarget", atTarget());
     }
 
     public boolean atTarget() {

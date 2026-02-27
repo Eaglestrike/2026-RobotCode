@@ -24,7 +24,7 @@ public class ShooterFlywheels extends SubsystemBase {
     private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
-    private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
+    private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
     private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
         slot0Configs.kS = newKS;
@@ -99,8 +99,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public boolean atVelocity() {
         return motor.getVelocity().getValue()
-                .isNear(targetVel,
-                        AngularVelocity.ofBaseUnits(FlywheelConstants.VELOCITY_TOLERANCE, RotationsPerSecond));
+                .isNear(targetVel, RotationsPerSecond.of(FlywheelConstants.VELOCITY_TOLERANCE));
     }
 
     public Command stop() {

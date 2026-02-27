@@ -1,3 +1,10 @@
+# 2026 Robot Code
+
+## Shooter Turret
+
+<img src="media/Turret_Angles.JPG" alt="Turret Angles" style="max-width:400px; width:100%; height:auto;" />
+<p><em>Figure: Turret coordinate system.</em></p>
+
 ***Default Value for Harmonic Drive (from Jerry Robotics Arm)*** <br>
 
   KS = 0.19 (or 0.2095)   V <br>
