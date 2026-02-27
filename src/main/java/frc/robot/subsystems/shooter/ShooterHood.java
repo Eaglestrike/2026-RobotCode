@@ -63,7 +63,6 @@ public class ShooterHood extends SubsystemBase {
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
         motor.setPosition(Degrees.of(HoodConstants.OFFSET));
-        zeroed = true;
 
         DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
             CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
