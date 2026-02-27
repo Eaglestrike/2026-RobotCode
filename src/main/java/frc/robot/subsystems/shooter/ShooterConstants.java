@@ -47,8 +47,8 @@ public final class ShooterConstants {
         public static final double MAX_VOLTS = 8.0;
         /** In rotations per second */
         // public static final double MAX_VELOCITY = 0.0;
-        /** In rotations per second (for when not shooting) */
-        public static final double IDLE_VELOCITY = 0.0;
+        /** In rotations per minute (for when not shooting) */
+        public static final double IDLE_VELOCITY = 60.0;
 
         public static final double GEAR_RATIO = 10 / 9.0;
 
