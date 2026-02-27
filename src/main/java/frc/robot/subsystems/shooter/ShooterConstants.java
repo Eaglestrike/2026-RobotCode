@@ -43,10 +43,9 @@ public final class ShooterConstants {
     }
 
     public final class FlywheelConstants {
-        public static final int MOTOR_ID = 67;
+        public static final int MOTOR_ID = 6;
         public static final double MAX_VOLTS = 8.0;
-        /** In rotations per second */
-        // public static final double MAX_VELOCITY = 0.0;
+       
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 60.0;
 
@@ -69,7 +68,7 @@ public final class ShooterConstants {
         public static final double MAX_OUTPUT = 1.0;
 
         /** In RPM per second squared */
-        public static final double MAX_ACCEL = 10000.0;
+        public static final double MAX_ACCEL = 2.0;
     }
 
     public final class TurretConstants {
