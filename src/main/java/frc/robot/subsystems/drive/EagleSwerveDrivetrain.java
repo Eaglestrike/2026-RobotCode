@@ -445,8 +445,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                     Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
                             target.getRotation().getSin());
 
-                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a ·
-                                                                                                                  // b̂
+                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a · b̂
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
 

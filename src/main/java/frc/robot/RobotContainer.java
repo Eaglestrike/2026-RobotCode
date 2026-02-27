@@ -92,7 +92,7 @@ public class RobotContainer {
 	private final Hopper hopper = new Hopper();
 	private final Climb climb = new Climb();
 	private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-			feeder, hopper);
+			feeder, hopper, drivetrain);
 	private final Vision vision = new Vision(drivetrain);
 
 	public RobotContainer() {
@@ -249,7 +249,7 @@ public class RobotContainer {
 		return Commands.sequence( // TODO: Redo superstructure.climb
 				// superstructure.climb(ClimbConstants.ClimbState.L1),
 				new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())), // This position needs to be replaced
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
 				Commands.waitSeconds(0.5),
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))

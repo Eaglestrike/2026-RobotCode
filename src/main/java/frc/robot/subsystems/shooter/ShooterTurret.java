@@ -42,8 +42,7 @@ public class ShooterTurret extends SubsystemBase {
     private Angle targetAngle = Degrees.of(0);
 
     private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
-                                                                  // broken
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when broken
     private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
@@ -78,7 +77,7 @@ public class ShooterTurret extends SubsystemBase {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
 
-        // DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+        DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
     }
 
     /**
@@ -172,10 +171,9 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
-            // DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         });
     }
 

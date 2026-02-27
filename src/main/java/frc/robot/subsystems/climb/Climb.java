@@ -103,7 +103,7 @@ public class Climb extends SubsystemBase {
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
 
-        // // DogLog.log("Climb/ClimbZeroed", zeroed);
+        DogLog.log("Climb/ClimbZeroed", zeroed);
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
@@ -161,11 +161,10 @@ public class Climb extends SubsystemBase {
     public Command zero() {
         return runOnce(
                 () -> {
-                    System.out.println("Zeroing Climb");
                     left.setPosition(ClimbConstants.LEFT_OFFSET);
                     right.setPosition(ClimbConstants.RIGHT_OFFSET);
                     zeroed = true;
-                    // DogLog.log("Climb/ClimbZeroed", zeroed);
+                    DogLog.log("Climb/ClimbZeroed", zeroed);
                 });
     }
 

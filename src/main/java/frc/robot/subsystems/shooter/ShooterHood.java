@@ -65,7 +65,7 @@ public class ShooterHood extends SubsystemBase {
             CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
 
-        // DogLog.log("ShooterHood/isZeroed", zeroed);
+        DogLog.log("ShooterHood/isZeroed", zeroed);
     }
 
     /**
@@ -114,10 +114,9 @@ public class ShooterHood extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing Shooter Hood");
             motor.setPosition(Degrees.of(HoodConstants.OFFSET));
             zeroed = true;
-            // DogLog.log("ShooterHood/isZeroed", zeroed);
+            DogLog.log("ShooterHood/isZeroed", zeroed);
         });
     }
 

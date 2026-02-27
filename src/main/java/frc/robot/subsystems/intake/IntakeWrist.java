@@ -78,7 +78,7 @@ public class IntakeWrist extends SubsystemBase {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
 
-        // DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+        DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
     }
 
     // encoder gives value in radians
@@ -101,14 +101,12 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing Intake Wrist");
             motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
-            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when
-                                                                 // enabling
+            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when enabling
             state = State.IDLE;
             zeroed = true;
 
-            // DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+            DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
         });
     }
 
@@ -145,7 +143,7 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
+        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
 
         if (!DriverStation.isEnabled() || !zeroed) {
             motor.setVoltage(0.0);
