@@ -73,12 +73,12 @@ public class RobotContainer {
         // auto
         private final SendableChooser<Command> autoChooser;
 
-    // Button Board constants
-    private final int CLIMB_BUTTON = 4;
-    private final int INTAKE_BUTTON = 5;
-    private final int HOOD_BUTTON = 2;
-    private final int TURRET_BUTTON = 1;
-    private final int SERIALIZER_BUTTON = 3;
+        // Button Board constants
+        private final int CLIMB_BUTTON = 4;
+        private final int INTAKE_BUTTON = 5;
+        private final int HOOD_BUTTON = 2;
+        private final int TURRET_BUTTON = 1;
+        private final int SERIALIZER_BUTTON = 3;
 
         // subsystems
         private final Shooter shooter = new Shooter(drivetrain);
@@ -176,8 +176,9 @@ public class RobotContainer {
                 // .onTrue(drivetrain.alignPID(() ->
                 // FieldConstants.getAllianceTowerPosition(true)));
                 rightJoystick.button(4)
-					.onTrue(climbL1(() -> false))
-					.onFalse(drivetrain.applyRequest(() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+                                .onTrue(climbL1(() -> false))
+                                .onFalse(drivetrain.applyRequest(
+                                                () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
                 // ---------------------------------
 
                 rightJoystick.trigger().onTrue(superstructure.intake());
@@ -241,17 +242,17 @@ public class RobotContainer {
                                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
         }
 
-                public Command climbL1(BooleanSupplier left) {
-                        return Commands.sequence( // TODO: Redo superstructure.climb
-							// superstructure.climb(ClimbConstants.ClimbState.L1),
-							new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-							drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
-							Commands.waitSeconds(0.5),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-							// superstructure.climb(ClimbConstants.ClimbState.STOWED)
-                        );	
-                }
+        public Command climbL1(BooleanSupplier left) {
+                return Commands.sequence( // TODO: Redo superstructure.climb
+                                // superstructure.climb(ClimbConstants.ClimbState.L1),
+                                new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
+                                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
+                                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
+                                Commands.waitSeconds(0.5),
+                                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
+                // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+                );
+        }
 
         public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
                 return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);
