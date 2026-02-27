@@ -24,6 +24,7 @@ import java.util.function.DoubleSupplier;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -47,6 +48,7 @@ import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.shooter.solver.BallisticSolver.SolverMode;
 import frc.robot.subsystems.vision.Vision;
+import edu.wpi.first.wpilibj.RobotBase;
 
 public class RobotContainer {
         private static final boolean ENABLE_CLIMB_COMMAND = true;
@@ -88,7 +90,8 @@ public class RobotContainer {
         private final int SERIALIZER_BUTTON = 3;
 
         // subsystems
-        private final Shooter shooter = new Shooter(drivetrain);
+        private final Shooter shooter = new Shooter(drivetrain,
+                        RobotBase.isSimulation() ? SolverMode.LOCAL : SolverMode.CLIENT);
         private final ShooterTurret turret = shooter.getTurret();
         private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
         private final IntakeRollers intakeRollers = new IntakeRollers();
@@ -146,15 +149,18 @@ public class RobotContainer {
                 drivetrain.setDefaultCommand(
                                 drivetrain.applyRequest(() -> {
                                         var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
+                                        double lx = MathUtil.applyDeadband(-leftJoystick.getX(), AXIS_DEADBAND);
+                                        double ly = MathUtil.applyDeadband(-leftJoystick.getY(), AXIS_DEADBAND);
+                                        double rx = MathUtil.applyDeadband(-rightJoystick.getX(), AXIS_DEADBAND);
                                         return drive
                                                         .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
                                                                         * driveMult)
                                                         .withRotationalDeadband(MaxAngularRate
                                                                         * DriveConstants.DRIVE_DEADBAND_MULT
                                                                         * driveMult)
-                                                        .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                                                        .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                                                        .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
+                                                        .withVelocityX(ly * MaxSpeed * driveMult)
+                                                        .withVelocityY(lx * MaxSpeed * driveMult)
+                                                        .withRotationalRate(rx * MaxAngularRate
                                                                         * driveMult);
                                 }));
 

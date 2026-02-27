@@ -115,7 +115,7 @@ public class MapleSimSwerveDrivetrain {
         for (int i = 0; i < this.simModules.length; i++)
             simModules[i] = new SimSwerveModule(moduleConstants[0], moduleSimulations[i], modules[i]);
 
-        SimulatedArena.overrideSimulationTimings(simPeriod, 1);
+        SimulatedArena.overrideSimulationTimings(simPeriod, 5);
         SimulatedArena.getInstance().addDriveTrainSimulation(mapleSimDrive);
     }
 
@@ -264,6 +264,9 @@ public class MapleSimSwerveDrivetrain {
         moduleConstants
                 // Disable encoder offsets
                 .withEncoderOffset(0)
+                // MapleSim does not simulate steer-drive coupling, so zero it out
+                // to prevent Phoenix 6 odometry from compensating for nonexistent coupling
+                .withCouplingGearRatio(0)
                 // Disable motor inversions for drive and steer motors
                 .withDriveMotorInverted(false)
                 .withSteerMotorInverted(false)

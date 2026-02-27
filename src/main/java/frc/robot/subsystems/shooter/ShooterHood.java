@@ -153,7 +153,6 @@ public class ShooterHood extends SubsystemBase {
 
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {

@@ -88,8 +88,12 @@ public class ShooterFlywheels extends SubsystemBase {
      */
     public void setVelocity(double targetVel) {
         double rps = Math.min(targetVel / 60.0, FlywheelConstants.MAX_VELOCITY_RPS);
-        this.targetVel = AngularVelocity.ofBaseUnits(rps, RotationsPerSecond);
-        motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+        this.targetVel = RotationsPerSecond.of(rps);
+        if (rps <= 0) {
+            motor.stopMotor();
+        } else {
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
+        }
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
