@@ -97,7 +97,7 @@ public class Climb extends SubsystemBase {
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
 
-        DogLog.log("Climb/ClimbZeroed", zeroed);
+        // // DogLog.log("Climb/ClimbZeroed", zeroed);
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
@@ -107,52 +107,48 @@ public class Climb extends SubsystemBase {
                         Map.entry(ClimbConstants.ClimbState.STOWED, stow()),
                         Map.entry(ClimbConstants.ClimbState.L1, climbL1()),
                         Map.entry(ClimbConstants.ClimbState.L2, climbL2()),
-                        Map.entry(ClimbConstants.ClimbState.L3, climbL3())
-                        ),
+                        Map.entry(ClimbConstants.ClimbState.L3, climbL3())),
                 () -> state);
     }
 
     private Command climbL1() {
         return Commands.sequence(
-            moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
-            moveTo(ClimbConstants.CLIMBED_POSITION, left)
-        );
+                moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
+                moveTo(ClimbConstants.CLIMBED_POSITION, left));
     }
 
     private Command climbL2() {
 
         return Commands.sequence(
-            climbL1(),
-            moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
-            moveTo(ClimbConstants.CLIMBED_POSITION, right)
-        );
+                climbL1(),
+                moveTo(ClimbConstants.L2_EXTEND_HEIGHT, right),
+                moveTo(ClimbConstants.CLIMBED_POSITION, right));
     }
 
     private Command climbL3() {
         return Commands.sequence(
-            climbL2(),
-            moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
-            moveTo(ClimbConstants.CLIMBED_POSITION, left)
-        );
+                climbL2(),
+                moveTo(ClimbConstants.L3_EXTEND_HEIGHT, left),
+                moveTo(ClimbConstants.CLIMBED_POSITION, left));
     }
 
     private Command stow() {
         return Commands.sequence(
-            moveTo(ClimbConstants.STOW_HEIGHT, left),
-            moveTo(ClimbConstants.STOW_HEIGHT, right));
+                moveTo(ClimbConstants.STOW_HEIGHT, left),
+                moveTo(ClimbConstants.STOW_HEIGHT, right));
     }
 
     // Move one motor to a specified position
     private Command moveTo(double position, TalonFX motor) {
         return runOnce(
                 () -> {
-                    if(!zeroed) {
+                    if (!zeroed) {
                         System.out.println("Climb not zeroed, ignoring moveTo command");
                         return;
                     }
                     motor.setControl(mmReq.withPosition(position).withSlot(0));
                 }).until(
-                    () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
+                        () -> Math.abs(motor.getPosition().getValueAsDouble() - position) < 0.1);
     }
 
     // Zero the encoders of both motors
@@ -163,7 +159,7 @@ public class Climb extends SubsystemBase {
                     left.setPosition(ClimbConstants.LEFT_OFFSET);
                     right.setPosition(ClimbConstants.RIGHT_OFFSET);
                     zeroed = true;
-                    DogLog.log("Climb/ClimbZeroed", zeroed);
+                    // DogLog.log("Climb/ClimbZeroed", zeroed);
                 });
     }
 
@@ -180,9 +176,11 @@ public class Climb extends SubsystemBase {
         return run(
                 () -> {
                     left.setVoltage(
-                            leftjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            leftjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS
+                                    / ClimbConstants.MANUAL_RATIO);
                     right.setVoltage(
-                            rightjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS / ClimbConstants.MANUAL_RATIO);
+                            rightjoystickPosition.getAsDouble() * ClimbConstants.MAX_VOLTS
+                                    / ClimbConstants.MANUAL_RATIO);
                 });
     }
 
