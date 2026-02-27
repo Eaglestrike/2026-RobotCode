@@ -47,6 +47,8 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
+        private static final boolean ENABLE_CLIMB_COMMAND = true;
+
         public static final double AXIS_DEADBAND = 0.02;
         public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
         private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
@@ -96,7 +98,9 @@ public class RobotContainer {
         public RobotContainer() {
                 configureBindings();
 
-                NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
+                NamedCommands.registerCommand("ClimbL1",
+                                ENABLE_CLIMB_COMMAND ? superstructure.climb(ClimbConstants.ClimbState.L1)
+                                                : Commands.none());
                 NamedCommands.registerCommand("SetModeFerry",
                                 Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
                 NamedCommands.registerCommand("SetModeShoot",
