@@ -7,7 +7,6 @@ import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -22,10 +21,10 @@ import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
     private TalonFX motor;
-    private VelocityTorqueCurrentFOC motionMagic = new VelocityTorqueCurrentFOC(0);
+    private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
-    private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
+    private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
     private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
         slot0Configs.kS = newKS;
@@ -58,9 +57,7 @@ public class ShooterFlywheels extends SubsystemBase {
     });
 
     private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, newTargetAccel -> {
-                slot0Configs.kD = newTargetAccel;
-                motor.getConfigurator().apply(slot0Configs);
+            FlywheelConstants.MAX_ACCEL, x -> {
             });
 
     public ShooterFlywheels() {
@@ -90,22 +87,25 @@ public class ShooterFlywheels extends SubsystemBase {
     }
 
     /**
-     * Function to set flywheel velocity
+     * Directly set the flywheel target velocity (for use by Shooter in periodic())
      * 
-     * @param targetVel in RPM
+     * @param targetVel Target velocity in rotations per minute
      */
-    public void setVelocity(double targetVel) {
-        targetVel /= 60;
-        if (targetVel < motor.getVelocity().getValueAsDouble()) {
-            // Brake until just before the target if trying to reduce speed
+    public void setVelocity(double vel) {
+        vel /= 60;
+        this.targetVel = RotationsPerSecond.of(vel);
+        if (motor.getVelocity().getValue().isNear(
+                targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
+        }
+
+        else if (vel < motor.getVelocity().getValueAsDouble()) {
+            // Coast until just before the target if trying to reduce speed
             motor.setVoltage(0);
-            if (motor.getVelocity().getValueAsDouble() - targetVel <= 2) {
-                this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-                motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
-            }
         } else {
-            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-            motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
         }
     }
 
@@ -117,7 +117,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public boolean atVelocity() {
         return motor.getVelocity().getValue()
-            .isNear(targetVel, AngularVelocity.ofBaseUnits(FlywheelConstants.VELOCITY_TOLERANCE, RotationsPerSecond));
+                .isNear(targetVel, RotationsPerSecond.of(FlywheelConstants.VELOCITY_TOLERANCE));
     }
 
     public Command stop() {
