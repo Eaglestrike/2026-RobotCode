@@ -81,14 +81,31 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getPosition().setUpdateFrequency(10);
         motor.optimizeBusUtilization();
     }
+    
+
+    public Command startAtVelocity(double targetVel) {
+        return this.runOnce(() -> {
+            setVelocity(targetVel);
+        });
+    }
 
     /**
      * Directly set the flywheel target velocity (for use by Shooter in periodic())
      * @param targetVel Target velocity in rotations per minute
      */
     public void setVelocity(double targetVel) {
-        this.targetVel = AngularVelocity.ofBaseUnits(targetVel/60, RotationsPerSecond);
-        motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+        targetVel /= 60;
+        if (targetVel < motor.getVelocity().getValueAsDouble()) {
+            // Brake until just before the target if trying to reduce speed
+            motor.setVoltage(0);
+            if (motor.getVelocity().getValueAsDouble() - targetVel <= 2) {
+                this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
+                motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            }
+        } else {
+            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
+            motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+        }
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
