@@ -24,7 +24,7 @@ public class ShooterFlywheels extends SubsystemBase {
     private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
-    private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
+    private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
     private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
         slot0Configs.kS = newKS;
@@ -57,7 +57,8 @@ public class ShooterFlywheels extends SubsystemBase {
     });
 
     private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, x -> {});
+            FlywheelConstants.MAX_ACCEL, x -> {
+            });
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;
@@ -81,7 +82,6 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getPosition().setUpdateFrequency(10);
         motor.optimizeBusUtilization();
     }
-    
 
     public Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
@@ -91,20 +91,24 @@ public class ShooterFlywheels extends SubsystemBase {
 
     /**
      * Directly set the flywheel target velocity (for use by Shooter in periodic())
+     * 
      * @param targetVel Target velocity in rotations per minute
      */
-    public void setVelocity(double targetVel) {
-        targetVel /= 60;
-        if (targetVel < motor.getVelocity().getValueAsDouble()) {
-            // Brake until just before the target if trying to reduce speed
+    public void setVelocity(double vel) {
+        vel /= 60;
+        this.targetVel = RotationsPerSecond.of(vel);
+        if (motor.getVelocity().getValue().isNear(
+                targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
+        }
+
+        else if (vel < motor.getVelocity().getValueAsDouble()) {
+            // Coast until just before the target if trying to reduce speed
             motor.setVoltage(0);
-            if (motor.getVelocity().getValueAsDouble() - targetVel <= 2) {
-                this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-                motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
-            }
         } else {
-            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-            motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
         }
     }
 
@@ -116,8 +120,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public boolean atVelocity() {
         return motor.getVelocity().getValue()
-                .isNear(targetVel,
-                        AngularVelocity.ofBaseUnits(FlywheelConstants.VELOCITY_TOLERANCE, RotationsPerSecond));
+                .isNear(targetVel, RotationsPerSecond.of(FlywheelConstants.VELOCITY_TOLERANCE));
     }
 
     public Command stop() {

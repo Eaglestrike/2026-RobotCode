@@ -126,6 +126,7 @@ public class Superstructure extends SubsystemBase {
      */
     public void setShooting(boolean shooting) {
         isShooting = shooting;
+        shooter.setShooting(shooting);
     }
 
     @Override

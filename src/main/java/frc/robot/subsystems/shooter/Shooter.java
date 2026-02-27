@@ -47,6 +47,7 @@ public class Shooter extends SubsystemBase {
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
 
     private boolean armed = false;
+    private boolean isShooting = false;
     private Translation3d cachedShooterPos = new Translation3d();
     private ChassisSpeeds cachedFieldSpeeds = new ChassisSpeeds();
 
@@ -68,6 +69,10 @@ public class Shooter extends SubsystemBase {
 
     public void setArmed(boolean armed) {
         this.armed = armed;
+    }
+
+    public void setShooting(boolean shooting) {
+        this.isShooting = shooting;
     }
 
     /** Stow turret/hood/flywheel (command for auto / teleop transitions). */
@@ -172,7 +177,7 @@ public class Shooter extends SubsystemBase {
                 && targetFlywheelVel > 0;
         boolean aimReady = isTurretOnTarget() && isHoodOnTarget();
 
-        if (solverReady && aimReady) {
+        if (isShooting) {
             flywheels.setVelocity(targetFlywheelVel);
         } else {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);

@@ -44,7 +44,7 @@ public class Feeder extends SubsystemBase {
     }
 
     public void stopMotor() {
-        motor.setControl(voltageOutReq.withOutput(0));
+        motor.stopMotor();
     }
 
 }

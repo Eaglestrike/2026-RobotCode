@@ -124,15 +124,7 @@ public class ShooterTurret extends SubsystemBase {
      * @return runOnce command (does not wait for movement to terminate; use atTarget() for that)
      */
     public Command requestPosition(Angle pos) {
-        return runOnce(() -> {
-            Angle safePos = normalizeToSafeRange(pos);
-            if (!zeroed) {
-                System.out.println("Turret not zeroed, ignoring request");
-                return;
-            }
-            this.targetAngle = safePos;
-            this.motor.setControl(this.position.withPosition(safePos));
-        });
+        return runOnce(() -> setAngle(pos));
     }
 
     /**
@@ -143,6 +135,7 @@ public class ShooterTurret extends SubsystemBase {
         if (!zeroed)
             return;
         Angle safePos = normalizeToSafeRange(pos);
+        DogLog.log("ShooterTurret/RequestedAngle", pos.in(Degrees), "Degrees");
         this.targetAngle = safePos;
         this.motor.setControl(this.position.withPosition(safePos));
     }
