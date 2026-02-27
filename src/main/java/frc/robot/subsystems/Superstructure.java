@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Degrees;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -19,6 +21,8 @@ import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 
 public class Superstructure extends SubsystemBase {
+    public static Translation2d shootOffset = new Translation2d(-1.2, -0.8);
+
     public enum ShootMode {
         FERRY,
         SHOOT,
@@ -44,6 +48,12 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
+
+        DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
+                value -> shootOffset = new Translation2d(value, shootOffset.getY()));
+        DogLog.tunable("Superstructure/ShootOffsetY", shootOffset.getY(),
+                value -> shootOffset = new Translation2d(shootOffset.getX(), value));
+
     }
 
     public Command initialize() {
@@ -129,12 +139,23 @@ public class Superstructure extends SubsystemBase {
         shooter.setShooting(shooting);
     }
 
+    private Pose3d applyShootOffset(Pose3d target) {
+        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
+        double xSign = isBlue ? 1.0 : -1.0;
+        double ySign = isBlue ? 1.0 : -1.0;
+        return new Pose3d(
+                target.getX() + shootOffset.getX() * xSign,
+                target.getY() + shootOffset.getY() * ySign,
+                target.getZ(),
+                target.getRotation());
+    }
+
     @Override
     public void periodic() {
         if (currentMode == ShootMode.FERRY) {
             shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
         } else {
-            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+            shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
         }
 
         if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
@@ -147,7 +168,7 @@ public class Superstructure extends SubsystemBase {
 
         shooter.setArmed(isShooting);
 
-        if (isShooting) {
+        if (isShooting && shooter.isReady()) {
             feeder.startMotor();
             hopper.startKicking();
         } else {

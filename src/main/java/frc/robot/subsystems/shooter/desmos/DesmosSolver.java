@@ -1,5 +1,6 @@
 package frc.robot.subsystems.shooter.desmos;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -56,6 +57,8 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver;
  * </ul>
  */
 public class DesmosSolver implements ShooterSolver {
+    /** Blending ratio for hood angle between apex and 90° (steep) */
+    private static double ratio = 1 / 3d;
 
     // ================================================================
     // Internal parameter bundle
@@ -260,8 +263,7 @@ public class DesmosSolver implements ShooterSolver {
         Apex apex = findApexAngle(p);
 
         // Step 2: Blend hood angle toward 90° for a steep descent trajectory
-        // (1/3 apex pitch + 2/3 * 90 deg -> biased steep)
-        p.a = 1 / 3d * apex.a + 2 / 3d * 90.0;
+        p.a = ratio * apex.a + (1 - ratio) * 90.0;
 
         // Sanity-check: if apex angle was NaN (degenerate geometry), bail out
         if (!Double.isFinite(p.a)) {
@@ -274,7 +276,7 @@ public class DesmosSolver implements ShooterSolver {
         }
 
         // Step 3: Bisect for flight time with the chosen hood angle
-        double t1 = findRoot(0.0, 10.0, p, 1e-8, 100);
+        double t1 = findRoot(0.0, 10.0, p, 1e-8, 50);
 
         // Step 4: Compute turret yaw to the lead-corrected target position at t1
         // Using standard atan2 for correct quadrant handling in all cases.
@@ -338,6 +340,8 @@ public class DesmosSolver implements ShooterSolver {
             return ShotData.INVALID;
         }
 
+        DogLog.log("Shooter/Launch velocity", r.v0);
+
         // Convert ball exit velocity (m/s) -> flywheel RPS -> RPM
         double flywheelRPS = ShooterConstants.ballVelToFlywheelRPS(r.v0);
         double rpm = flywheelRPS * 60.0;
@@ -348,5 +352,14 @@ public class DesmosSolver implements ShooterSolver {
                 rpm,
                 actualTarget,
                 true);
+    }
+
+    /**
+     * Sets the blending ratio for hood angle between the apex solution and 90° (steep shot).
+     * By default, ratio = ⅓ (one-third of the way from apex to 90°).  
+     * @param ratio The blending ratio (0.0 = full 90°, 1.0 = full apex)
+     */
+    public static void setHoodRatio(double ratio) {
+        DesmosSolver.ratio = ratio;
     }
 }
