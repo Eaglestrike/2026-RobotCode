@@ -58,12 +58,12 @@ public final class ShooterConstants {
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
 
-        public static final double kP = 12.5;
+        public static final double kP = 12;
         public static final double kI = 0.0;
-        public static final double kD = 0.008;
-        public static final double kS = 8;
-        public static final double kV = 1;
-        public static final double kA = 45;
+        public static final double kD = 0;
+        public static final double kS = 15.4;
+        public static final double kV = 0.2;
+        public static final double kA = 0;
 
         public static final double MIN_OUTPUT = -1.0;
         public static final double MAX_OUTPUT = 1.0;
