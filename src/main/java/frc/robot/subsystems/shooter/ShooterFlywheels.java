@@ -87,7 +87,8 @@ public class ShooterFlywheels extends SubsystemBase {
      * @param targetVel Target velocity in rotations per minute
      */
     public void setVelocity(double targetVel) {
-        this.targetVel = AngularVelocity.ofBaseUnits(targetVel/60, RotationsPerSecond);
+        double rps = Math.min(targetVel / 60.0, FlywheelConstants.MAX_VELOCITY_RPS);
+        this.targetVel = AngularVelocity.ofBaseUnits(rps, RotationsPerSecond);
         motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
     }
 

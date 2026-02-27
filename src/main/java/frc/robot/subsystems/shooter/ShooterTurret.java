@@ -144,22 +144,6 @@ public class ShooterTurret extends SubsystemBase {
         return motor.getPosition().getValue();
     }
 
-    /**
-     * Directly set the turret target angle (for use by Shooter in periodic()).
-     * Uses normalizeToSafeRange to wrap into valid turret range.
-     */
-    public void setAngle(Angle pos) {
-        if (!zeroed)
-            return;
-        Angle safePos = normalizeToSafeRange(pos);
-        this.targetAngle = safePos;
-        this.motor.setControl(this.position.withPosition(safePos));
-    }
-
-    public Angle getAngle() {
-        return motor.getPosition().getValue();
-    }
-
     public void setFacing(Pose2d to) {
         // TODO: Maybe account for robot's velocity when calculating angle to turn to
         var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));

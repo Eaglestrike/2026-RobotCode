@@ -45,7 +45,7 @@ public final class ShooterConstants {
     public final class FlywheelConstants {
         public static final int MOTOR_ID = 6;
         public static final double MAX_VOLTS = 8.0;
-       
+
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 0.0;
 
@@ -53,15 +53,17 @@ public final class ShooterConstants {
 
         /** In rotations per second */
         public static final double VELOCITY_TOLERANCE = 2.0;
+        /** Max flywheel velocity (rotations per second) */
+        public static final double MAX_VELOCITY_RPS = 70.0;
 
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
 
-        public static final double kP = 12.5;
+        public static final double kP = 12.0;
         public static final double kI = 0.0;
-        public static final double kD = 0.008;
-        public static final double kS = 8;
-        public static final double kV = 1;
+        public static final double kD = 0.0;
+        public static final double kS = 15.4;
+        public static final double kV = 0.2;
         public static final double kA = 45;
 
         public static final double MIN_OUTPUT = -1.0;
@@ -77,7 +79,7 @@ public final class ShooterConstants {
         /**
          * Offset of the turret center, relative to the robot's center point (meters)
          */
-        public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
+        public static final Translation2d OFFSET = new Translation2d(0.12827, -0.05080);
 
         /** In rotations of the turret — zero sensor is at back, so offset by -180° */
         public static final double ENCODER_OFFSET = -0.5;

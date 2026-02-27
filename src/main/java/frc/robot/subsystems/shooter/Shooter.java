@@ -120,13 +120,18 @@ public class Shooter extends SubsystemBase {
             }
             ShotData result = solver.calculateShot(
                     input.shooterPose, input.fieldSpeeds, input.target);
+
+            double dx = input.target.getX() - input.shooterPose.getX();
+            double dy = input.target.getY() - input.shooterPose.getY();
+            DogLog.log("Shooter/Solver/InputDist_m", Math.sqrt(dx * dx + dy * dy));
+            DogLog.log("Shooter/Solver/ResultRPM", result.rpm());
+            DogLog.log("Shooter/Solver/ResultValid", result.validShot());
+
             double hoodDeg = MathUtil.clamp(result.hoodAngle().getDegrees(),
                     ShooterConstants.HoodConstants.MIN_ANGLE,
                     ShooterConstants.HoodConstants.MAX_ANGLE);
             double fieldTurretDeg;
             if (directTurret) {
-                double dx = input.target.getX() - input.shooterPose.getX();
-                double dy = input.target.getY() - input.shooterPose.getY();
                 fieldTurretDeg = Math.toDegrees(Math.atan2(dy, dx));
             } else {
                 fieldTurretDeg = result.turretAngle().getDegrees();
@@ -285,9 +290,8 @@ public class Shooter extends SubsystemBase {
 
         boolean solverReady = lastSolverResult != null && lastSolverResult.validShot()
                 && targetFlywheelVel > 0;
-        boolean aimReady = isTurretOnTarget() && isHoodOnTarget();
 
-        if (solverReady && aimReady) {
+        if (armed && solverReady) {
             flywheels.setVelocity(targetFlywheelVel);
         } else {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -368,7 +372,7 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetHoodAngle_deg", targetHoodAngleDeg);
         DogLog.log("Shooter/ActualHoodAngle_deg", hood.getAngle().in(Degrees));
-        DogLog.log("Shooter/TargetFlywheelVel_rps", targetFlywheelVel);
+        DogLog.log("Shooter/TargetFlywheelVel_rpm", targetFlywheelVel);
         DogLog.log("Shooter/TurretOnTarget", isTurretOnTarget());
         DogLog.log("Shooter/HoodOnTarget", isHoodOnTarget());
         DogLog.log("Shooter/FlywheelReady", isFlywheelReady());
