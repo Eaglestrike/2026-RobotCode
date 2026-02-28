@@ -7,7 +7,6 @@ import java.util.function.DoubleSupplier;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -21,47 +20,51 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
+    public static final boolean ENABLE_TUNING = true;
+
     private TalonFX motor;
-    private VelocityTorqueCurrentFOC motionMagic = new VelocityTorqueCurrentFOC(0);
+    private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
-    private AngularVelocity targetVel = AngularVelocity.ofBaseUnits(0, RotationsPerSecond);
-
-    private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
-        slot0Configs.kS = newKS;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kV = DogLog.tunable("ShooterFlywheels/kV", FlywheelConstants.kV, newKV -> {
-        slot0Configs.kV = newKV;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kA = DogLog.tunable("ShooterFlywheels/kA", FlywheelConstants.kA, newKA -> {
-        slot0Configs.kA = newKA;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kP = DogLog.tunable("ShooterFlywheels/kP", FlywheelConstants.kP, newKP -> {
-        slot0Configs.kP = newKP;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kI = DogLog.tunable("ShooterFlywheels/kI", FlywheelConstants.kI, newKI -> {
-        slot0Configs.kI = newKI;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kD = DogLog.tunable("ShooterFlywheels/kD", FlywheelConstants.kD, newKD -> {
-        slot0Configs.kD = newKD;
-        motor.getConfigurator().apply(slot0Configs);
-    });
+    private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
     private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.TARGET_ACCEL, newTargetAccel -> {
-                slot0Configs.kD = newTargetAccel;
+            FlywheelConstants.MAX_ACCEL, x -> {
+            });
+
+    {
+        if(ENABLE_TUNING) {
+            DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
+                slot0Configs.kS = newKS;
                 motor.getConfigurator().apply(slot0Configs);
             });
+
+            DogLog.tunable("ShooterFlywheels/kV", FlywheelConstants.kV, newKV -> {
+                slot0Configs.kV = newKV;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kA", FlywheelConstants.kA, newKA -> {
+                slot0Configs.kA = newKA;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kP", FlywheelConstants.kP, newKP -> {
+                slot0Configs.kP = newKP;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kI", FlywheelConstants.kI, newKI -> {
+                slot0Configs.kI = newKI;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kD", FlywheelConstants.kD, newKD -> {
+                slot0Configs.kD = newKD;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+        }
+    }    
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;
@@ -85,18 +88,31 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public Command startAtVelocity(double targetVel) {
         return this.runOnce(() -> {
-            this.targetVel = AngularVelocity.ofBaseUnits(targetVel, RotationsPerSecond);
-            motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            setVelocity(targetVel);
         });
     }
 
     /**
-     * Function to set flywheel velocity
-     * @param targetVel in RPM
+     * Directly set the flywheel target velocity (for use by Shooter in periodic())
+     * 
+     * @param targetVel Target velocity in rotations per minute
      */
-    public void setVelocity(double targetVel) {
-        this.targetVel = AngularVelocity.ofBaseUnits(targetVel / 60, RotationsPerSecond);
-        motor.setControl(motionMagic.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+    public void setVelocity(double vel) {
+        vel /= 60;
+        this.targetVel = RotationsPerSecond.of(vel);
+        if (motor.getVelocity().getValue().isNear(
+                targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
+        }
+
+        else if (vel < motor.getVelocity().getValueAsDouble()) {
+            // Coast until just before the target if trying to reduce speed
+            motor.setVoltage(0);
+        } else {
+            // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
+            motor.setControl(velocityRequest.withVelocity(this.targetVel));
+        }
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
@@ -107,7 +123,7 @@ public class ShooterFlywheels extends SubsystemBase {
 
     public boolean atVelocity() {
         return motor.getVelocity().getValue()
-            .isNear(targetVel, AngularVelocity.ofBaseUnits(FlywheelConstants.VELOCITY_TOLERANCE, RotationsPerSecond));
+                .isNear(targetVel, RotationsPerSecond.of(FlywheelConstants.VELOCITY_TOLERANCE));
     }
 
     public Command stop() {

@@ -66,7 +66,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
-    private static double alignKP = 3.114;
+    private static double alignKP = 2.114;
     private static double alignKI = 0.0;
     private static double alignKD = 0.114;
 
@@ -77,7 +77,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     private SwerveRequest.FieldCentricFacingAngle velocityRequest = new SwerveRequest.FieldCentricFacingAngle()
             .withForwardPerspective(ForwardPerspectiveValue.BlueAlliance)
             .withDriveRequestType(DriveRequestType.Velocity)
-            .withHeadingPID(4, 0,0);
+            .withHeadingPID(4, 0, 0);
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -426,12 +426,12 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return this.run(() -> {
             Pose2d pose = this.getState().Pose;
             Pose2d target = targetSupplier.get().toPose2d();
-            DogLog.log("AutoAlign/Target Pose", target);
+            // DogLog.log("AutoAlign/Target Pose", target);
 
             double veloX = alignXController.calculate(pose.getX(), target.getX());
             double veloY = alignYController.calculate(pose.getY(), target.getY());
             Rotation2d headingReference = target.getRotation();
-            
+
             this.setControl(velocityRequest
                     .withVelocityX(veloX)
                     .withVelocityY(veloY)
@@ -442,14 +442,15 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                     Pose2d target = targetSupplier.get().toPose2d();
                     Transform2d error = pose.minus(target);
                     Translation2d errorTrans = error.getTranslation();
-                    Translation2d unitHeading = new Translation2d(target.getRotation().getCos(), target.getRotation().getSin());
-                    
-                    double dot = errorTrans.getX()*unitHeading.getX() + errorTrans.getY()*unitHeading.getY();  // a · b̂
+                    Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
+                            target.getRotation().getSin());
+
+                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a · b̂
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
 
                     return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
-                           Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
+                            Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
                 })
                 .finallyDo(() -> {
                     this.setControl(new SwerveRequest.Idle());

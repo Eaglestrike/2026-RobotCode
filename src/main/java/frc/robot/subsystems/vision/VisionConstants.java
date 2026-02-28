@@ -7,9 +7,9 @@ import edu.wpi.first.math.util.Units;
 
 public class VisionConstants {
     public static final String LEFT_BACK_NAME = "LeftCameraBack";
-    public static final String LEFT_LEFT_NAME = "LeftCameraLeft";
+    public static final String LEFT_LEFT_NAME = "LeftCamera";
     public static final String RIGHT_BACK_NAME = "RightCameraBack";
-    public static final String RIGHT_RIGHT_NAME = "RightCameraRight";
+    public static final String RIGHT_RIGHT_NAME = "RightCamera";
 
     public static final Transform3d LEFT_BACK_TRANSFORM = new Transform3d(new Translation3d(-0.3211576, 0.29718, 0.2022856),
             new Rotation3d(0, -Math.PI / 6, Units.degreesToRadians(165)));
