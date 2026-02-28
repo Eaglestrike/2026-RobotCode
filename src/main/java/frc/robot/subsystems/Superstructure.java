@@ -21,7 +21,9 @@ import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
     public enum ShootMode {
@@ -30,7 +32,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Height, in meters, above the trench to use as the ferry target Z (near the ball's apex).
+     * Height, in meters, above the trench to use as the ferry target Z (near the
+     * ball's apex).
      */
     private static final double FERRY_HEIGHT_OFFSET = 0.10;
 
@@ -141,27 +144,40 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Computes the Pose3d target for ferry mode (look at the README for sketchy explanation of the logic).
+     * Computes the Pose3d target for ferry mode (look at the README for sketchy
+     * explanation of the logic).
      */
     private Pose3d computeFerryTarget() {
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         boolean isBlue = alliance == DriverStation.Alliance.Blue;
 
+        // X: the line over the bump/trench on our alliance's side of the field
         double targetX = isBlue
                 ? FieldConstants.LinesVertical.hubCenter
                 : FieldConstants.LinesVertical.oppHubCenter;
 
+        // Robot's current Y on the field
         Pose2d robotPose = drivetrain.getState().Pose;
         double robotY = robotPose.getY();
 
+        // Clamp Y into the open trench zone on the correct side of the hub.
+        // If the robot is above the field center-line (left side), aim into the left
+        // trench opening;
+        // otherwise aim into the right trench opening.
         double targetY;
         if (robotY >= FieldConstants.LinesHorizontal.center) {
-            double bumpMiddle = (FieldConstants.LinesHorizontal.leftBumpStart + FieldConstants.LinesHorizontal.leftBumpEnd) / 2;
+            // Left trench opening: from leftTrenchOpenEnd (just above the bump) to
+            // leftTrenchOpenStart (field wall)
+            double bumpMiddle = (FieldConstants.LinesHorizontal.leftBumpStart
+                    + FieldConstants.LinesHorizontal.leftBumpEnd) / 2;
             targetY = MathUtil.clamp(robotY,
                     bumpMiddle,
                     FieldConstants.LinesHorizontal.leftTrenchOpenStart);
         } else {
-            double bumpMiddle = (FieldConstants.LinesHorizontal.rightBumpStart + FieldConstants.LinesHorizontal.rightBumpEnd) / 2;
+            // Right trench opening: from rightTrenchOpenEnd (field wall, 0) to
+            // rightTrenchOpenStart (just below bump)
+            double bumpMiddle = (FieldConstants.LinesHorizontal.rightBumpStart
+                    + FieldConstants.LinesHorizontal.rightBumpEnd) / 2;
             targetY = MathUtil.clamp(robotY,
                     FieldConstants.LinesHorizontal.rightTrenchOpenEnd,
                     bumpMiddle);
@@ -172,6 +188,7 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        DogLog.log("Superstructure/AllianceHubPosition", FieldConstants.getAllianceHubPosition());
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
@@ -190,7 +207,7 @@ public class Superstructure extends SubsystemBase {
 
         shooter.setArmed(isShooting);
 
-        if (isShooting) {
+        if (isShooting && shooter.isReady()) {
             feeder.startMotor();
             hopper.startKicking();
         } else {

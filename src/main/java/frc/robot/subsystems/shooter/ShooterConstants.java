@@ -61,10 +61,10 @@ public final class ShooterConstants {
 
         public static final double kP = 12.0;
         public static final double kI = 0.0;
-        public static final double kD = 0.0;
+        public static final double kD = 0;
         public static final double kS = 15.4;
         public static final double kV = 0.2;
-        public static final double kA = 45;
+        public static final double kA = 0;
 
         public static final double MIN_OUTPUT = -1.0;
         public static final double MAX_OUTPUT = 1.0;
