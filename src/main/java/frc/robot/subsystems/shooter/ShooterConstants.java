@@ -14,13 +14,13 @@ public final class ShooterConstants {
      */
     public static final InterpolatingDoubleTreeMap BALL_VEL_TO_FLYWHEEL_VEL = new InterpolatingDoubleTreeMap();
     static {
-        BALL_VEL_TO_FLYWHEEL_VEL.put(1.7303, 10.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(4.7783, 20.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(6.7228, 30.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(8.0715, 40.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(9.2410, 61.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(9.7809, 62.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(10.1543, 70.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(1.2381, 10.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(4.6097, 20.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(6.9112, 30.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(7.2088, 30.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(8.6967, 40.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(8.6545, 40.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(10.5219, 50.0);
     }
 
     /**
