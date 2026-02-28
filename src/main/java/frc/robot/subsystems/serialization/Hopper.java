@@ -23,7 +23,7 @@ public class Hopper extends SubsystemBase {
     public Hopper() {
         motor = new TalonFX(SerializationConstants.HOPPER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
-        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         motor.getConfigurator().apply(cfg);
         motor.optimizeBusUtilization();
         motor.stopMotor();

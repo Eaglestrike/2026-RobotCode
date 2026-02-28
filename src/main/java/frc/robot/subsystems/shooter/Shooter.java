@@ -88,9 +88,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public boolean isTurretOnTarget() {
-        double cur = turret.getAngle().in(Degrees);
-        double error = MathUtil.inputModulus(cur - targetTurretAngleDeg, -180, 180);
-        return Math.abs(error) < ShooterConstants.TurretConstants.ANGLE_TOLERANCE.in(Degrees);
+        return turret.atTarget();
     }
 
     private boolean isHoodOnTarget() {
@@ -248,9 +246,6 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/HasTarget", targetPose != null);
         DogLog.log("Shooter/DistanceToTarget", distanceToTarget);
         DogLog.log("Shooter/TargetTurretAngle_deg", targetTurretAngleDeg);
-        DogLog.log("Shooter/ActualTurretAngle_deg", turret.getAngle().in(Degrees));
-        DogLog.log("Shooter/TurretError_deg",
-                MathUtil.inputModulus(turret.getAngle().in(Degrees) - targetTurretAngleDeg, -180, 180));
         DogLog.log("Shooter/FieldTurretAngle_deg", cachedFieldTurretDeg);
         DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetHoodAngle_deg", targetHoodAngleDeg);

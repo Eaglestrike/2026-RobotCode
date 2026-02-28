@@ -127,14 +127,18 @@ public class ShooterTurret extends SubsystemBase {
      */
     public Command requestPosition(Angle pos) {
         return runOnce(() -> {
-            Angle safePos = normalizeToSafeRange(pos);
-            if (!zeroed) {
-                System.out.println("Turret not zeroed, ignoring request");
-                return;
-            }
-            this.targetAngle = safePos;
-            this.motor.setControl(this.position.withPosition(safePos));
+            setAngle(pos);
         });
+    }
+
+    public void setAngle(Angle pos) {
+        Angle safePos = normalizeToSafeRange(pos);
+        if (!zeroed) {
+            System.out.println("Turret not zeroed, ignoring request");
+            return;
+        }
+        this.targetAngle = safePos;
+        this.motor.setControl(this.position.withPosition(safePos));
     }
 
     public void setFacing(Pose2d to) {

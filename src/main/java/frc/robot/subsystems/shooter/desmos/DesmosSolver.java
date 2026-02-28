@@ -325,7 +325,7 @@ public class DesmosSolver implements ShooterSolver {
     // ShooterSolver interface implementation
     // ================================================================
 
-    private static int CACHE_ITERS = 5;
+    private static int CACHE_ITERS = 0;
     private ShotData cachedResult;
     private int cacheIter = CACHE_ITERS;
 
@@ -353,8 +353,8 @@ public class DesmosSolver implements ShooterSolver {
      */
     @Override
     public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget) {
-        if (cacheIter++ == CACHE_ITERS) {
-            cacheIter = 1;
+        if (cacheIter < CACHE_ITERS && cachedResult != null) {
+            cacheIter++;
             return cachedResult;
         }
 
@@ -380,7 +380,7 @@ public class DesmosSolver implements ShooterSolver {
         // Convert ball exit velocity (m/s) -> flywheel RPS -> RPM
         double flywheelRPS = ShooterConstants.ballVelToFlywheelRPS(r.v0);
         double rpm = flywheelRPS * 60.0;
-
+        cacheIter = 0;
         return cachedResult = new ShotData(
                 Rotation2d.fromDegrees(r.hoodAngle),
                 Rotation2d.fromDegrees(r.turretAngle),
