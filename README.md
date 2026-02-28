@@ -5,6 +5,13 @@
 <img src="media/Turret_Angles.JPG" alt="Turret Angles" style="max-width:400px; width:100%; height:auto;" />
 <p><em>Figure: Turret coordinate system.</em></p>
 
+## Ferrying
+
+<img src="media/FerryLogic.png" style="max-width:800px; width:100%; height:auto;">
+<p><em>Figure: Ferrying Example</em></p>
+
+We want the ball to go in one of the two zones marked by the red dashed line. To do so, we set the target to be above the trench / bump so that following the parabolic arc, the ball falls into the desired zone (let's not ferry over the hub because that significantly reduces range).
+
 ***Default Value for Harmonic Drive (from Jerry Robotics Arm)*** <br>
 
   KS = 0.19 (or 0.2095)   V <br>

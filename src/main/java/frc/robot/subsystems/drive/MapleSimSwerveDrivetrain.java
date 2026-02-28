@@ -135,7 +135,7 @@ public class MapleSimSwerveDrivetrain {
                 mapleSimDrive.getSimulatedDriveTrainPose().getRotation().getMeasure());
         pigeonSim.setAngularVelocityZ(RadiansPerSecond.of(
                 mapleSimDrive.getDriveTrainSimulatedChassisSpeedsRobotRelative().omegaRadiansPerSecond));
-        DogLog.log("Sim/DrivetrainPose", mapleSimDrive.getSimulatedDriveTrainPose());
+        // DogLog.log("Sim/DrivetrainPose", mapleSimDrive.getSimulatedDriveTrainPose());
     }
 
     /**

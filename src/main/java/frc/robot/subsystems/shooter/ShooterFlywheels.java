@@ -20,44 +20,50 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
+    public static final boolean ENABLE_TUNING = true;
+
     private TalonFX motor;
     private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
-    private final DoubleSubscriber kS = DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
-        slot0Configs.kS = newKS;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kV = DogLog.tunable("ShooterFlywheels/kV", FlywheelConstants.kV, newKV -> {
-        slot0Configs.kV = newKV;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kA = DogLog.tunable("ShooterFlywheels/kA", FlywheelConstants.kA, newKA -> {
-        slot0Configs.kA = newKA;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kP = DogLog.tunable("ShooterFlywheels/kP", FlywheelConstants.kP, newKP -> {
-        slot0Configs.kP = newKP;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kI = DogLog.tunable("ShooterFlywheels/kI", FlywheelConstants.kI, newKI -> {
-        slot0Configs.kI = newKI;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
-    private final DoubleSubscriber kD = DogLog.tunable("ShooterFlywheels/kD", FlywheelConstants.kD, newKD -> {
-        slot0Configs.kD = newKD;
-        motor.getConfigurator().apply(slot0Configs);
-    });
-
     private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
             FlywheelConstants.MAX_ACCEL, x -> {});
+
+    {
+        if(ENABLE_TUNING) {
+            DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
+                slot0Configs.kS = newKS;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kV", FlywheelConstants.kV, newKV -> {
+                slot0Configs.kV = newKV;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kA", FlywheelConstants.kA, newKA -> {
+                slot0Configs.kA = newKA;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kP", FlywheelConstants.kP, newKP -> {
+                slot0Configs.kP = newKP;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kI", FlywheelConstants.kI, newKI -> {
+                slot0Configs.kI = newKI;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+
+            DogLog.tunable("ShooterFlywheels/kD", FlywheelConstants.kD, newKD -> {
+                slot0Configs.kD = newKD;
+                motor.getConfigurator().apply(slot0Configs);
+            });
+        }
+    }    
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;
@@ -117,6 +123,6 @@ public class ShooterFlywheels extends SubsystemBase {
     public void periodic() {
         DogLog.log("ShooterFlywheels/Velocity_rps", motor.getVelocity().getValueAsDouble());
         DogLog.log("ShooterFlywheels/TargetVelocity_rps", targetVel.in(RotationsPerSecond));
-        DogLog.log("ShooterFlywheels/AtVelocity", atVelocity());
+        DogLog.log("ShooterFlywheels/FlywheelsAtVelocity", atVelocity());
     }
 }

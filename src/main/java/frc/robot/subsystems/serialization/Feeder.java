@@ -23,7 +23,7 @@ public class Feeder extends SubsystemBase {
     public Feeder() {
         motor = new TalonFX(SerializationConstants.FEEDER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
-        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         cfg.Slot0.kS = SerializationConstants.kS;
         cfg.Slot0.kP = SerializationConstants.kP;
         cfg.Slot0.kI = SerializationConstants.kI;

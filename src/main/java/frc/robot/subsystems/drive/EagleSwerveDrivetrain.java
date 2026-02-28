@@ -426,7 +426,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return this.run(() -> {
             Pose2d pose = this.getState().Pose;
             Pose2d target = targetSupplier.get().toPose2d();
-            DogLog.log("AutoAlign/Target Pose", target);
+            // DogLog.log("AutoAlign/Target Pose", target);
 
             double veloX = alignXController.calculate(pose.getX(), target.getX());
             double veloY = alignYController.calculate(pose.getY(), target.getY());
@@ -445,8 +445,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                     Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
                             target.getRotation().getSin());
 
-                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a ·
-                                                                                                                  // b̂
+                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a · b̂
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
 
