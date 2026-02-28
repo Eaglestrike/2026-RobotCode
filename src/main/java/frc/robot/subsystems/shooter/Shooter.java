@@ -243,7 +243,8 @@ public class Shooter extends SubsystemBase {
 
         // Convert field-relative turret angle to robot-relative using CURRENT heading
         // (every cycle)
-        targetTurretAngleDeg = -(cachedFieldTurretDeg - robotPose.getRotation().getDegrees());
+        targetTurretAngleDeg = -(cachedFieldTurretDeg - robotPose.getRotation().getDegrees())
+                + ShooterConstants.TurretConstants.AIM_TRIM_DEG;
 
         // Throttle: only submit solver input every N cycles (~60ms)
         if (++periodicCounter >= SOLVER_SUBMIT_PERIOD) {

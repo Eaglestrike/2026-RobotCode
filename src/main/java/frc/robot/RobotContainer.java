@@ -24,7 +24,6 @@ import java.util.function.DoubleSupplier;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -100,12 +99,13 @@ public class RobotContainer {
         private final Hopper hopper = new Hopper();
         private final Climb climb = new Climb();
         private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-                        feeder, hopper);
+                        feeder, hopper, drivetrain);
         private final Vision vision = new Vision(drivetrain);
 
         public RobotContainer() {
-                drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-                                Rotation2d.fromDegrees(180)));
+                if (RobotBase.isSimulation()) {
+                        drivetrain.resetPose(new Pose2d(0.5, 0.5, new Rotation2d(0, 0)));
+                }
                 configureBindings();
 
                 NamedCommands.registerCommand("ClimbL1",
@@ -137,7 +137,7 @@ public class RobotContainer {
                                 .onTrue(Commands.runOnce(() -> shooter.setSolverMode(solverModeChooser.getSelected()))
                                                 .ignoringDisable(true));
 
-                SmartDashboard.putBoolean("Direct Turret", false);
+                SmartDashboard.putBoolean("Direct Turret", true);
                 new Trigger(() -> SmartDashboard.getBoolean("Direct Turret", false) != shooter.isDirectTurret())
                                 .onTrue(Commands.runOnce(
                                                 () -> shooter.setDirectTurret(
@@ -149,18 +149,15 @@ public class RobotContainer {
                 drivetrain.setDefaultCommand(
                                 drivetrain.applyRequest(() -> {
                                         var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
-                                        double lx = MathUtil.applyDeadband(-leftJoystick.getX(), AXIS_DEADBAND);
-                                        double ly = MathUtil.applyDeadband(-leftJoystick.getY(), AXIS_DEADBAND);
-                                        double rx = MathUtil.applyDeadband(-rightJoystick.getX(), AXIS_DEADBAND);
                                         return drive
                                                         .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
                                                                         * driveMult)
                                                         .withRotationalDeadband(MaxAngularRate
                                                                         * DriveConstants.DRIVE_DEADBAND_MULT
                                                                         * driveMult)
-                                                        .withVelocityX(ly * MaxSpeed * driveMult)
-                                                        .withVelocityY(lx * MaxSpeed * driveMult)
-                                                        .withRotationalRate(rx * MaxAngularRate
+                                                        .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
+                                                        .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
+                                                        .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
                                                                         * driveMult);
                                 }));
 
@@ -171,9 +168,7 @@ public class RobotContainer {
                 operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
                         System.out.println("Zeroing drive");
                         drivetrain.seedFieldCentric();
-                        drivetrain.resetPose(
-                                        new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-                                                        Rotation2d.fromDegrees(180)));
+                        drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
                 }).ignoringDisable(true));
 
                 drivetrain.registerTelemetry(logger::telemeterize);
@@ -274,16 +269,17 @@ public class RobotContainer {
                                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
         }
 
-                public Command climbL1(BooleanSupplier left) {
-                        return Commands.sequence(
-							Commands.runOnce(() -> System.out.println("Aligning to " + left.getAsBoolean() + " tower")),
-							drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
-							Commands.waitSeconds(0.5),
-							Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-							// superstructure.climb(ClimbConstants.ClimbState.STOWED)
-                        );	
-                }
+        public Command climbL1(BooleanSupplier left) {
+                return Commands.sequence(
+                                Commands.runOnce(() -> System.out
+                                                .println("Aligning to " + left.getAsBoolean() + " tower")),
+                                drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
+                                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
+                                Commands.waitSeconds(0.5),
+                                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
+                // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+                );
+        }
 
         public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
                 return new Trigger(() -> Math.abs(axis.getAsDouble()) > deadband);

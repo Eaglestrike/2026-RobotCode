@@ -3,14 +3,19 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Degrees;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import frc.robot.FieldConstants.RightTrench;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
@@ -24,6 +29,11 @@ public class Superstructure extends SubsystemBase {
         SHOOT,
     }
 
+    /**
+     * Height, in meters, above the trench to use as the ferry target Z (near the ball's apex).
+     */
+    private static final double FERRY_HEIGHT_OFFSET = 0.10;
+
     private ShootMode currentMode;
     public boolean isShooting;
 
@@ -33,9 +43,10 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
+    private final EagleSwerveDrivetrain drivetrain;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -44,6 +55,7 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
+        this.drivetrain = drivetrain;
     }
 
     public Command initialize() {
@@ -128,15 +140,47 @@ public class Superstructure extends SubsystemBase {
         isShooting = shooting;
     }
 
+    /**
+     * Computes the Pose3d target for ferry mode (look at the README for sketchy explanation of the logic).
+     */
+    private Pose3d computeFerryTarget() {
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        boolean isBlue = alliance == DriverStation.Alliance.Blue;
+
+        double targetX = isBlue
+                ? FieldConstants.LinesVertical.hubCenter
+                : FieldConstants.LinesVertical.oppHubCenter;
+
+        Pose2d robotPose = drivetrain.getState().Pose;
+        double robotY = robotPose.getY();
+
+        double targetY;
+        if (robotY >= FieldConstants.LinesHorizontal.center) {
+            double bumpMiddle = (FieldConstants.LinesHorizontal.leftBumpStart + FieldConstants.LinesHorizontal.leftBumpEnd) / 2;
+            targetY = MathUtil.clamp(robotY,
+                    bumpMiddle,
+                    FieldConstants.LinesHorizontal.leftTrenchOpenStart);
+        } else {
+            double bumpMiddle = (FieldConstants.LinesHorizontal.rightBumpStart + FieldConstants.LinesHorizontal.rightBumpEnd) / 2;
+            targetY = MathUtil.clamp(robotY,
+                    FieldConstants.LinesHorizontal.rightTrenchOpenEnd,
+                    bumpMiddle);
+        }
+
+        return new Pose3d(targetX, targetY, RightTrench.height + FERRY_HEIGHT_OFFSET, new Rotation3d());
+    }
+
     @Override
     public void periodic() {
         if (currentMode == ShootMode.FERRY) {
-            shooter.setFacing(FieldConstants.getAllianceOutpostPosition());
+            Pose3d ferryTarget = computeFerryTarget();
+            DogLog.log("Superstructure/FerryTarget", ferryTarget);
+            shooter.setFacing(ferryTarget);
         } else {
             shooter.setFacing(FieldConstants.getAllianceHubPosition());
         }
 
-        if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
+        if (!DriverStation.isEnabled()) {
             isShooting = false;
             shooter.setArmed(false);
             feeder.stopMotor();

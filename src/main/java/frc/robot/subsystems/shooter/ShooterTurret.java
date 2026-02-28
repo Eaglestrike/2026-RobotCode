@@ -90,7 +90,8 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     /**
-     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT,
+     * FORWARD_LIMIT]
      * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
      * nearest limit.
      */
@@ -120,8 +121,10 @@ public class ShooterTurret extends SubsystemBase {
     /**
      * Sets control for the turret to move to requested position
      * Angle is measured from intake = 0 rotations, with clockwise positive
+     * 
      * @param pos Angle between -1 and 1 rotations
-     * @return runOnce command (does not wait for movement to terminate; use atTarget() for that)
+     * @return runOnce command (does not wait for movement to terminate; use
+     *         atTarget() for that)
      */
     public Command requestPosition(Angle pos) {
         return runOnce(() -> setAngle(pos));
@@ -225,10 +228,10 @@ public class ShooterTurret extends SubsystemBase {
 
     public Pose3d getComponentPose3d() {
         return new Pose3d(
-                0.131341,
-                -0.046547,
+                -0.131341,
+                0.046547,
                 0.391529,
-                new Rotation3d(0, 0, this.motor.getPosition().getValue().in(Radians)));
+                new Rotation3d(0, 0, -this.motor.getPosition().getValue().in(Radians)));
     }
 
 }

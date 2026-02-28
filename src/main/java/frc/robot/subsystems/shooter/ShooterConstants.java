@@ -87,6 +87,13 @@ public final class ShooterConstants {
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
+        /**
+         * Turret aim trim in degrees, applied in command space after field->robot
+         * conversion. Positive value follows the motor's configured positive direction
+         * (Clockwise_Positive).
+         */
+        public static final double AIM_TRIM_DEG = 0.0;
+
         public static final double GEAR_RATIO = 9.2;
 
         public static final double MAX_VOLTS = 2.0;

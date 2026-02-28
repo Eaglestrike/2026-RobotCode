@@ -13,8 +13,10 @@ import org.ironmaple.simulation.SimulatedArena;
 import dev.doglog.DogLog;
 import dev.doglog.DogLogOptions;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -30,6 +32,10 @@ public class Robot extends TimedRobot {
     DogLog.setOptions(new DogLogOptions()
         .withCaptureNt(false)
         .withLogExtras(false));
+    if (RobotBase.isSimulation()) {
+      DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
+      DriverStationSim.notifyNewData();
+    }
     cleanupOldLogs();
     m_robotContainer = new RobotContainer();
   }
