@@ -117,7 +117,6 @@ public class ShooterHood extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing Shooter Hood");
             motor.setPosition(Degrees.of(HoodConstants.OFFSET));
             zeroed = true;
             DogLog.log("ShooterHood/isZeroed", zeroed);
@@ -126,8 +125,8 @@ public class ShooterHood extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
-        DogLog.log("ShooterHood/AtTarget", atTarget());
+        // DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
+        // DogLog.log("ShooterHood/AtTarget", atTarget());
     }
 
     public boolean atTarget() {
@@ -153,7 +152,8 @@ public class ShooterHood extends SubsystemBase {
 
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterHood/SimPosition", sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET).in(Degrees), "Degrees");
+        // DogLog.log("ShooterHood/SimPosition",
+        // sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {

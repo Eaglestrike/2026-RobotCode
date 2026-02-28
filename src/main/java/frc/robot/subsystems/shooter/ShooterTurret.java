@@ -42,8 +42,7 @@ public class ShooterTurret extends SubsystemBase {
     private Angle targetAngle = Degrees.of(0);
 
     private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
-                                                                  // broken
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when broken
     private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
@@ -90,7 +89,8 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     /**
-     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT,
+     * FORWARD_LIMIT]
      * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
      * nearest limit.
      */
@@ -120,28 +120,21 @@ public class ShooterTurret extends SubsystemBase {
     /**
      * Sets control for the turret to move to requested position
      * Angle is measured from intake = 0 rotations, with clockwise positive
+     * 
      * @param pos Angle between -1 and 1 rotations
-     * @return runOnce command (does not wait for movement to terminate; use atTarget() for that)
+     * @return runOnce command (does not wait for movement to terminate; use
+     *         atTarget() for that)
      */
     public Command requestPosition(Angle pos) {
-        return runOnce(() -> setAngle(pos));
-    }
-
-    /**
-     * Directly set the turret target angle (for use by Shooter in periodic()).
-     * Uses normalizeToSafeRange to wrap into valid turret range.
-     */
-    public void setAngle(Angle pos) {
-        if (!zeroed)
-            return;
-        Angle safePos = normalizeToSafeRange(pos);
-        DogLog.log("ShooterTurret/RequestedAngle", pos.in(Degrees), "Degrees");
-        this.targetAngle = safePos;
-        this.motor.setControl(this.position.withPosition(safePos));
-    }
-
-    public Angle getAngle() {
-        return motor.getPosition().getValue();
+        return runOnce(() -> {
+            Angle safePos = normalizeToSafeRange(pos);
+            if (!zeroed) {
+                System.out.println("Turret not zeroed, ignoring request");
+                return;
+            }
+            this.targetAngle = safePos;
+            this.motor.setControl(this.position.withPosition(safePos));
+        });
     }
 
     public void setFacing(Pose2d to) {
@@ -177,7 +170,6 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
             DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
@@ -195,9 +187,10 @@ public class ShooterTurret extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-        DogLog.log("ShooterTurret/AtTarget", atTarget());
+        // DogLog.log("ShooterTurret/Position",
+        // motor.getPosition().getValue().in(Degrees), "Degrees");
+        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
+        // DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
 
     /* sim */
@@ -215,16 +208,17 @@ public class ShooterTurret extends SubsystemBase {
         var talonFXSim = motor.getSimState();
         talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
         var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-        DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
+        // DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
 
         sim.setInputVoltage(motorVoltage.in(Volts));
         sim.update(0.020);
 
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        DogLog.log("ShooterTurret/SimPosition", sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
+        // DogLog.log("ShooterTurret/SimPosition",
+        // sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
 
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
+        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
 
     }
 

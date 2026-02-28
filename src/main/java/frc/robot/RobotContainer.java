@@ -48,6 +48,8 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
+	private static final boolean ENABLE_CLIMB_COMMAND = false;
+
 	public static final double AXIS_DEADBAND = 0.02;
 	public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
 	private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
@@ -91,15 +93,14 @@ public class RobotContainer {
 	private final Hopper hopper = new Hopper();
 	private final Climb climb = new Climb();
 	private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-			feeder, hopper);
+			feeder, hopper, drivetrain);
 	private final Vision vision = new Vision(drivetrain);
 
 	public RobotContainer() {
-		drivetrain.resetPose(new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-				Rotation2d.fromDegrees(180)));
 		configureBindings();
 
-		NamedCommands.registerCommand("ClimbL1", superstructure.climb(ClimbConstants.ClimbState.L1));
+		NamedCommands.registerCommand("ClimbL1Left", climbL1(() -> true));
+		NamedCommands.registerCommand("ClimbL1Right", climbL1(() -> false));
 		NamedCommands.registerCommand("SetModeFerry",
 				Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
 		NamedCommands.registerCommand("SetModeShoot",
@@ -111,13 +112,10 @@ public class RobotContainer {
 		NamedCommands.registerCommand("Intake", superstructure.intake());
 		NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
 		NamedCommands.registerCommand("Stow", superstructure.stow());
-		NamedCommands.registerCommand("AlignLeftTower",
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(true)));
-		NamedCommands.registerCommand("AlignRightTower",
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(false)));
 
 		autoChooser = AutoBuilder.buildAutoChooser("Tests");
 		SmartDashboard.putData("Auto Chooser", autoChooser);
+
 	}
 
 	private void configureBindings() {
@@ -143,9 +141,7 @@ public class RobotContainer {
 		operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
 			System.out.println("Zeroing drive");
 			drivetrain.seedFieldCentric();
-			drivetrain.resetPose(
-					new Pose2d(FieldConstants.fieldLength - 0.5, FieldConstants.fieldWidth - 0.5,
-							Rotation2d.fromDegrees(180)));
+			drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
 		}).ignoringDisable(true));
 
 		drivetrain.registerTelemetry(logger::telemeterize);
@@ -181,7 +177,8 @@ public class RobotContainer {
 		// FieldConstants.getAllianceTowerPosition(true)));
 		rightJoystick.button(4)
 				.onTrue(climbL1(() -> false))
-				.onFalse(drivetrain.applyRequest(() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+				.onFalse(drivetrain.applyRequest(
+						() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
 		// ---------------------------------
 
 		rightJoystick.trigger().onTrue(superstructure.intake());
@@ -246,9 +243,14 @@ public class RobotContainer {
 	}
 
 	public Command climbL1(BooleanSupplier left) {
-		return Commands.sequence(
-				Commands.runOnce(() -> System.out.println("Aligning to " + left.getAsBoolean() + " tower")),
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())),
+		if (!ENABLE_CLIMB_COMMAND) {
+			return Commands.print("Climb command disabled");
+		}
+
+		return Commands.sequence( // TODO: Redo superstructure.climb
+				// superstructure.climb(ClimbConstants.ClimbState.L1),
+				new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())), // This position needs to be replaced
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
 				Commands.waitSeconds(0.5),
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))

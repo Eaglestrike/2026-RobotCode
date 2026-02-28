@@ -1,0 +1,12 @@
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ballistic-server
+Restart=always
+# User=username
+# Group=groupname
+WorkingDirectory=/root
+
+[Install]
+WantedBy=multi-user.target
+
