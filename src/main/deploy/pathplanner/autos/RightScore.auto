@@ -55,13 +55,7 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignRightTower"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbL1"
+            "name": "ClimbL1Right"
           }
         }
       ]
