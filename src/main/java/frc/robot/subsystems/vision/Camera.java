@@ -29,6 +29,10 @@ public class Camera {
     }
 
     public void periodic() {
+        if(!camera.isConnected()) {
+            return;
+        }
+        
         List<PhotonPipelineResult> results = camera.getAllUnreadResults();
         if (results.isEmpty()) {
             return;

@@ -21,7 +21,11 @@ import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
 
 public class EagleSwerveTelemetry {
+	private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
+
+	private int telemetryCounter = 0;
     private final double MaxSpeed;
+
 
     /**
      * Construct a telemetry object, with the specified max speed of the robot
@@ -94,6 +98,11 @@ public class EagleSwerveTelemetry {
      * SignalLogger.
      */
     public void telemeterize(SwerveDriveState state) {
+		if (++telemetryCounter < NT_PUBLISH_LIMIT) {
+			return;
+		}
+		telemetryCounter = 0;
+
         /* Telemeterize the swerve drive state */
         drivePose.set(state.Pose);
         driveSpeeds.set(state.Speeds);
