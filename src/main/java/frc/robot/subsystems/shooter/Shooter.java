@@ -22,6 +22,10 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
+    public static final boolean DEBUG = true;
+
+    public static double velocityMultiplier = 0.9; // To scale flywheel velocity
+
     private final EagleSwerveDrivetrain drive;
     private final ShooterTurret turret;
     private final ShooterHood hood;
@@ -30,7 +34,6 @@ public class Shooter extends SubsystemBase {
     // Current target (field-relative 3D pose, set each loop by Superstructure)
     private Pose3d targetPose = null;
 
-    // Solver (lightweight, runs inline in periodic — no background thread needed)
     private final ShooterSolver solver = new DesmosSolver();
 
     // Cached solver result for diagnostics
@@ -46,6 +49,10 @@ public class Shooter extends SubsystemBase {
     // Predicted trajectory for AdvantageScope 3D visualization
     private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
 
+    private static final int LOG_EVERY_N_LOOPS = 10;
+    private boolean debug = false;
+    private int logCounter = 0;
+
     private boolean armed = false;
     private boolean isShooting = false;
     private Translation3d cachedShooterPos = new Translation3d();
@@ -56,6 +63,8 @@ public class Shooter extends SubsystemBase {
         turret = new ShooterTurret(drive);
         hood = new ShooterHood();
         flywheels = new ShooterFlywheels();
+
+        DogLog.tunable("Shooter/VelocityMultiplier", velocityMultiplier, x -> velocityMultiplier = x);
     }
 
     /**
@@ -171,12 +180,8 @@ public class Shooter extends SubsystemBase {
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
         hood.setGoal(Degrees.of(targetHoodAngleDeg));
 
-        boolean solverReady = lastSolverResult != null && lastSolverResult.validShot()
-                && targetFlywheelVel > 0;
-        boolean aimReady = isTurretOnTarget() && isHoodOnTarget();
-
         if (isShooting) {
-            flywheels.setVelocity(targetFlywheelVel);
+            flywheels.setVelocity(targetFlywheelVel * velocityMultiplier);
         } else {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
         }
@@ -243,6 +248,12 @@ public class Shooter extends SubsystemBase {
     // Logging
     // ================================================================
     private void logValues() {
+        if (!DEBUG || logCounter++ < LOG_EVERY_N_LOOPS) {
+            return;
+        }
+
+        logCounter = 0;
+
         DogLog.log("Shooter/HasTarget", targetPose != null);
         DogLog.log("Shooter/DistanceToTarget", distanceToTarget);
         DogLog.log("Shooter/TargetTurretAngle_deg", targetTurretAngleDeg);

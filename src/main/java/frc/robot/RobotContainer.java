@@ -23,6 +23,7 @@ import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -172,13 +173,11 @@ public class RobotContainer {
 						operatorController::getRightY))
 				.onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
-		// rightJoystick.button(3)
-		// .onTrue(drivetrain.alignPID(() ->
-		// FieldConstants.getAllianceTowerPosition(true)));
 		rightJoystick.button(4)
-				.onTrue(climbL1(() -> false))
-				.onFalse(drivetrain.applyRequest(
-						() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+			.whileTrue(drivetrain.alignPID(() ->
+				FieldConstants.Hub.farFace.plus(new Transform2d(0.5, 0.0, new Rotation2d()))));
+		// rightJoystick.button(4)
+		// 		.whileTrue(climbL1(() -> false))
 		// ---------------------------------
 
 		rightJoystick.trigger().onTrue(superstructure.intake());
@@ -250,7 +249,7 @@ public class RobotContainer {
 		return Commands.sequence( // TODO: Redo superstructure.climb
 				// superstructure.climb(ClimbConstants.ClimbState.L1),
 				new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())), // This position needs to be replaced
+				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean()).toPose2d()), // This position needs to be replaced
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
 				Commands.waitSeconds(0.5),
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))

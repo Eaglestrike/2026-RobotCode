@@ -325,7 +325,7 @@ public class DesmosSolver implements ShooterSolver {
     // ShooterSolver interface implementation
     // ================================================================
 
-    private static int CACHE_ITERS = 0;
+    private static int CACHE_ITERS = 5;
     private ShotData cachedResult;
     private int cacheIter = CACHE_ITERS;
 
@@ -378,7 +378,7 @@ public class DesmosSolver implements ShooterSolver {
         DogLog.log("Shooter/Launch velocity", r.v0);
 
         // Convert ball exit velocity (m/s) -> flywheel RPS -> RPM
-        double flywheelRPS = ShooterConstants.ballVelToFlywheelRPS(r.v0);
+        double flywheelRPS = ShooterConstants.BALL_VEL_TO_FLYWHEEL_VEL.get(r.v0);
         double rpm = flywheelRPS * 60.0;
         cacheIter = 0;
         return cachedResult = new ShotData(

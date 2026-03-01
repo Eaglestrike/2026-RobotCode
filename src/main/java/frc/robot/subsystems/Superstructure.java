@@ -27,7 +27,8 @@ import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
-    public static Translation2d shootOffset = new Translation2d(-1.2, -0.8);
+    // public static Translation2d shootOffset = new Translation2d(-1.2, -0.8);
+    public static Translation2d shootOffset = new Translation2d(0, 0.5);
 
     public enum ShootMode {
         FERRY,
