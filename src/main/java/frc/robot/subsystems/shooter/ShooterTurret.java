@@ -134,7 +134,6 @@ public class ShooterTurret extends SubsystemBase {
     public void setAngle(Angle pos) {
         Angle safePos = normalizeToSafeRange(pos);
         if (!zeroed) {
-            System.out.println("Turret not zeroed, ignoring request");
             return;
         }
         this.targetAngle = safePos;
