@@ -1,7 +1,12 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+
+import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -11,10 +16,13 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
@@ -24,6 +32,8 @@ public class Shooter extends SubsystemBase {
     private final ShooterHood hood;
     private final ShooterFlywheels flywheels;
     private final EagleSwerveDrivetrain drive;
+
+    private final FuelSim fuelSim = new FuelSim();
 
     private final ShooterSolver solver = new LUTSolver();
 
@@ -35,6 +45,24 @@ public class Shooter extends SubsystemBase {
         turret = new ShooterTurret(drive);
         hood = new ShooterHood();
         flywheels = new ShooterFlywheels();
+
+        if (RobotBase.isSimulation()) {
+            fuelSim.registerRobot(
+                    Inches.of(21.75).in(Meters),
+                    Inches.of(21.75).in(Meters),
+                    0.0254,
+                    () -> drive.getState().Pose,
+                    () -> drive.getState().Speeds);
+            fuelSim.spawnStartingFuel();
+            fuelSim.start();
+            fuelSim.enableAirResistance();
+            SmartDashboard.putData(Commands.runOnce(() -> {
+                fuelSim.clearFuel();
+                fuelSim.spawnStartingFuel();
+            })
+                    .withName("Reset Fuel")
+                    .ignoringDisable(true));
+        }
     }
 
     public Command stowShooter() {
@@ -54,7 +82,6 @@ public class Shooter extends SubsystemBase {
         if (targetPose == null) {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             lastSolverResult = null;
-            predictedTrajectoryPoses = new Pose3d[0];
             logValues();
             return;
         }
@@ -87,6 +114,9 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
+        DogLog.log("Shooter/PredictedTargetTranslation3d",
+                new Translation3d[] { result.predictedTarget() });
+
         DogLog.log("Shooter/Solver/TargetFieldTurretAngle_deg", result.turretAngle().getDegrees());
         DogLog.log("Shooter/Solver/TargetHoodAngle_deg", result.hoodAngle().getDegrees());
         DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", result.rpm());
@@ -96,17 +126,44 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
-        turret.setAngle(Degrees.of(result.hoodAngle().getDegrees()));
-        hood.setGoal(Degrees.of(targetTurretAngleDeg));
+        turret.setAngle(Degrees.of(targetTurretAngleDeg));
+        hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
 
         if (isShooting) {
             flywheels.setVelocity(result.rpm());
         } else {
             flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
         }
-
-        buildTrajectoryVisualization(shooterPos, fieldSpeeds);
+        if (RobotBase.isSimulation()) {
+            if (Utils.getCurrentTimeSeconds() % 0.2 < 0.02) {
+                // fuelSim.launchFuel(MetersPerSecond.of(
+                // rpmToBallVel(requestRpm)), Degrees.of(requestHoodAngleDeg),
+                // Degrees.of(-targetTurretAngleDeg),
+                // Meters.of(ShooterConstants.TurretConstants.OFFSET_HEIGHT));
+                fuelSim.launchFuel(MetersPerSecond.of(
+                        rpmToBallVel(result.rpm())), Degrees.of(result.hoodAngle().getDegrees()),
+                        Degrees.of(-targetTurretAngleDeg),
+                        Meters.of(ShooterConstants.TurretConstants.OFFSET_HEIGHT));
+                launchTime = Utils.getCurrentTimeSeconds();
+            }
+            if (FuelSim.Hub.BLUE_HUB.getScore() > prevScore) {
+                prevScore = FuelSim.Hub.BLUE_HUB.getScore();
+                double tof = Utils.getCurrentTimeSeconds() - launchTime;
+                DogLog.log("Shooter/LastShot/TimeOfFlight", tof);
+            }
+        }
         logValues();
+    }
+
+    private double launchTime = 0.0;
+    private double prevScore = 0.0;
+
+    private double requestRpm = 0.0;
+    private double requestHoodAngleDeg = 0.0;
+
+    {
+        DogLog.tunable("Shooter/RequestRPM", 0.0, rpm -> requestRpm = rpm);
+        DogLog.tunable("Shooter/RequestHoodAngleDeg", 0.0, angle -> requestHoodAngleDeg = angle);
     }
 
     public boolean isReady() {
@@ -128,61 +185,8 @@ public class Shooter extends SubsystemBase {
     // ================================================================
     // Trajectory visualization (for AdvantageScope 3D Field)
     // ================================================================
-    private Pose3d[] predictedTrajectoryPoses = new Pose3d[0];
     private ShotData lastSolverResult = null;
     private Pose3d targetPose = null;
-
-    private void buildTrajectoryVisualization(Translation3d shooterPos, ChassisSpeeds fieldSpeeds) {
-        if (lastSolverResult == null || !lastSolverResult.validShot()) {
-            predictedTrajectoryPoses = new Pose3d[0];
-            return;
-        }
-
-        double launchAngleRad = Math.toRadians(lastSolverResult.hoodAngle().getDegrees());
-        double turretAngleRad = lastSolverResult.turretAngle().getRadians();
-
-        // Recover launch velocity from RPM → RPS → ball vel (m/s)
-        double launchVelocity = rpmToBallVel(lastSolverResult.rpm());
-
-        // Ball's field-frame initial velocity = launch velocity + robot velocity
-        double ct = Math.cos(launchAngleRad);
-        double vxF = launchVelocity * ct * Math.cos(turretAngleRad) + fieldSpeeds.vxMetersPerSecond;
-        double vyF = launchVelocity * ct * Math.sin(turretAngleRad) + fieldSpeeds.vyMetersPerSecond;
-        double vzF = launchVelocity * Math.sin(launchAngleRad);
-
-        // Estimate time of flight from distance / horizontal speed
-        Translation3d predictedTarget = lastSolverResult.predictedTarget();
-        double dx = predictedTarget.getX() - shooterPos.getX();
-        double dy = predictedTarget.getY() - shooterPos.getY();
-        double horizDist = Math.sqrt(dx * dx + dy * dy);
-        double horizSpeed = Math.sqrt(vxF * vxF + vyF * vyF);
-        double tFlight = horizDist / Math.max(horizSpeed, 1e-6);
-        if (!Double.isFinite(tFlight) || tFlight <= 0) {
-            predictedTrajectoryPoses = new Pose3d[0];
-            return;
-        }
-
-        // Sample ~20 points along the trajectory (gravity-only, consistent with
-        // DesmosSolver)
-        int n = 20;
-        double dtVis = tFlight / n;
-        predictedTrajectoryPoses = new Pose3d[n + 1];
-
-        double px = shooterPos.getX(), py = shooterPos.getY(), pz = shooterPos.getZ();
-        double vx = vxF, vy = vyF, vz = vzF;
-        double g = 9.81;
-
-        for (int i = 0; i <= n; i++) {
-            predictedTrajectoryPoses[i] = new Pose3d(px, py, Math.max(pz, 0), new Rotation3d());
-            if (i < n) {
-                // Gravity-only integration (no drag — matches DesmosSolver model)
-                vz -= g * dtVis;
-                px += vx * dtVis;
-                py += vy * dtVis;
-                pz += vz * dtVis;
-            }
-        }
-    }
 
     private double rpmToBallVel(double rpm) {
         // linear conv
@@ -217,12 +221,15 @@ public class Shooter extends SubsystemBase {
             DogLog.log("Shooter/TargetPose3d",
                     new Pose3d[] { targetPose });
         }
-        if (predictedTrajectoryPoses.length > 0) {
-            DogLog.log("Shooter/PredictedTrajectory", predictedTrajectoryPoses);
-        }
     }
 
     private static Transform3d toTransform(Pose3d pose) {
         return new Transform3d(pose.getTranslation(), pose.getRotation());
+    }
+
+    @Override
+    public void simulationPeriodic() {
+        fuelSim.updateSim();
+
     }
 }

@@ -19,6 +19,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -68,6 +69,10 @@ public class ShooterHood extends SubsystemBase {
             CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
         });
 
+        if (RobotBase.isSimulation()) {
+            motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+            zeroed = true;
+        }
         DogLog.log("ShooterHood/isZeroed", zeroed);
     }
 

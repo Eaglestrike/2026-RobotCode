@@ -33,7 +33,7 @@ public class ShooterFlywheels extends SubsystemBase {
             });
 
     {
-        if(ENABLE_TUNING) {
+        if (ENABLE_TUNING) {
             DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
                 slot0Configs.kS = newKS;
                 motor.getConfigurator().apply(slot0Configs);
@@ -64,7 +64,7 @@ public class ShooterFlywheels extends SubsystemBase {
                 motor.getConfigurator().apply(slot0Configs);
             });
         }
-    }    
+    }
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;

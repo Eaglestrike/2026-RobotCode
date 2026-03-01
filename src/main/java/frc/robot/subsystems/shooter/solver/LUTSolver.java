@@ -38,8 +38,8 @@ public class LUTSolver implements ShooterSolver {
         }
 
         Rotation2d turretAngle = predictedTarget.toTranslation2d()
-                .minus(launcherPose.getTranslation().toTranslation2d()).getAngle()
-                .minus(launcherPose.getRotation().toRotation2d());
+                .minus(launcherPose.getTranslation().toTranslation2d())
+                .getAngle().minus(launcherPose.getRotation().toRotation2d());
 
         return new ShotData(
                 HOOD_MAP.get(distance),
@@ -67,8 +67,12 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
 
     static {
-        RPM_MAP.put(0.0, 0.0);
-        HOOD_MAP.put(0.0, Rotation2d.fromDegrees(0.0));
-        TOF_MAP.put(0.0, 0.0);
+        RPM_MAP.put(1.976, 1200.0);
+        HOOD_MAP.put(1.976, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(1.976, 0.940);
+
+        RPM_MAP.put(3.482, 1350.0);
+        HOOD_MAP.put(3.482, Rotation2d.fromDegrees(60));
+        TOF_MAP.put(3.482, 0.982);
     }
 }

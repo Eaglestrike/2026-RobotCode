@@ -82,11 +82,10 @@ public class ShooterTurret extends SubsystemBase {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
 
-        DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
-
         if (RobotBase.isSimulation()) {
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
+            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         }
     }
 
@@ -185,6 +184,8 @@ public class ShooterTurret extends SubsystemBase {
     public void periodic() {
         // DogLog.log("ShooterTurret/Position",
         // motor.getPosition().getValue().in(Degrees), "Degrees");
+        // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
+        // "Degrees");
         // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
         // DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
@@ -204,15 +205,15 @@ public class ShooterTurret extends SubsystemBase {
         var talonFXSim = motor.getSimState();
         talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
         var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-        // DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
+        DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
 
         sim.setInputVoltage(motorVoltage.in(Volts));
         sim.update(0.020);
 
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        // DogLog.log("ShooterTurret/SimPosition",
-        // sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
+        DogLog.log("ShooterTurret/SimPosition",
+                sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
 
         // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
 
@@ -223,7 +224,7 @@ public class ShooterTurret extends SubsystemBase {
                 0.131341,
                 -0.046547,
                 0.391529,
-                new Rotation3d(0, 0, this.motor.getPosition().getValue().in(Radians)));
+                new Rotation3d(0, 0, -this.motor.getPosition().getValue().in(Radians)));
     }
 
 }
