@@ -42,7 +42,8 @@ public class ShooterTurret extends SubsystemBase {
     private Angle targetAngle = Degrees.of(0);
 
     private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when broken
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
+                                                                  // broken
     private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
