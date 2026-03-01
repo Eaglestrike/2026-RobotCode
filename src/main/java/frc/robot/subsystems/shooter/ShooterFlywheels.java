@@ -84,6 +84,9 @@ public class ShooterFlywheels extends SubsystemBase {
 
         motor = new TalonFX(FlywheelConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         motor.getConfigurator().apply(config);
+        motor.getVelocity().setUpdateFrequency(50);
+        motor.getPosition().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
     }
 
     public Command startAtVelocity(double targetVel) {
@@ -130,5 +133,12 @@ public class ShooterFlywheels extends SubsystemBase {
         return this.runOnce(() -> {
             motor.stopMotor();
         });
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterFlywheels/Velocity_rps", motor.getVelocity().getValueAsDouble());
+        DogLog.log("ShooterFlywheels/TargetVelocity_rps", targetVel.in(RotationsPerSecond));
+        DogLog.log("ShooterFlywheels/AtVelocity", atVelocity());
     }
 }

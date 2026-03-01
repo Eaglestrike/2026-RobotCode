@@ -33,6 +33,7 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.RobotBase;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
@@ -71,6 +72,9 @@ public class ShooterTurret extends SubsystemBase {
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         this.motor.getConfigurator().apply(cfg);
+        motor.getPosition().setUpdateFrequency(50);
+        motor.getVelocity().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
@@ -79,6 +83,11 @@ public class ShooterTurret extends SubsystemBase {
         });
 
         DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+
+        if (RobotBase.isSimulation()) {
+            motor.setPosition(TurretConstants.ENCODER_OFFSET);
+            zeroed = true;
+        }
     }
 
     /**
@@ -119,24 +128,18 @@ public class ShooterTurret extends SubsystemBase {
      *         atTarget() for that)
      */
     public Command requestPosition(Angle pos) {
-        return runOnce(() -> setAngle(pos));
+        return runOnce(() -> {
+            setAngle(pos);
+        });
     }
 
-    /**
-     * Directly set the turret target angle (for use by Shooter in periodic()).
-     * Uses normalizeToSafeRange to wrap into valid turret range.
-     */
     public void setAngle(Angle pos) {
-        if (!zeroed)
-            return;
         Angle safePos = normalizeToSafeRange(pos);
-        // DogLog.log("ShooterTurret/RequestedAngle", pos.in(Degrees), "Degrees");
+        if (!zeroed) {
+            return;
+        }
         this.targetAngle = safePos;
         this.motor.setControl(this.position.withPosition(safePos));
-    }
-
-    public Angle getAngle() {
-        return motor.getPosition().getValue();
     }
 
     public void setFacing(Pose2d to) {
