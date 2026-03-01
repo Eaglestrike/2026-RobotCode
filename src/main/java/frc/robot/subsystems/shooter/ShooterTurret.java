@@ -142,15 +142,6 @@ public class ShooterTurret extends SubsystemBase {
         this.motor.setControl(this.position.withPosition(safePos));
     }
 
-    public void setFacing(Pose2d to) {
-        // TODO: Maybe account for robot's velocity when calculating angle to turn to
-        var pose = drive.getState().Pose.plus(new Transform2d(TurretConstants.OFFSET, new Rotation2d()));
-        var angle = to.getTranslation().minus(pose.getTranslation()).getAngle()
-                .minus(pose.getRotation());
-        // TODO: Check if this normalizes between -180 to 180 correctly
-        targetAngle = Rotations.of(angle.getRotations());
-    }
-
     public Command stop() {
         return runOnce(() -> {
             motor.stopMotor();
