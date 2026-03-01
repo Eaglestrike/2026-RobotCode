@@ -422,11 +422,11 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    public Command alignPID(Supplier<Pose3d> targetSupplier) {
+    public Command alignPID(Supplier<Pose2d> targetSupplier) {
         return this.run(() -> {
             Pose2d pose = this.getState().Pose;
-            Pose2d target = targetSupplier.get().toPose2d();
-            // DogLog.log("AutoAlign/Target Pose", target);
+            Pose2d target = targetSupplier.get();
+            DogLog.log("AutoAlign/Target Pose", target);
 
             double veloX = alignXController.calculate(pose.getX(), target.getX());
             double veloY = alignYController.calculate(pose.getY(), target.getY());
@@ -439,7 +439,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         })
                 .until(() -> {
                     Pose2d pose = this.getState().Pose;
-                    Pose2d target = targetSupplier.get().toPose2d();
+                    Pose2d target = targetSupplier.get();
                     Transform2d error = pose.minus(target);
                     Translation2d errorTrans = error.getTranslation();
                     Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),

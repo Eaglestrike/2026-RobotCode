@@ -1,9 +1,9 @@
+// Copy from JerryRoboticsArm2
 package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.revrobotics.PersistMode;
@@ -63,7 +63,7 @@ public class IntakeWrist extends SubsystemBase {
                         IntakeConstants.Wrist.MAX_VEL,
                         IntakeConstants.Wrist.MAX_ACC));
         pid.setTolerance(Math.toRadians(1.0));
-        pid.reset(getAngle().magnitude());
+        pid.reset(getAngle().in(Radians));
 
         pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
         pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
@@ -124,9 +124,7 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command eject() {
-        return runOnce(() -> {
-            this.requestPosition(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
-        });
+        return requestPosition(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
