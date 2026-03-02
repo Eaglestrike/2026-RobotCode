@@ -166,6 +166,11 @@ public class Shooter extends SubsystemBase {
         DogLog.tunable("Shooter/RequestHoodAngleDeg", 0.0, angle -> requestHoodAngleDeg = angle);
     }
 
+    public void shootManual() {
+        flywheels.setVelocity(requestRpm);
+        hood.setGoal(Degrees.of(requestHoodAngleDeg));
+    }
+
     public boolean isReady() {
         return turret.atTarget() && hood.atTarget() && flywheels.atVelocity();
     }
