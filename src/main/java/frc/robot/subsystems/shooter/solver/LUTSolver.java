@@ -67,16 +67,21 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
 
     static {
-        RPM_MAP.put(1.976, 1200.0);
-        HOOD_MAP.put(1.976, Rotation2d.fromDegrees(70));
-        TOF_MAP.put(1.976, 0.940);
+        // max: please recalibrate TOF usings lomo camera
+        // 1.937, 1s, 74º, 1500rpm
+        // 3.05, 1.2s, 73º, 1800rpm
+        // 5.51, 1.22s, 58º, 2050rpm
 
-        RPM_MAP.put(3.482, 1350.0);
-        HOOD_MAP.put(3.482, Rotation2d.fromDegrees(60));
-        TOF_MAP.put(3.482, 0.982);
+        RPM_MAP.put(1.937, 1500.0);
+        HOOD_MAP.put(1.937, Rotation2d.fromDegrees(74));
+        TOF_MAP.put(1.937, 1.0);
 
-        RPM_MAP.put(4.727, 1550.0);
-        HOOD_MAP.put(4.727, Rotation2d.fromDegrees(50));
-        TOF_MAP.put(4.727, 1.000);
+        RPM_MAP.put(3.05, 1800.0);
+        HOOD_MAP.put(3.05, Rotation2d.fromDegrees(73));
+        TOF_MAP.put(3.05, 1.2);
+
+        RPM_MAP.put(5.51, 2050.0);
+        HOOD_MAP.put(5.51, Rotation2d.fromDegrees(58));
+        TOF_MAP.put(5.51, 1.22);
     }
 }

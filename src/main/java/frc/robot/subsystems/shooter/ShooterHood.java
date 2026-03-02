@@ -66,7 +66,7 @@ public class ShooterHood extends SubsystemBase {
         motor.setPosition(Degrees.of(HoodConstants.OFFSET));
 
         DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
-            CommandScheduler.getInstance().schedule(goToPos(Degrees.of(x)));
+            setGoal(Degrees.of(x));
         });
 
         if (RobotBase.isSimulation()) {

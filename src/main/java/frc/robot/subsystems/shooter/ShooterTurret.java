@@ -1,7 +1,9 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Volts;
 
@@ -137,8 +139,11 @@ public class ShooterTurret extends SubsystemBase {
         if (!zeroed) {
             return;
         }
+        // double omega =
+        // RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
+        double omega = 0;
         this.targetAngle = safePos;
-        this.motor.setControl(this.position.withPosition(safePos));
+        this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
     }
 
     public Command stop() {
@@ -221,9 +226,9 @@ public class ShooterTurret extends SubsystemBase {
 
     public Pose3d getComponentPose3d() {
         return new Pose3d(
-                0.131341,
-                -0.046547,
-                0.391529,
+                ShooterConstants.TurretConstants.OFFSET.getX(),
+                ShooterConstants.TurretConstants.OFFSET.getY(),
+                ShooterConstants.TurretConstants.OFFSET_HEIGHT,
                 new Rotation3d(0, 0, -this.motor.getPosition().getValue().in(Radians)));
     }
 

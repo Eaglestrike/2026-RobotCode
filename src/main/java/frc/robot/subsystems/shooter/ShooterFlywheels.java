@@ -18,6 +18,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.*;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
+import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
     public static final boolean ENABLE_TUNING = true;
@@ -87,6 +88,10 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getVelocity().setUpdateFrequency(50);
         motor.getPosition().setUpdateFrequency(10);
         motor.optimizeBusUtilization();
+
+        DogLog.tunable("ShooterFlywheels/Request RPM", 0.0, x -> {
+            setVelocity(x);
+        });
     }
 
     public Command startAtVelocity(double targetVel) {
