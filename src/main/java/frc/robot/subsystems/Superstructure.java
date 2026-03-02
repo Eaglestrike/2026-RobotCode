@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Degrees;
 
+import java.lang.reflect.Field;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -50,7 +52,7 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
     private final EagleSwerveDrivetrain drivetrain;
-    private boolean tuning = false;
+    private boolean tuning = true;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
@@ -214,17 +216,6 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (tuning && isShooting) {
-            shooter.shootManual();
-            feeder.startMotor();
-            hopper.startKicking();
-            return;
-        } else if(!isShooting) {
-            shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
-            feeder.stopMotor();
-            hopper.startMotor();
-            return;
-        }
 
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
@@ -232,6 +223,9 @@ public class Superstructure extends SubsystemBase {
             shooter.setFacing(ferryTarget);
         } else {
             shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
+            if(tuning) {
+                shooter.shootManual();
+            }
         }
 
         if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {

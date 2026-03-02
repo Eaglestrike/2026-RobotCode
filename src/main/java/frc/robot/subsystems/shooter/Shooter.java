@@ -127,12 +127,12 @@ public class Shooter extends SubsystemBase {
 
         // Command subsystems
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
-        hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
+        // hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
 
         if (isShooting) {
-            flywheels.setVelocity(result.rpm());
+            // flywheels.setVelocity(result.rpm());
         } else {
-            flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            // flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
         }
         if (RobotBase.isSimulation()) {
             if (Utils.getCurrentTimeSeconds() % 0.2 < 0.02) {
