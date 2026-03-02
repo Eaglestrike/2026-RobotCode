@@ -56,6 +56,7 @@ struct FRCShooterParams : public BallisticParams
     FRCShooterParams()
     {
         g = GRAVITY;
+        spinLiftFactor = 0.0;  // 与 Java 一致，可改或通过环境变量扩展
         arcMode = ArcMode::Low;
 
         dt = 0.005;     // Fine RK4 steps for accuracy

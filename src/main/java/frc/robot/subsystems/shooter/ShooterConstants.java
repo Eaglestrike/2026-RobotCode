@@ -14,32 +14,29 @@ public final class ShooterConstants {
      */
     public static final InterpolatingDoubleTreeMap BALL_VEL_TO_FLYWHEEL_VEL = new InterpolatingDoubleTreeMap();
     static {
-        BALL_VEL_TO_FLYWHEEL_VEL.put(1.7303, 10.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(4.7783, 20.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(6.7228, 30.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(8.0715, 40.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(9.2410, 61.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(9.7809, 62.0);
-        BALL_VEL_TO_FLYWHEEL_VEL.put(10.1543, 70.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(1.2381, 10.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(4.6097, 20.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(6.9112, 30.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(7.2088, 30.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(8.6967, 40.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(8.6545, 40.0);
+        BALL_VEL_TO_FLYWHEEL_VEL.put(10.5219, 50.0);
     }
 
     /**
-     * Quadratic fit: flywheelRPS = 0.8593 * ballVel^2 - 3.2464 * ballVel + 13.6691
-     * Inverted to: ballVel = f(flywheelRPS)
+     * Direct quadratic fit: ballVel = A * flywheelRPS^2 + B * flywheelRPS + C
      */
-    private static final double A = 0.8593;
-    private static final double B = -3.2464;
-    private static final double C = 13.6691;
+    private static final double A = -0.00276490;
+    private static final double B = 0.38986381;
+    private static final double C = -2.25855714;
 
     /**
      * Convert flywheel velocity (rps) to ball velocity (m/s)
-     * using the inverted quadratic fit.
+     * using the direct quadratic fit.
      */
     public static double flywheelRPSToBallVel(double flywheelRPS) {
-        double disc = B * B - 4.0 * A * (C - flywheelRPS);
-        if (disc < 0)
-            return 0;
-        return (-B + Math.sqrt(disc)) / (2.0 * A);
+        double v = A * flywheelRPS * flywheelRPS + B * flywheelRPS + C;
+        return Math.max(v, 0);
     }
 
     public final class FlywheelConstants {
@@ -96,7 +93,7 @@ public final class ShooterConstants {
 
         public static final double GEAR_RATIO = 9.2;
 
-        public static final double MAX_VOLTS = 2.0;
+        public static final double MAX_VOLTS = 0.5;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(0.5);
 
@@ -107,8 +104,8 @@ public final class ShooterConstants {
         public static final double kV = 0.0;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Degree.of(130.0);
-        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
+        public static final Angle FORWARD_LIMIT = Degree.of(120.0);
+        public static final Angle BACKWARD_LIMIT = Degree.of(-190.0);
 
         public static final int PHOTOELECTRIC_DIO = 7;
     }

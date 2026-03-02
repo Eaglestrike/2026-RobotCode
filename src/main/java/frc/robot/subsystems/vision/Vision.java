@@ -26,6 +26,16 @@ public class Vision extends SubsystemBase {
                 this::addVisionMeasurement)
     };
 
+    private static final int POSE_PUBLISH_PERIOD = 10;
+    private int posePublishCounter = 0;
+
+    /** Max vision observations injected into the pose estimator per cycle (overloop mitigation). */
+    private static final int MAX_OBSERVATIONS_PER_CYCLE = 2;
+    private int observationsThisCycle = 0;
+
+    /** Round-robin: only one camera's periodic runs per cycle (overloop mitigation). */
+    private int cameraIndex = 0;
+
     public Vision(EagleSwerveDrivetrain drive) {
         this.drive = drive;
         leftCameraBackPosePublisher = NetworkTableInstance.getDefault()
@@ -44,18 +54,25 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
-        Pose3d robot3d = new Pose3d(drive.getState().Pose);
-        leftCameraBackPosePublisher.set(robot3d.transformBy(VisionConstants.LEFT_BACK_TRANSFORM));
-        leftCameraLeftPosePublisher.set(robot3d.transformBy(VisionConstants.LEFT_LEFT_TRANSFORM));
-        rightCameraBackPosePublisher.set(robot3d.transformBy(VisionConstants.RIGHT_BACK_TRANSFORM));
-        rightCameraRightPosePublisher.set(robot3d.transformBy(VisionConstants.RIGHT_RIGHT_TRANSFORM));
+        observationsThisCycle = 0;
 
-        for (var camera : cameras) {
-            camera.periodic();
+        if (++posePublishCounter >= POSE_PUBLISH_PERIOD) {
+            posePublishCounter = 0;
+            Pose3d robot3d = new Pose3d(drive.getState().Pose);
+            leftCameraBackPosePublisher.set(robot3d.transformBy(VisionConstants.LEFT_BACK_TRANSFORM));
+            leftCameraLeftPosePublisher.set(robot3d.transformBy(VisionConstants.LEFT_LEFT_TRANSFORM));
+            rightCameraBackPosePublisher.set(robot3d.transformBy(VisionConstants.RIGHT_BACK_TRANSFORM));
+            rightCameraRightPosePublisher.set(robot3d.transformBy(VisionConstants.RIGHT_RIGHT_TRANSFORM));
         }
+
+        cameras[cameraIndex++ % cameras.length].periodic();
     }
 
     private void addVisionMeasurement(PoseObservation observation) {
+        if (observationsThisCycle >= MAX_OBSERVATIONS_PER_CYCLE) {
+            return;
+        }
+        observationsThisCycle++;
         drive.addVisionMeasurement(observation.pose(), observation.timestamp());
     }
 }

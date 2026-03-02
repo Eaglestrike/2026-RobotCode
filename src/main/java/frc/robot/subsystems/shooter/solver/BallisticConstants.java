@@ -75,10 +75,10 @@ public class BallisticConstants {
     }
 
     /** Low speed flywheel RPM - for close range shots */
-    public static final double LOW_SPEED_RPM = 2500.0;
+    public static final double LOW_SPEED_RPM = 1800.0;
 
     /** Medium speed flywheel RPM - for mid range shots */
-    public static final double MEDIUM_SPEED_RPM = 3500.0;
+    public static final double MEDIUM_SPEED_RPM = 2500.0;
 
     /** High speed flywheel RPM - for long range shots */
     public static final double HIGH_SPEED_RPM = 4500.0;
@@ -96,7 +96,7 @@ public class BallisticConstants {
     public static final double HIGH_SPEED_LAUNCH_VEL = ShooterConstants.flywheelRPSToBallVel(HIGH_SPEED_RPM / 60.0);
 
     /** Distance threshold for LOW -> MEDIUM transition (meters) */
-    public static final double LOW_TO_MEDIUM_DISTANCE = 4.0;
+    public static final double LOW_TO_MEDIUM_DISTANCE = 3.0;
 
     /** Distance threshold for MEDIUM -> HIGH transition (meters) */
     public static final double MEDIUM_TO_HIGH_DISTANCE = 6.0;
@@ -206,12 +206,24 @@ public class BallisticConstants {
     /** Maximum pitch angle (radians) */
     public double thetaMax = Math.PI / 2.0;
 
+    /**
+     * Spin lift factor: 单飞轮产生的球体内旋（后旋）带来 Magnus 升力，使球略上飘。
+     * 用等效重力减小来近似：g_eff = g * (1 - spinLiftFactor)。
+     * 0 = 不修正；约 0.01~0.03 可依实射微调（球常打高则略增）。
+     */
+    public double spinLiftFactor = 0.0;
+
+    /** Effective gravity used in solver (accounts for spin lift). */
+    public double getEffectiveG() {
+        return g * (1.0 - spinLiftFactor);
+    }
+
     // ================================================================
     // Shooter geometry (MEASURE THESE)
     // ================================================================
 
     /** Height of shooter exit point above ground (meters) */
-    public static final double SHOOTER_HEIGHT = 0.59673;
+    public static final double SHOOTER_HEIGHT = 0.554035;
 
     // ================================================================
     // Solver Presets

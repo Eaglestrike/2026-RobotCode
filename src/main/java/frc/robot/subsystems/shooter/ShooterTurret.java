@@ -42,7 +42,8 @@ public class ShooterTurret extends SubsystemBase {
     private Angle targetAngle = Degrees.of(0);
 
     private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when broken
+    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
+                                                                  // broken
     private boolean zeroed = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
@@ -70,9 +71,6 @@ public class ShooterTurret extends SubsystemBase {
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         this.motor.getConfigurator().apply(cfg);
-        motor.getPosition().setUpdateFrequency(50);
-        motor.getVelocity().setUpdateFrequency(10);
-        motor.optimizeBusUtilization();
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
@@ -137,7 +135,7 @@ public class ShooterTurret extends SubsystemBase {
         if (!zeroed)
             return;
         Angle safePos = normalizeToSafeRange(pos);
-        // DogLog.log("ShooterTurret/RequestedAngle", pos.in(Degrees), "Degrees");
+        DogLog.log("ShooterTurret/RequestedAngle", pos.in(Degrees), "Degrees");
         this.targetAngle = safePos;
         this.motor.setControl(this.position.withPosition(safePos));
     }
@@ -179,6 +177,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
+            System.out.println("Zeroing turret");
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
             DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
@@ -194,12 +193,16 @@ public class ShooterTurret extends SubsystemBase {
         return motor.getPosition().getValue().isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE);
     }
 
+    private int turretLogCounter = 0;
+
     @Override
     public void periodic() {
-        // DogLog.log("ShooterTurret/Position",
-        // motor.getPosition().getValue().in(Degrees), "Degrees");
-        DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-        // DogLog.log("ShooterTurret/AtTarget", atTarget());
+        if (++turretLogCounter >= 5) {
+            turretLogCounter = 0;
+            DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().in(Degrees), "Degrees");
+            DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
+            DogLog.log("ShooterTurret/AtTarget", atTarget());
+        }
     }
 
     /* sim */
@@ -217,18 +220,12 @@ public class ShooterTurret extends SubsystemBase {
         var talonFXSim = motor.getSimState();
         talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
         var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-        // DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
 
         sim.setInputVoltage(motorVoltage.in(Volts));
         sim.update(0.020);
 
         talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio));
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
-        // DogLog.log("ShooterTurret/SimPosition",
-        // sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
-
-        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-
     }
 
     public Pose3d getComponentPose3d() {

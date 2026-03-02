@@ -23,6 +23,7 @@ import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -63,6 +64,8 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
+
+    private final DoubleSubscriber yawOffsetSub = DogLog.tunable("Drive/YawOffsetDeg", 0.0, x -> {});
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
@@ -298,6 +301,14 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return m_sysIdRoutineToApply.dynamic(direction);
     }
 
+    public double getYawOffsetDeg() {
+        return yawOffsetSub.get();
+    }
+
+    public Rotation2d getAdjustedYaw() {
+        return getState().Pose.getRotation().plus(Rotation2d.fromDegrees(yawOffsetSub.get()));
+    }
+
     @Override
     public void periodic() {
         /*
@@ -312,13 +323,12 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
          * occurs during testing.
          */
         if (!m_hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
-            DriverStation.getAlliance().ifPresent(allianceColor -> {
-                setOperatorPerspectiveForward(
-                        allianceColor == Alliance.Red
-                                ? kRedAlliancePerspectiveRotation
-                                : kBlueAlliancePerspectiveRotation);
-                m_hasAppliedOperatorPerspective = true;
-            });
+            Alliance allianceColor = DriverStation.getAlliance().orElse(Alliance.Blue);
+            setOperatorPerspectiveForward(
+                    allianceColor == Alliance.Red
+                            ? kRedAlliancePerspectiveRotation
+                            : kBlueAlliancePerspectiveRotation);
+            m_hasAppliedOperatorPerspective = true;
         }
     }
 
@@ -426,7 +436,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return this.run(() -> {
             Pose2d pose = this.getState().Pose;
             Pose2d target = targetSupplier.get().toPose2d();
-            // DogLog.log("AutoAlign/Target Pose", target);
+            DogLog.log("AutoAlign/Target Pose", target);
 
             double veloX = alignXController.calculate(pose.getX(), target.getX());
             double veloY = alignYController.calculate(pose.getY(), target.getY());
@@ -445,7 +455,8 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                     Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
                             target.getRotation().getSin());
 
-                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a · b̂
+                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a ·
+                                                                                                                  // b̂
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
 

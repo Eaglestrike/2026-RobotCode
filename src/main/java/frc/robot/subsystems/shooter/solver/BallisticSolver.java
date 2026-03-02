@@ -12,11 +12,14 @@ package frc.robot.subsystems.shooter.solver;
 
 import java.io.IOException;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.DoubleSubscriber;
+import frc.robot.subsystems.shooter.ShooterConstants;
 import frc.robot.subsystems.shooter.solver2.BallisticClient;
 import frc.robot.subsystems.shooter.solver2.BallisticClient.ServerSolverResult;
 
@@ -114,15 +117,21 @@ public class BallisticSolver implements ShooterSolver {
     // Instance fields (configurable per-robot)
     // ================================================================
     private final BallisticConstants params;
-    private final double dragCoeff;
     private SolverMode mode;
     private BallisticClient ballisticClient;
+
+    private final DoubleSubscriber lowRpmSub = DogLog.tunable("Shooter/LowRpm", 1350.0, x -> {});
+    private final DoubleSubscriber mediumRpmSub = DogLog.tunable("Shooter/MediumRpm", 2000.0, x -> {});
+    private final DoubleSubscriber highRpmSub = DogLog.tunable("Shooter/HighRpm", 4500.0, x -> {});
+    private final DoubleSubscriber quadraticDragSub =
+            DogLog.tunable("Shooter/QuadraticDrag", BallisticConstants.DEFAULT_DRAG_COEFFICIENT, x -> {});
+    // private final DoubleSubscriber launchSpeedScale = DogLog.tunable("Shooter/LaunchSpeedScale", 1.0, x -> {});
+    // private final DoubleSubscriber spinLiftFactorSub = DogLog.tunable("Shooter/SpinLiftFactor", 0.0, x -> {});
 
     /** Create a BallisticSolver with the specified mode. */
     public BallisticSolver(SolverMode mode) {
         this.params = new BallisticConstants();
         this.params.highArc = true;
-        this.dragCoeff = BallisticConstants.DEFAULT_DRAG_COEFFICIENT;
         this.mode = mode;
 
         if (mode == SolverMode.CLIENT) {
@@ -181,12 +190,32 @@ public class BallisticSolver implements ShooterSolver {
         return mode == SolverMode.CLIENT && ballisticClient == null;
     }
 
+    public double getRpmForPreset(BallisticConstants.SpeedPreset preset) {
+        return switch (preset) {
+            case LOW -> lowRpmSub.get();
+            case MEDIUM -> mediumRpmSub.get();
+            case HIGH -> highRpmSub.get();
+            default -> mediumRpmSub.get();
+        };
+    }
+
+    public double getLaunchVelocityForPreset(BallisticConstants.SpeedPreset preset) {
+        double rps = getRpmForPreset(preset) / 60.0;
+        return ShooterConstants.flywheelRPSToBallVel(rps);
+    }
+
+    /** Quadratic drag coefficient (tunable via Shooter/QuadraticDrag). */
+    public double getDragCoefficient() {
+        return quadraticDragSub.get();
+    }
+
     // ================================================================
     // ShooterSolver interface implementation
     // ================================================================
     @Override
     public ShotData calculateShot(Pose3d launcherPosition, ChassisSpeeds fieldSpeeds,
             Translation3d actualTarget) {
+        params.spinLiftFactor = 0.0; // spinLiftFactorSub.get() commented out
         // ---- 1. Relative position: target w.r.t. launcher in field frame ----
         Translation3d deltaField = actualTarget.minus(launcherPosition.getTranslation());
         double relX = deltaField.getX();
@@ -197,11 +226,12 @@ public class BallisticSolver implements ShooterSolver {
         double relVelX = -fieldSpeeds.vxMetersPerSecond;
         double relVelY = -fieldSpeeds.vyMetersPerSecond;
 
-        // ---- 3. Distance → speed preset → launch velocity & RPM ----
+        // ---- 3. Distance → speed preset → launch velocity & RPM (from tunables) ----
         double horizontalDistance = Math.sqrt(relX * relX + relY * relY);
         BallisticConstants.SpeedPreset preset = BallisticConstants.getSpeedPresetForDistance(horizontalDistance);
-        double launchVelocity = BallisticConstants.getLaunchVelocityForPreset(preset);
-        double rpm = BallisticConstants.getRPMForPreset(preset);
+        double scale = 1.0; // launchSpeedScale.get() commented out
+        double launchVelocity = getLaunchVelocityForPreset(preset) * scale;
+        double rpm = getRpmForPreset(preset) * scale;
 
         // ---- 4. Solve based on mode ----
         if (mode == SolverMode.CLIENT) {
@@ -247,7 +277,7 @@ public class BallisticSolver implements ShooterSolver {
         Vec3 relPos = new Vec3(relX, relY, relZ);
         Vec3 relVel = new Vec3(relVelX, relVelY, 0);
 
-        SolverResult result = solve(relPos, relVel, launchVelocity, dragCoeff, params);
+        SolverResult result = solve(relPos, relVel, launchVelocity, quadraticDragSub.get(), params);
 
         if (result.success || Double.isFinite(result.theta)) {
             double shootingAngleDeg = Math.toDegrees(result.theta);
@@ -374,7 +404,7 @@ public class BallisticSolver implements ShooterSolver {
 
         while (tPrev < params.tMax) {
             State curr = prev.copy();
-            rk4Step(curr, params.dt, kDrag, params.g, params.wind);
+            rk4Step(curr, params.dt, kDrag, params.getEffectiveG(), params.wind);
             double tCurr = tPrev + params.dt;
 
             Vec3 relCurr = relVec(curr.r, relPos0, relVel, tCurr);
@@ -389,7 +419,7 @@ public class BallisticSolver implements ShooterSolver {
 
                 State stStar = prev.copy();
                 if (tau > 1e-15) {
-                    rk4Step(stStar, tau, kDrag, params.g, params.wind);
+                    rk4Step(stStar, tau, kDrag, params.getEffectiveG(), params.wind);
                 }
                 double tStar = tPrev + tau;
                 bestRelMiss = relVec(stStar.r, relPos0, relVel, tStar);
@@ -471,8 +501,8 @@ public class BallisticSolver implements ShooterSolver {
         Vec3 aim = targetPos(relPos0, relVel, tStar);
         Vec3 aimCorr = aim.minus(relMissAtStar.times(P.beta));
 
-        double[] angles0 = vacuumArcAnglesToPoint(aim, v0, P.highArc, P.g);
-        double[] angles1 = vacuumArcAnglesToPoint(aimCorr, v0, P.highArc, P.g);
+        double[] angles0 = vacuumArcAnglesToPoint(aim, v0, P.highArc, P.getEffectiveG());
+        double[] angles1 = vacuumArcAnglesToPoint(aimCorr, v0, P.highArc, P.getEffectiveG());
 
         double th0 = angles0[0], ph0 = angles0[1];
         double th1 = angles1[0], ph1 = angles1[1];
@@ -511,7 +541,7 @@ public class BallisticSolver implements ShooterSolver {
         }
 
         // Initial guess
-        double[] guess = initialGuess(relPos0, relVel, v0, P.highArc, P.g);
+        double[] guess = initialGuess(relPos0, relVel, v0, P.highArc, P.getEffectiveG());
         double theta = MathUtil.clamp(guess[0], P.thetaMin, P.thetaMax);
         double phi = wrapPi(guess[1]);
 

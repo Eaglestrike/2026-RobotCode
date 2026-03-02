@@ -98,6 +98,9 @@ struct BallisticParams
     ArcMode arcMode = ArcMode::Low; // Arc mode
     
     double g = 9.80665;        // Gravity acceleration
+    /** Spin lift: 单飞轮球体内旋 (Magnus) 等效重力减小，g_eff = g * (1 - spinLiftFactor). 0=不修正. */
+    double spinLiftFactor = 0.0;
+    double getEffectiveG() const { return g * (1.0 - spinLiftFactor); }
     Vec3 wind = { 0.0, 0.0, 0.0 };        // Wind vector
 
     double dt = 0.01;          // RK4 basic step
@@ -316,7 +319,7 @@ inline void find_closest_approach(
     while (tPrev < P.tMax)
     {
         State curr = prev;
-        rk4_step(curr, P.dt, kDrag, P.g, P.wind);
+        rk4_step(curr, P.dt, kDrag, P.getEffectiveG(), P.wind);
         const double tCurr = tPrev + P.dt;
 
         const Vec3 relCurr = rel_vec(curr.r, relPos0, relVel, tCurr);
@@ -333,7 +336,7 @@ inline void find_closest_approach(
                 State st = prev;
                 if (tau > 1e-15)
                 {
-                    rk4_step(st, tau, kDrag, P.g, P.wind);
+                    rk4_step(st, tau, kDrag, P.getEffectiveG(), P.wind);
                 }
 
                 const double tOut = tPrev + tau;
@@ -347,7 +350,7 @@ inline void find_closest_approach(
             State stStar = prev;
             if (tauStar > 1e-15)
             {
-                rk4_step(stStar, tauStar, kDrag, P.g, P.wind);
+                rk4_step(stStar, tauStar, kDrag, P.getEffectiveG(), P.wind);
             }
 
             relMissAtStar = rel_vec(stStar.r, relPos0, relVel, tStar);
@@ -479,8 +482,8 @@ inline bool compute_angle_residual(
     const Vec3 aimCorr = aim - P.beta * relMissAtStar;
 
     double th0, ph0, th1, ph1;
-    const bool ok0 = vacuum_arc_angles_to_point(aim, v0, P.arcMode, P.g, th0, ph0);
-    const bool ok1 = vacuum_arc_angles_to_point(aimCorr, v0, P.arcMode, P.g, th1, ph1);
+    const bool ok0 = vacuum_arc_angles_to_point(aim, v0, P.arcMode, P.getEffectiveG(), th0, ph0);
+    const bool ok1 = vacuum_arc_angles_to_point(aimCorr, v0, P.arcMode, P.getEffectiveG(), th1, ph1);
 
     if (!ok0 || !ok1)
     {
@@ -922,7 +925,7 @@ inline SolverResult solve_launch_angles(
     // Initial guess
     // ----------------------------
     double theta, phi;
-    initial_guess_vacuum_lead(relPos0, relVel, v0, P.arcMode, P.g, theta, phi);
+    initial_guess_vacuum_lead(relPos0, relVel, v0, P.arcMode, P.getEffectiveG(), theta, phi);
     theta = std::clamp(theta, P.thetaMin, P.thetaMax);
     phi = wrap_pi(phi);
 

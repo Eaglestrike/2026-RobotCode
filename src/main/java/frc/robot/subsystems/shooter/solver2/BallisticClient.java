@@ -57,6 +57,8 @@ public class BallisticClient {
         }
     }
 
+    private static final int SO_READ_TIMEOUT_MS = 500;
+
     private SocketChannel channel;
 
     public BallisticClient(String hostname, int port) throws IOException {
@@ -67,6 +69,7 @@ public class BallisticClient {
         channel = SocketChannel.open();
         channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
         channel.socket().connect(new InetSocketAddress(hostname, port), timeoutMs);
+        channel.socket().setSoTimeout(SO_READ_TIMEOUT_MS);
         System.out.println("Connected to ballistic server at " + hostname + ":" + port);
     }
 
