@@ -50,6 +50,7 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
     private final EagleSwerveDrivetrain drivetrain;
+    private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
@@ -66,6 +67,9 @@ public class Superstructure extends SubsystemBase {
                 value -> shootOffset = new Translation2d(value, shootOffset.getY()));
         DogLog.tunable("Superstructure/ShootOffsetY", shootOffset.getY(),
                 value -> shootOffset = new Translation2d(shootOffset.getX(), value));
+
+        DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
+        DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
 
         this.drivetrain = drivetrain;
     }
@@ -210,6 +214,18 @@ public class Superstructure extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (tuning && isShooting) {
+            shooter.shootManual();
+            feeder.startMotor();
+            hopper.startKicking();
+            return;
+        } else if(!isShooting) {
+            shooter.getFlywheels().setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            feeder.stopMotor();
+            hopper.startMotor();
+            return;
+        }
+
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
@@ -230,7 +246,7 @@ public class Superstructure extends SubsystemBase {
             hopper.startKicking();
         } else {
             feeder.stopMotor();
-            hopper.stopMotor();
+            hopper.startMotor(); // this starts at like 0.3 volts don't worry
         }
     }
 
