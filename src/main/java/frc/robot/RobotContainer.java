@@ -21,8 +21,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.*;
@@ -48,6 +50,10 @@ import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
 	private static final boolean ENABLE_CLIMB_COMMAND = false;
+	/** Meters from the tower to align to (for center of the robot) */
+	private static final double CLIMB_TOWER_DISTANCE = 0.5;
+	/** Meters per second when moving towards the pole */
+	private static final double CLIMB_SPEED = 0.5;
 
 	public static final double AXIS_DEADBAND = 0.02;
 	public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -175,7 +181,7 @@ public class RobotContainer {
 		// .onTrue(drivetrain.alignPID(() ->
 		// FieldConstants.getAllianceTowerPosition(true)));
 		rightJoystick.button(4)
-				.onTrue(climbL1(() -> false))
+				.onTrue(climbL1(() -> true))
 				.onFalse(drivetrain.applyRequest(
 						() -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
 		// ---------------------------------
@@ -246,11 +252,21 @@ public class RobotContainer {
 			return Commands.print("Climb command disabled");
 		}
 
+		DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+
+		Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(left.getAsBoolean());
+		// DogLog.log("Climb/TowerPolePose", towerPolePose);
+		double multiplier = left.getAsBoolean() ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
+		DogLog.log("Climb/DirectionMultiplier", multiplier);
+		Pose3d alignPose = new Pose3d(towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
+				towerPolePose.getRotation());
+		DogLog.log("Climb/AlignPose", alignPose);
+
 		return Commands.sequence( // TODO: Redo superstructure.climb
 				// superstructure.climb(ClimbConstants.ClimbState.L1),
 				new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-				drivetrain.alignPID(() -> FieldConstants.getAllianceTowerPosition(left.getAsBoolean())), // This position needs to be replaced
-				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(1))),
+				drivetrain.alignPID(() -> alignPose),
+				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
 				Commands.waitSeconds(0.5),
 				Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
 		// superstructure.climb(ClimbConstants.ClimbState.STOWED)
