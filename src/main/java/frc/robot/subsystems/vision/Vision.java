@@ -13,12 +13,10 @@ public class Vision extends SubsystemBase {
     private final StructPublisher<Pose3d> rightCameraBackPosePublisher;
     private final StructPublisher<Pose3d> rightCameraRightPosePublisher;
 
+    /** LeftCamera (LeftLeft) disabled; only LeftBack + Right cameras run. */
     private final Camera[] cameras = {
             new Camera(VisionConstants.LEFT_BACK_NAME,
             VisionConstants.LEFT_BACK_TRANSFORM,
-            this::addVisionMeasurement),
-            new Camera(VisionConstants.LEFT_LEFT_NAME,
-            VisionConstants.LEFT_LEFT_TRANSFORM,
             this::addVisionMeasurement),
             new Camera(VisionConstants.RIGHT_BACK_NAME, VisionConstants.RIGHT_BACK_TRANSFORM,
                 this::addVisionMeasurement),

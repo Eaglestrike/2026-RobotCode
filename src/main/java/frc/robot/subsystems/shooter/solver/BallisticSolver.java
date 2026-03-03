@@ -125,7 +125,23 @@ public class BallisticSolver implements ShooterSolver {
     private final DoubleSubscriber highRpmSub = DogLog.tunable("Shooter/HighRpm", 4500.0, x -> {});
     private final DoubleSubscriber quadraticDragSub =
             DogLog.tunable("Shooter/QuadraticDrag", BallisticConstants.DEFAULT_DRAG_COEFFICIENT, x -> {});
-    // private final DoubleSubscriber launchSpeedScale = DogLog.tunable("Shooter/LaunchSpeedScale", 1.0, x -> {});
+    private final DoubleSubscriber rpmToInitialSpeedScale =
+            DogLog.tunable("Shooter/RpmToInitialSpeedScale", 1.0, x -> {});
+
+    /** Fit points for RPM→initialSpeed quadratic: v = A*rps² + B*rps + C (rps = RPM/60). */
+    private static final double DEFAULT_FIT_RPM_1 = 1350.0;
+    private static final double DEFAULT_FIT_RPM_2 = 2000.0;
+    private static final double DEFAULT_FIT_RPM_3 = 4500.0;
+    private final DoubleSubscriber fitRpm1 = DogLog.tunable("Shooter/QuadraticFit/Rpm1", DEFAULT_FIT_RPM_1, x -> {});
+    private final DoubleSubscriber fitVel1 = DogLog.tunable("Shooter/QuadraticFit/Vel1",
+            ShooterConstants.flywheelRPSToBallVel(DEFAULT_FIT_RPM_1 / 60.0), x -> {});
+    private final DoubleSubscriber fitRpm2 = DogLog.tunable("Shooter/QuadraticFit/Rpm2", DEFAULT_FIT_RPM_2, x -> {});
+    private final DoubleSubscriber fitVel2 = DogLog.tunable("Shooter/QuadraticFit/Vel2",
+            ShooterConstants.flywheelRPSToBallVel(DEFAULT_FIT_RPM_2 / 60.0), x -> {});
+    private final DoubleSubscriber fitRpm3 = DogLog.tunable("Shooter/QuadraticFit/Rpm3", DEFAULT_FIT_RPM_3, x -> {});
+    private final DoubleSubscriber fitVel3 = DogLog.tunable("Shooter/QuadraticFit/Vel3",
+            ShooterConstants.flywheelRPSToBallVel(DEFAULT_FIT_RPM_3 / 60.0), x -> {});
+
     // private final DoubleSubscriber spinLiftFactorSub = DogLog.tunable("Shooter/SpinLiftFactor", 0.0, x -> {});
 
     /** Create a BallisticSolver with the specified mode. */
@@ -199,9 +215,45 @@ public class BallisticSolver implements ShooterSolver {
         };
     }
 
+    /**
+     * Fit quadratic v = A*rps² + B*rps + C from 3 tunable points (RPM, vel).
+     * Returns {A, B, C} or null if singular (fall back to default curve).
+     */
+    private double[] fitQuadraticFromPoints() {
+        double r1 = fitRpm1.get() / 60.0;
+        double r2 = fitRpm2.get() / 60.0;
+        double r3 = fitRpm3.get() / 60.0;
+        double v1 = fitVel1.get();
+        double v2 = fitVel2.get();
+        double v3 = fitVel3.get();
+        // Solve [r² r 1] * [A;B;C] = v for each point. 3x3 linear system.
+        double m11 = r1 * r1, m12 = r1, m13 = 1;
+        double m21 = r2 * r2, m22 = r2, m23 = 1;
+        double m31 = r3 * r3, m32 = r3, m33 = 1;
+        double det = m11 * (m22 * m33 - m23 * m32) - m12 * (m21 * m33 - m23 * m31) + m13 * (m21 * m32 - m22 * m31);
+        if (Math.abs(det) < 1e-12) {
+            return null;
+        }
+        double invDet = 1.0 / det;
+        double a = invDet * (v1 * (m22 * m33 - m23 * m32) - m12 * (v2 * m33 - v3 * m23) + m13 * (v2 * m32 - v3 * m22));
+        double b = invDet * (m11 * (v2 * m33 - v3 * m23) - v1 * (m21 * m33 - m23 * m31) + m13 * (m21 * v3 - m31 * v2));
+        double c = invDet * (m11 * (m22 * v3 - m32 * v2) - m12 * (m21 * v3 - m31 * v2) + v1 * (m21 * m32 - m22 * m31));
+        return new double[] { a, b, c };
+    }
+
+    /** Evaluate fitted quadratic at rps, or fallback to ShooterConstants curve if fit is singular. */
+    private double rpsToLaunchVelocity(double rps) {
+        double[] abc = fitQuadraticFromPoints();
+        if (abc != null) {
+            double v = abc[0] * rps * rps + abc[1] * rps + abc[2];
+            return Math.max(v, 0.0);
+        }
+        return ShooterConstants.flywheelRPSToBallVel(rps);
+    }
+
     public double getLaunchVelocityForPreset(BallisticConstants.SpeedPreset preset) {
         double rps = getRpmForPreset(preset) / 60.0;
-        return ShooterConstants.flywheelRPSToBallVel(rps);
+        return rpsToLaunchVelocity(rps) * rpmToInitialSpeedScale.get();
     }
 
     /** Quadratic drag coefficient (tunable via Shooter/QuadraticDrag). */
@@ -229,9 +281,8 @@ public class BallisticSolver implements ShooterSolver {
         // ---- 3. Distance → speed preset → launch velocity & RPM (from tunables) ----
         double horizontalDistance = Math.sqrt(relX * relX + relY * relY);
         BallisticConstants.SpeedPreset preset = BallisticConstants.getSpeedPresetForDistance(horizontalDistance);
-        double scale = 1.0; // launchSpeedScale.get() commented out
-        double launchVelocity = getLaunchVelocityForPreset(preset) * scale;
-        double rpm = getRpmForPreset(preset) * scale;
+        double launchVelocity = getLaunchVelocityForPreset(preset); // scale applied inside getter
+        double rpm = getRpmForPreset(preset);
 
         // ---- 4. Solve based on mode ----
         if (mode == SolverMode.CLIENT) {
