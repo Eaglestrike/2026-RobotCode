@@ -22,9 +22,9 @@ public class Vision extends SubsystemBase {
                     this::addVisionMeasurement),
             new Camera(VisionConstants.RIGHT_BACK_NAME, VisionConstants.RIGHT_BACK_TRANSFORM,
                     this::addVisionMeasurement),
-            // new Camera(VisionConstants.RIGHT_RIGHT_NAME,
-            // VisionConstants.RIGHT_RIGHT_TRANSFORM,
-            // this::addVisionMeasurement)
+            new Camera(VisionConstants.RIGHT_RIGHT_NAME,
+                    VisionConstants.RIGHT_RIGHT_TRANSFORM,
+                    this::addVisionMeasurement)
     };
 
     public Vision(EagleSwerveDrivetrain drive) {

@@ -52,7 +52,7 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
     private final EagleSwerveDrivetrain drivetrain;
-    private boolean tuning = true;
+    private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
@@ -223,7 +223,7 @@ public class Superstructure extends SubsystemBase {
             shooter.setFacing(ferryTarget);
         } else {
             shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
-            if(tuning) {
+            if (tuning) {
                 shooter.shootManual();
             }
         }
