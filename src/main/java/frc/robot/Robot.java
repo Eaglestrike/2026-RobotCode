@@ -96,6 +96,6 @@ public class Robot extends TimedRobot {
   public void simulationPeriodic() {
     Pose3d[] fuelPoses = SimulatedArena.getInstance()
         .getGamePiecesArrayByType("Fuel");
-    DogLog.log("Sim/FuelPoses", fuelPoses);
+    // DogLog.log("Sim/FuelPoses", fuelPoses);
   }
 }

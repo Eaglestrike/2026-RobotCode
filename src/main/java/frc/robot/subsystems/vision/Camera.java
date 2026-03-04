@@ -1,8 +1,10 @@
 package frc.robot.subsystems.vision;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 
+import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.estimation.TargetModel;
@@ -10,7 +12,6 @@ import org.photonvision.targeting.PhotonPipelineResult;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Transform3d;
 
 public class Camera {
@@ -22,21 +23,27 @@ public class Camera {
         camera = new PhotonCamera(initialName);
         poseEstimator = new PhotonPoseEstimator(
                 AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded),
-                PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
                 robotToCamera);
         poseEstimator.setTagModel(TargetModel.kAprilTag36h11);
-        poseEstimator.setMultiTagFallbackStrategy(PhotonPoseEstimator.PoseStrategy.LOWEST_AMBIGUITY);
         this.addVisionMeasurement = addVisionMeasurement;
     }
 
     public void periodic() {
+        if(!camera.isConnected()) {
+            return;
+        }
+        
         List<PhotonPipelineResult> results = camera.getAllUnreadResults();
         if (results.isEmpty()) {
             return;
         }
-
         for (PhotonPipelineResult result : results) {
-            var poseOpt = poseEstimator.update(result);
+            Optional<EstimatedRobotPose> poseOpt = null;
+            if (result.multitagResult.isEmpty()) {
+                poseOpt = poseEstimator.estimateLowestAmbiguityPose(result);
+            } else {
+                poseOpt = poseEstimator.estimateCoprocMultiTagPose(result);
+            }
             if (poseOpt.isPresent()) {
                 var pose = poseOpt.get();
                 if (pose.strategy == PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR
