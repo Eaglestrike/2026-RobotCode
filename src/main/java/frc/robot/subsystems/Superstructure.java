@@ -87,8 +87,7 @@ public class Superstructure extends SubsystemBase {
         return Commands.sequence(
                 intakeWrist.eject(),
                 Commands.waitSeconds(0.5),
-                intakeRollers.eject()
-        );
+                intakeRollers.eject());
     }
 
     /**
@@ -101,6 +100,12 @@ public class Superstructure extends SubsystemBase {
         return Commands.sequence(
                 stow(),
                 climb.moveTo(level));
+    }
+
+    public Command duck() {
+        return Commands.sequence(
+                shooter.getHood().goToPos(Degrees.of(0)),
+                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
     }
 
     public ClimbConstants.ClimbState getClimbState() {
