@@ -15,7 +15,8 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.wpilibj2.command.*;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
@@ -33,7 +34,7 @@ public class ShooterFlywheels extends SubsystemBase {
             });
 
     {
-        if(ENABLE_TUNING) {
+        if (ENABLE_TUNING) {
             DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
                 slot0Configs.kS = newKS;
                 motor.getConfigurator().apply(slot0Configs);
@@ -64,7 +65,7 @@ public class ShooterFlywheels extends SubsystemBase {
                 motor.getConfigurator().apply(slot0Configs);
             });
         }
-    }    
+    }
 
     public ShooterFlywheels() {
         VoltageConfigs voltages = config.Voltage;
@@ -84,6 +85,13 @@ public class ShooterFlywheels extends SubsystemBase {
 
         motor = new TalonFX(FlywheelConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         motor.getConfigurator().apply(config);
+        motor.getVelocity().setUpdateFrequency(50);
+        motor.getPosition().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
+
+        DogLog.tunable("ShooterFlywheels/Request RPM", 0.0, x -> {
+            setVelocity(x);
+        });
     }
 
     public Command startAtVelocity(double targetVel) {
@@ -130,5 +138,12 @@ public class ShooterFlywheels extends SubsystemBase {
         return this.runOnce(() -> {
             motor.stopMotor();
         });
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterFlywheels/Velocity_rps", motor.getVelocity().getValueAsDouble());
+        DogLog.log("ShooterFlywheels/TargetVelocity_rps", targetVel.in(RotationsPerSecond));
+        DogLog.log("ShooterFlywheels/AtVelocity", atVelocity());
     }
 }

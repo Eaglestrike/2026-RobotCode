@@ -20,7 +20,6 @@ import edu.wpi.first.wpilibj2.command.SelectCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
-
 public class Climb extends SubsystemBase {
     public static final boolean ENABLE_TUNING = true;
 
@@ -103,18 +102,21 @@ public class Climb extends SubsystemBase {
         right.getConfigurator().apply(cfg);
         right.getConfigurator().apply(rightMotorConfigs);
 
+        left.optimizeBusUtilization();
+        right.optimizeBusUtilization();
+
         DogLog.log("Climb/ClimbZeroed", zeroed);
     }
 
     public Command moveTo(ClimbConstants.ClimbState state) {
-        currentState = state;
-        return new SelectCommand<ClimbConstants.ClimbState>(
-                Map.ofEntries(
-                        Map.entry(ClimbConstants.ClimbState.STOWED, stow()),
-                        Map.entry(ClimbConstants.ClimbState.L1, climbL1()),
-                        Map.entry(ClimbConstants.ClimbState.L2, climbL2()),
-                        Map.entry(ClimbConstants.ClimbState.L3, climbL3())),
-                () -> state);
+        return Commands.runOnce(() -> currentState = state)
+                .andThen(new SelectCommand<ClimbConstants.ClimbState>(
+                        Map.ofEntries(
+                                Map.entry(ClimbConstants.ClimbState.STOWED, stow()),
+                                Map.entry(ClimbConstants.ClimbState.L1, climbL1()),
+                                Map.entry(ClimbConstants.ClimbState.L2, climbL2()),
+                                Map.entry(ClimbConstants.ClimbState.L3, climbL3())),
+                        () -> state));
     }
 
     private Command climbL1() {
@@ -144,9 +146,8 @@ public class Climb extends SubsystemBase {
                 moveTo(ClimbConstants.STOW_HEIGHT, right));
     }
 
-    // Move one motor to a specified position
     private Command moveTo(double position, TalonFX motor) {
-        return runOnce(
+        return run(
                 () -> {
                     if (!zeroed) {
                         System.out.println("Climb not zeroed, ignoring moveTo command");
