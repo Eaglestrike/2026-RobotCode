@@ -5,10 +5,10 @@
 package frc.robot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -39,7 +39,7 @@ public class FieldConstants {
     public static final double fieldLength = AprilTagLayoutType.OFFICIAL.getLayout().getFieldLength();
     public static final double fieldWidth = AprilTagLayoutType.OFFICIAL.getLayout().getFieldWidth();
 
-	/** The distance from the upright pole to the center of the robot when lining up to climb */
+	/** The distance from the upright pole to the edge of the pole */
 	public static final double DISTANCE_FROM_UPRIGHT = Units.inchesToMeters(12.0);
     
 	/**
@@ -284,14 +284,14 @@ public class FieldConstants {
         Translation2d uprightPole;
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
         if (isLeft) {
-            uprightPole = (alliance == DriverStation.Alliance.Blue) ? Tower.leftUpright : Tower.oppLeftUpright;
+            uprightPole = (alliance == DriverStation.Alliance.Blue) ? Tower.leftUpright : Tower.oppRightUpright;
         } else {
-            uprightPole = (alliance == DriverStation.Alliance.Blue) ? Tower.rightUpright : Tower.oppRightUpright;
+            uprightPole = (alliance == DriverStation.Alliance.Blue) ? Tower.rightUpright : Tower.oppLeftUpright;
         }
 
         int multiplier = -1;
 		double rotation = Math.PI;
-        if (isLeft) {
+        if (isLeft ^ (alliance == DriverStation.Alliance.Red)) {
             multiplier = 1;
 			rotation = 0;
         }
