@@ -82,7 +82,7 @@ public class ShooterHood extends SubsystemBase {
         return motor.getPosition().getValue();
     }
 
-    public Command goToPos(Angle shootingAngle) {
+    public Command requestPosition(Angle shootingAngle) {
         return runOnce(() -> setGoal(shootingAngle));
     }
 

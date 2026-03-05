@@ -69,15 +69,15 @@ public class Shooter extends SubsystemBase {
     public Command stowShooter() {
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
-                hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
     public Command duck() {
         return Commands.sequence(
                 runOnce(() -> isDuckOverride = true),
-                hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
     public Command unDuck() {
@@ -92,7 +92,7 @@ public class Shooter extends SubsystemBase {
     public void setFacing(Pose3d targetPose) {
         this.targetPose = targetPose;
         if (targetPose == null) {
-            flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             lastSolverResult = null;
             logValues();
             return;
@@ -142,9 +142,9 @@ public class Shooter extends SubsystemBase {
         if (!isDuckOverride) {
             hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
             if (isShooting) {
-                flywheels.setVelocity(result.rpm());
+                flywheels.requestVelocity(result.rpm());
             } else {
-                flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+                flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         }
 
@@ -181,7 +181,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void shootManual() {
-        flywheels.setVelocity(requestRpm);
+        flywheels.requestVelocity(requestRpm);
         hood.setGoal(Degrees.of(requestHoodAngleDeg));
     }
 

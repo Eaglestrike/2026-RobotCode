@@ -90,22 +90,16 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.optimizeBusUtilization();
 
         DogLog.tunable("ShooterFlywheels/Request RPM", 0.0, x -> {
-            setVelocity(x);
-        });
-    }
-
-    public Command startAtVelocity(double targetVel) {
-        return this.runOnce(() -> {
-            setVelocity(targetVel);
+            requestVelocity(x);
         });
     }
 
     /**
      * Directly set the flywheel target velocity (for use by Shooter in periodic())
      * 
-     * @param targetVel Target velocity in rotations per minute
+     * @param vel Target velocity in rotations per minute
      */
-    public void setVelocity(double vel) {
+    public void requestVelocity(double vel) {
         vel /= 60;
         this.targetVel = RotationsPerSecond.of(vel);
         if (motor.getVelocity().getValue().isNear(
