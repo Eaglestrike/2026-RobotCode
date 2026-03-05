@@ -11,7 +11,9 @@ public final class IntakeConstants {
     }
 
     public static final class Wrist {
-        public static final int MOTOR_ID = 24;
+        // FIXME: i'm intentionally commenting this out because the all the constants
+        // below are wrong. PLEASE FIX THEM!!!! -max
+        // public static final int MOTOR_ID = 24;
 
         public static final double MAX_VEL = 14;
         public static final double MAX_ACC = 20;
@@ -24,7 +26,6 @@ public final class IntakeConstants {
         public static final double MAX_ANGLE = 15; // degrees
         public static final double STOW_ANGLE = -90; // degrees
 
-        public static final double EXTEND_HOPPER_VOLTS = 2.0;
         public static final double MAX_VOLTS = 8.0;
 
         public static final double kP = 40;
@@ -35,8 +36,6 @@ public final class IntakeConstants {
         public static final double kA = 0.01;
         public static final double kV = 3.0;
         public static final double kS = 0.19;
-        public static final double IZONE_DEG = 0.5;
-        public static final double IMAX_VOLTS = 1.0;
 
         public static final double EJECT_ANGLE = 0;
 

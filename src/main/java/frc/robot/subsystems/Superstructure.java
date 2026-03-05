@@ -84,7 +84,7 @@ public class Superstructure extends SubsystemBase {
         return Commands.sequence(
                 intakeRollers.startHopperOut(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
-                Commands.waitUntil(intakeWrist::clearedHopper),
+                Commands.waitUntil(intakeWrist::hopperExtended),
                 intakeRollers.start());
 
     }
