@@ -38,6 +38,7 @@ public class Shooter extends SubsystemBase {
     private final ShooterSolver solver = new LUTSolver();
 
     private boolean isShooting = false;
+    private boolean isDuckOverride = false; // if true, hood & flywheel will stop
     private double distanceToTarget = 0.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -70,6 +71,17 @@ public class Shooter extends SubsystemBase {
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
                 hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+    }
+
+    public Command duck() {
+        return Commands.sequence(
+                runOnce(() -> isDuckOverride = true),
+                hood.goToPos(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                runOnce(() -> flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+    }
+
+    public Command unDuck() {
+        return runOnce(() -> isDuckOverride = false);
     }
 
     public void setShooting(boolean shooting) {
@@ -127,13 +139,15 @@ public class Shooter extends SubsystemBase {
 
         // Command subsystems
         turret.setAngle(Degrees.of(targetTurretAngleDeg));
-        hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
-
-        if (isShooting) {
-            flywheels.setVelocity(result.rpm());
-        } else {
-            flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+        if (!isDuckOverride) {
+            hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
+            if (isShooting) {
+                flywheels.setVelocity(result.rpm());
+            } else {
+                flywheels.setVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            }
         }
+
         if (RobotBase.isSimulation()) {
             if (Utils.getCurrentTimeSeconds() % 0.2 < 0.02) {
                 // fuelSim.launchFuel(MetersPerSecond.of(

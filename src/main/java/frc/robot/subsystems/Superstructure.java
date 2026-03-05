@@ -140,6 +140,16 @@ public class Superstructure extends SubsystemBase {
                 climb.moveTo(level));
     }
 
+    public Command duck() {
+        return Commands.sequence(
+                shooter.duck(),
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+    }
+
+    public Command unDuck() {
+        return shooter.unDuck();
+    }
+
     public ClimbConstants.ClimbState getClimbState() {
         return climb.getState();
     }
