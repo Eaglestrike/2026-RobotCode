@@ -136,7 +136,7 @@ public class FieldConstants {
     }
 
     public static Pose3d getAllianceHubPosition() {
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
         Translation3d position = alliance == DriverStation.Alliance.Blue ? Hub.topCenterPoint : Hub.oppTopCenterPoint;
         return new Pose3d(position, new Rotation3d());
     }
@@ -282,7 +282,7 @@ public class FieldConstants {
 
     public static Pose3d getAllianceTowerPosition(boolean isLeft) {
         Translation2d uprightPole;
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
         if (isLeft) {
             uprightPole = (alliance == DriverStation.Alliance.Blue) ? Tower.leftUpright : Tower.oppRightUpright;
         } else {
@@ -334,7 +334,7 @@ public class FieldConstants {
     }
 
     public static Pose3d getAllianceOutpostPosition() {
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red);
         Translation2d position = alliance == DriverStation.Alliance.Blue ? Outpost.centerPoint : Outpost.oppCenterPoint;
         return new Pose3d(position.getX(), position.getY(), 0, new Rotation3d(0, 0, 0));
     }
