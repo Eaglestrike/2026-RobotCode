@@ -9,7 +9,9 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
@@ -53,7 +55,8 @@ public class IntakeWrist extends SubsystemBase {
         cfg.Slot0.kS = IntakeConstants.Wrist.kS;
         cfg.Slot0.kV = IntakeConstants.Wrist.kV;
         cfg.Slot0.kG = IntakeConstants.Wrist.kG;
-        cfg.Slot0.kA = IntakeConstants.Wrist.kA;
+        cfg.Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseClosedLoopSign;
+        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         motor.getConfigurator().apply(cfg);
         motor.setControl(ctl);
