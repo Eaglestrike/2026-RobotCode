@@ -7,6 +7,7 @@ import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -161,6 +162,10 @@ public class IntakeWrist extends SubsystemBase {
             goal = Degrees.of(jiggleAngle);
         }
 
-        motor.setControl(ctl.withPosition(goal));
+        if (zeroed) {
+            motor.setControl(ctl.withPosition(goal));
+        } else {
+            motor.disable();
+        }
     }
 }
