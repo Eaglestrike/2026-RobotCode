@@ -12,7 +12,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
 public class Feeder extends SubsystemBase {
-    public static final boolean USE_VELOCITY_CONTROL = false; // set to true to use velocity control instead of voltage control
+    public static final boolean USE_VELOCITY_CONTROL = false; // set to true to use velocity control instead of voltage
+                                                              // control
 
     private TalonFX motor;
     private VoltageOut voltageOutReq = new VoltageOut(0).withEnableFOC(true);

@@ -102,7 +102,8 @@ public class IntakeWrist extends SubsystemBase {
     public Command zero() {
         return runOnce(() -> {
             motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
-            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when enabling
+            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when
+                                                                 // enabling
             state = State.IDLE;
             zeroed = true;
 

@@ -1,7 +1,6 @@
 // Copyright (c) 2025-2026 Littleton Robotics
 // http://github.com/Mechanical-Advantage
 
-
 package frc.robot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +23,8 @@ import java.nio.file.Path;
  * points.
  *
  * <p>
- * NOTE: All constants are defined relative to the field coordinate system, and from the
+ * NOTE: All constants are defined relative to the field coordinate system, and
+ * from the
  * perspective of the blue alliance station
  */
 public class FieldConstants {
@@ -39,10 +39,10 @@ public class FieldConstants {
     public static final double fieldLength = AprilTagLayoutType.OFFICIAL.getLayout().getFieldLength();
     public static final double fieldWidth = AprilTagLayoutType.OFFICIAL.getLayout().getFieldWidth();
 
-	/** The distance from the upright pole to the edge of the pole */
-	public static final double DISTANCE_FROM_UPRIGHT = Units.inchesToMeters(12.0);
-    
-	/**
+    /** The distance from the upright pole to the edge of the pole */
+    public static final double DISTANCE_FROM_UPRIGHT = Units.inchesToMeters(12.0);
+
+    /**
      * Officially defined and relevant vertical lines found on the field (defined by
      * X-axis offset)
      */
@@ -290,10 +290,10 @@ public class FieldConstants {
         }
 
         int multiplier = -1;
-		double rotation = Math.PI;
+        double rotation = Math.PI;
         if (isLeft ^ (alliance == DriverStation.Alliance.Red)) {
             multiplier = 1;
-			rotation = 0;
+            rotation = 0;
         }
         return new Pose3d(
                 uprightPole.getX(),
@@ -327,7 +327,7 @@ public class FieldConstants {
         // Relevant reference points on alliance side
         public static final Translation2d centerPoint = new Translation2d(0,
                 AprilTagLayoutType.OFFICIAL.getLayout().getTagPose(29).get().getY());
-        
+
         // Relevant reference points on opposing side
         public static final Translation2d oppCenterPoint = new Translation2d(fieldLength,
                 AprilTagLayoutType.OFFICIAL.getLayout().getTagPose(13).get().getY());
@@ -338,7 +338,6 @@ public class FieldConstants {
         Translation2d position = alliance == DriverStation.Alliance.Blue ? Outpost.centerPoint : Outpost.oppCenterPoint;
         return new Pose3d(position.getX(), position.getY(), 0, new Rotation3d(0, 0, 0));
     }
-    
 
     public enum FieldType {
         ANDYMARK("andymark"),
@@ -373,10 +372,10 @@ public class FieldConstants {
                     if (layout == null) {
                         try {
                             Path p = Path.of(
-                                            Filesystem.getDeployDirectory().getPath(),
-                                            "apriltags",
-                                            fieldType.getJsonFolder(),
-                                            name + ".json");
+                                    Filesystem.getDeployDirectory().getPath(),
+                                    "apriltags",
+                                    fieldType.getJsonFolder(),
+                                    name + ".json");
                             layout = new AprilTagFieldLayout(p);
                             layoutString = new ObjectMapper().writeValueAsString(layout);
                         } catch (IOException e) {

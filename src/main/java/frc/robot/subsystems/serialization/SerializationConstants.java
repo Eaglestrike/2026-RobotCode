@@ -17,7 +17,6 @@ public class SerializationConstants {
     public static final double kV = 1;
     public static final double kA = 45;
 
-
     public static final int HOPPER_MOTOR_ID = 4;
     public static final double HOPPER_MAX_VOLTS = -3;
     public static final double HOPPER_NORMAL_VOLTS = -0.3;
