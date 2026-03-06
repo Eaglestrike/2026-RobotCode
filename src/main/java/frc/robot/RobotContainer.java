@@ -26,6 +26,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
@@ -184,6 +185,8 @@ public class RobotContainer {
                 .onTrue(climbL1(() -> true))
                 .onFalse(drivetrain.applyRequest(
                         () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+
+        operatorController.b().onTrue(led.setColor(Color.kGreen)).onFalse(led.setColor(Color.kBlue));
         // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());

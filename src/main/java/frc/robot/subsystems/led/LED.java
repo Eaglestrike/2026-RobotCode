@@ -19,7 +19,7 @@ public class LED extends SubsystemBase {
         addressableLED.start();
     }
 
-    Command setColor(Color color) {
+    public Command setColor(Color color) {
         return runOnce(() -> {
             LEDPattern red = LEDPattern.solid(color);
             red.applyTo(buffer);
