@@ -20,6 +20,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
@@ -47,11 +48,12 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
+    private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -60,6 +62,7 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
+        this.led = led;
 
         DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
                 value -> shootOffset = new Translation2d(value, shootOffset.getY()));

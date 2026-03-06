@@ -42,6 +42,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
@@ -98,8 +99,9 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
+    private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder, hopper, drivetrain);
+            feeder, hopper, drivetrain, led);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
