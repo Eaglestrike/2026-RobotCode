@@ -1,30 +1,31 @@
 package frc.robot.subsystems.intake;
 
+import edu.wpi.first.units.measure.Voltage;
+
 public final class IntakeConstants {
     public static final class Rollers {
-        public static final int MOTOR_ID = 14;
+        public static final int MOTOR_ID = 16;
         public static final boolean INVERTED = false;
 
         public static final double VOLTS = 4.0;
-        public static final double HOPPER_OUT_VOLTS = -1.5;
         public static final double JIGGLE_VOLTS = 1.0;
     }
 
     public static final class Wrist {
         // FIXME: i'm intentionally commenting this out because the all the constants
         // below are wrong. PLEASE FIX THEM!!!! -max
-        // public static final int MOTOR_ID = 24;
+        public static final int MOTOR_ID = 36;
 
         public static final double MAX_VEL = 14;
         public static final double MAX_ACC = 20;
 
-        public static final double GEAR_RATIO = 100.0;
+        public static final double GEAR_RATIO = 45;
         /** In radians of the intake */
-        public static final double ENCODER_OFFSET = -0.2199114858 - Math.PI / 2;
+        public static final double ENCODER_OFFSET = - Math.PI / 2;
 
         public static final double MIN_ANGLE = Math.toDegrees(ENCODER_OFFSET); // degrees
-        public static final double MAX_ANGLE = 15; // degrees
-        public static final double STOW_ANGLE = -90; // degrees
+        public static final double MAX_ANGLE = 0; // degrees
+        public static final double STOW_ANGLE = MIN_ANGLE; // degrees
 
         public static final double MAX_VOLTS = 8.0;
 
@@ -42,5 +43,11 @@ public final class IntakeConstants {
         public static final double JIGGLE_UP_ANGLE = -5;
         public static final double JIGGLE_DOWN_ANGLE = 5;
         public static final double JIGGLE_FREQ_SEC = 0.5;
+
+        public static final double UP_VOLTS = -2.0;
+        public static final double DOWN_VOLTS = 1.5;
+
+        public static final double UP_STALL_CURRENT = 15;
+        public static final double DOWN_STALL_CURRENT = 8;
     }
 }

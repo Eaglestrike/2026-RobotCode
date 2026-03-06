@@ -168,6 +168,12 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x())
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
+        operatorController.button(7).and(operatorController.a())
+                .onTrue(shooter.getHood().zero().ignoringDisable(true));
+
+        operatorController.button(7).and(operatorController.b())
+                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+
         operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
