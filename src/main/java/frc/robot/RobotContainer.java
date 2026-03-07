@@ -105,19 +105,30 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
 
-        NamedCommands.registerCommand("ClimbL1Left", climbL1(() -> true));
-        NamedCommands.registerCommand("ClimbL1Right", climbL1(() -> false));
+        NamedCommands.registerCommand("ClimbL1Left",
+                Commands.defer(() -> climbL1(() -> true), java.util.Set.of()));
+        NamedCommands.registerCommand("ClimbL1Right",
+                Commands.defer(() -> climbL1(() -> false), java.util.Set.of()));
         NamedCommands.registerCommand("SetModeFerry",
-                Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)),
+                        java.util.Set.of()));
         NamedCommands.registerCommand("SetModeShoot",
-                Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)),
+                        java.util.Set.of()));
         NamedCommands.registerCommand("StartShooting",
-                Commands.runOnce(() -> superstructure.setShooting(true)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setShooting(true)), java.util.Set.of()));
         NamedCommands.registerCommand("StopShooting",
-                Commands.runOnce(() -> superstructure.setShooting(false)));
-        NamedCommands.registerCommand("Intake", superstructure.intake());
-        NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
-        NamedCommands.registerCommand("Stow", superstructure.stow());
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setShooting(false)), java.util.Set.of()));
+        NamedCommands.registerCommand("Intake",
+                Commands.defer(() -> superstructure.intake(), java.util.Set.of()));
+        NamedCommands.registerCommand("StowIntake",
+                Commands.defer(() -> superstructure.stowIntake(), java.util.Set.of()));
+        NamedCommands.registerCommand("Stow",
+                Commands.defer(() -> superstructure.stow(), java.util.Set.of()));
+        NamedCommands.registerCommand("Duck",
+                Commands.defer(() -> superstructure.duck(), java.util.Set.of()));
+        NamedCommands.registerCommand("Unduck",
+                Commands.defer(() -> superstructure.unDuck(), java.util.Set.of()));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);

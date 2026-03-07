@@ -34,7 +34,13 @@
   "eventMarkers": [
     {
       "name": "Duck",
-      "waypointRelativePos": 1.0,
+      "waypointRelativePos": 0.45237230066445167,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 0.5836794019933557,
       "endWaypointRelativePos": null,
       "command": null
     }

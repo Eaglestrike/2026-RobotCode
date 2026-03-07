@@ -28,6 +28,13 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
+    private enum ShooterState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING
+    }
+
     private final ShooterTurret turret;
     private final ShooterHood hood;
     private final ShooterFlywheels flywheels;
@@ -37,8 +44,8 @@ public class Shooter extends SubsystemBase {
 
     private final ShooterSolver solver = new LUTSolver();
 
-    private boolean isShooting = false;
-    private boolean isDuckOverride = false; // if true, hood & flywheel will stop
+    private ShooterState currentState = ShooterState.IDLE;
+
     private double distanceToTarget = 0.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -67,6 +74,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public Command stowShooter() {
+        currentState = ShooterState.IDLE;
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
                 hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
@@ -75,17 +83,23 @@ public class Shooter extends SubsystemBase {
 
     public Command duck() {
         return Commands.sequence(
-                runOnce(() -> isDuckOverride = true),
+                runOnce(() -> currentState = ShooterState.DUCKING),
                 hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
     public Command unDuck() {
-        return runOnce(() -> isDuckOverride = false);
+        return runOnce(() -> currentState = ShooterState.AIMING);
     }
 
     public void setShooting(boolean shooting) {
-        isShooting = shooting;
+        if (shooting) {
+            currentState = ShooterState.SHOOTING;
+        } else {
+            // When shooting is turned off, remain in aiming mode so the hood/turret
+            // will track the target but the flywheel won't spin up.
+            currentState = ShooterState.AIMING;
+        }
     }
 
     // called periodically by superstructure
@@ -138,10 +152,14 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
-        turret.setAngle(Degrees.of(targetTurretAngleDeg));
-        if (!isDuckOverride) {
+        if(currentState != ShooterState.IDLE) {
+            turret.setAngle(Degrees.of(targetTurretAngleDeg));
+        }
+        
+        // If we're ducking, don't move the hood or spin the flywheel.
+        if (currentState != ShooterState.DUCKING && currentState != ShooterState.IDLE) {
             hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
-            if (isShooting) {
+            if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
