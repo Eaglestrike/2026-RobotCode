@@ -47,5 +47,7 @@ public final class IntakeConstants {
 
         public static final double UP_STALL_CURRENT = 15;
         public static final double DOWN_STALL_CURRENT = 8;
+
+        public static final double RETAINING_VOLTS = 0.5;
     }
 }

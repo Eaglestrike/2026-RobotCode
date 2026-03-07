@@ -94,7 +94,7 @@ public class IntakeWrist extends SubsystemBase {
                 runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
                 new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
                 runOnce(() -> {
-                    motor.setControl(voltReq.withOutput(0));
+                    motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
                     motor.setPosition(position); // Cos stalling messes up the encoder
                 })).finallyDo(() -> motor.setControl(voltReq.withOutput(0)));
     }
