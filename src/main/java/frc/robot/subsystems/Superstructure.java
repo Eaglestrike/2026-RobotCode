@@ -25,7 +25,7 @@ import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
 
 public class Superstructure extends SubsystemBase {
-    public static Translation2d shootOffset = new Translation2d(0, 0.2);
+    public static Translation2d shootOffset = new Translation2d(0, 0);
 
     public enum ShootMode {
         FERRY,
@@ -82,9 +82,7 @@ public class Superstructure extends SubsystemBase {
      */
     public Command intake() {
         return Commands.sequence(
-                intakeRollers.startHopperOut(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
-                Commands.waitUntil(intakeWrist::clearedHopper),
                 intakeRollers.start());
 
     }
