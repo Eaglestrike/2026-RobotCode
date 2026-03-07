@@ -4,6 +4,8 @@ import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -26,6 +28,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.RobotContainer;
+import frc.robot.subsystems.climb.ClimbConstants;
 
 public class IntakeWrist extends SubsystemBase {
     private enum State {
@@ -79,24 +82,23 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command requestPosition(Angle position) {
-        if (!zeroed) {
-            return Commands.print("Wrist not zeroed");
-        }
-        double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
-                ? IntakeConstants.Wrist.UP_VOLTS
-                : IntakeConstants.Wrist.DOWN_VOLTS;
-        double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
-                ? IntakeConstants.Wrist.UP_STALL_CURRENT
-                : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-        DogLog.log("Intake/Intake voltage", voltage);
-        DogLog.log("Intake/stall current", stallCurrent);
-        return new SequentialCommandGroup(
-                runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
-                new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
-                runOnce(() -> {
-                    motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
-                    motor.setPosition(position); // Cos stalling messes up the encoder
-                })).finallyDo(() -> motor.setControl(voltReq.withOutput(0)));
+            double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
+            double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+            DogLog.log("Intake/Intake voltage", voltage);
+            DogLog.log("Intake/stall current", stallCurrent);
+            return Commands.select(
+                    Map.ofEntries(
+                            Map.entry(true,
+                                    new SequentialCommandGroup(
+                                            runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
+                                            new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+                                            runOnce(() -> {
+                                                motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
+                                                motor.setPosition(position); // Cos stalling messes up the encoder
+                                            })
+                                    ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)))),
+                            Map.entry(false, Commands.print("Wrist not zeroed"))),
+                    () -> zeroed);
     }
 
     public Command zero() {

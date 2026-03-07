@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.5211336805555562,
-        "y": 1.2243104021990745
+        "x": 0.7666482928240745,
+        "y": 0.686238425925926
       },
       "prevControl": null,
       "nextControl": {
-        "x": 0.8083656662170382,
-        "y": 1.4898373361074666
+        "x": 1.0538802784855565,
+        "y": 0.9517653598343181
       },
       "isLocked": false,
       "linkedName": "HumanPlayerStation"
@@ -33,8 +33,8 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxVelocity": 1.0,
+    "maxAcceleration": 1.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -48,7 +48,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -90.0
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }
