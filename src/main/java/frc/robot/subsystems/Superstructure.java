@@ -3,12 +3,12 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Degrees;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -31,12 +31,6 @@ public class Superstructure extends SubsystemBase {
         FERRY,
         SHOOT,
     }
-
-    /**
-     * Height, in meters, above the trench to use as the ferry target Z (near the
-     * ball's apex).
-     */
-    private static final double FERRY_HEIGHT_OFFSET = 0.10;
 
     private ShootMode currentMode;
     public boolean isShooting;
@@ -182,45 +176,34 @@ public class Superstructure extends SubsystemBase {
     private Pose3d computeFerryTarget() {
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         boolean isBlue = alliance == DriverStation.Alliance.Blue;
-
-        // X: the line over the bump/trench on our alliance's side of the field
-        double targetX = isBlue
-                ? FieldConstants.LinesVertical.hubCenter
-                : FieldConstants.LinesVertical.oppHubCenter;
+        final double EDGE_OFFSET = 2.0;
+        double targetX = isBlue ? 0 : FieldConstants.fieldLength;
 
         // Robot's current Y on the field
         Pose2d robotPose = drivetrain.getState().Pose;
         double robotY = robotPose.getY();
 
-        // Clamp Y into the open trench zone on the correct side of the hub.
-        // If the robot is above the field center-line (left side), aim into the left
-        // trench opening;
-        // otherwise aim into the right trench opening.
-        double targetY;
-        if (robotY >= FieldConstants.LinesHorizontal.center) {
-            // Left trench opening: from leftTrenchOpenEnd (just above the bump) to
-            // leftTrenchOpenStart (field wall)
-            double bumpMiddle = (FieldConstants.LinesHorizontal.leftBumpStart
-                    + FieldConstants.LinesHorizontal.leftBumpEnd) / 2;
-            targetY = MathUtil.clamp(robotY,
-                    bumpMiddle,
-                    FieldConstants.LinesHorizontal.leftTrenchOpenStart);
-        } else {
-            // Right trench opening: from rightTrenchOpenEnd (field wall, 0) to
-            // rightTrenchOpenStart (just below bump)
-            double bumpMiddle = (FieldConstants.LinesHorizontal.rightBumpStart
-                    + FieldConstants.LinesHorizontal.rightBumpEnd) / 2;
-            targetY = MathUtil.clamp(robotY,
-                    FieldConstants.LinesHorizontal.rightTrenchOpenEnd,
-                    bumpMiddle);
-        }
+        double targetY = robotY >= FieldConstants.LinesHorizontal.center ? FieldConstants.fieldWidth - EDGE_OFFSET : EDGE_OFFSET;
 
-        return new Pose3d(targetX, targetY, RightTrench.height + FERRY_HEIGHT_OFFSET, new Rotation3d());
+        return new Pose3d(targetX, targetY, RightTrench.height, new Rotation3d());
+    }
+
+    private void autoSetMode() {
+        Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        boolean isBlue = alliance == DriverStation.Alliance.Blue;
+        Pose2d robotPose = drivetrain.getState().Pose;
+        if ((isBlue && robotPose.getX() > FieldConstants.Hub.farFace.getX())
+                || (!isBlue && robotPose.getX() < FieldConstants.Hub.oppFarLeftCorner.getX())) {
+            setMode(ShootMode.FERRY);
+        } else {
+            setMode(ShootMode.SHOOT);
+        }
     }
 
     @Override
     public void periodic() {
-
+        autoSetMode();
+        DogLog.log("Superstructure/Mode", currentMode.toString());
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
@@ -239,7 +222,7 @@ public class Superstructure extends SubsystemBase {
             return;
         }
 
-        if (isShooting && shooter.isReady()) {
+        if (isShooting && shooter.isReady()) { // for ferrying check if trajectory intersects hub
             feeder.startMotor();
             hopper.startKicking();
         } else {

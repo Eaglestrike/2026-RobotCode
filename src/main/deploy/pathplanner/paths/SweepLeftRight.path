@@ -64,12 +64,12 @@
     },
     {
       "anchor": {
-        "x": 4.0,
-        "y": 0.6720247395783827
+        "x": 3.5304919704861115,
+        "y": 0.6356527054398144
       },
       "prevControl": {
-        "x": 7.289832517238312,
-        "y": 0.46060739436124676
+        "x": 5.893390625,
+        "y": 0.6195543258151359
       },
       "nextControl": null,
       "isLocked": false,
@@ -120,6 +120,12 @@
       }
     },
     {
+      "name": "StopShooting",
+      "waypointRelativePos": 1.819248338870433,
+      "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
       "name": "Duck",
       "waypointRelativePos": 3.657784872298626,
       "endWaypointRelativePos": null,
@@ -129,6 +135,12 @@
           "name": "Duck"
         }
       }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 4.0,
+      "endWaypointRelativePos": null,
+      "command": null
     }
   ],
   "globalConstraints": {

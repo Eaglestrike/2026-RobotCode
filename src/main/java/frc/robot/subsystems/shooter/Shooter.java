@@ -45,6 +45,7 @@ public class Shooter extends SubsystemBase {
     private final ShooterSolver solver = new LUTSolver();
 
     private ShooterState currentState = ShooterState.AIMING;
+    private ShooterState lastState = currentState;
 
     private double distanceToTarget = 0.0;
 
@@ -74,6 +75,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public Command stowShooter() {
+        lastState = currentState;
         currentState = ShooterState.IDLE;
         return Commands.parallel(
                 turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
@@ -83,27 +85,33 @@ public class Shooter extends SubsystemBase {
 
     public Command duck() {
         return Commands.sequence(
-                runOnce(() -> currentState = ShooterState.DUCKING),
+                runOnce(() -> {
+                    lastState = currentState;
+                    currentState = ShooterState.DUCKING;
+                }),
                 hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
     public Command unDuck() {
-        return runOnce(() -> currentState = ShooterState.AIMING);
+        return runOnce(() -> currentState = lastState);
     }
 
     public void setShooting(boolean shooting) {
         if (shooting) {
+            lastState = currentState;
             currentState = ShooterState.SHOOTING;
         } else {
             // When shooting is turned off, remain in aiming mode so the hood/turret
             // will track the target but the flywheel won't spin up.
+            lastState = currentState;
             currentState = ShooterState.AIMING;
         }
     }
 
     // called periodically by superstructure
     public void setFacing(Pose3d targetPose) {
+        DogLog.log("Shooter/CurrentState", currentState.toString());
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
