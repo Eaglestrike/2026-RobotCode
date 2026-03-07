@@ -21,7 +21,7 @@ public final class IntakeConstants {
 
         public static final double GEAR_RATIO = 45;
         /** In radians of the intake */
-        public static final double ENCODER_OFFSET = - Math.PI / 2;
+        public static final double ENCODER_OFFSET = -Math.PI / 2;
 
         public static final double MIN_ANGLE = Math.toDegrees(ENCODER_OFFSET); // degrees
         public static final double MAX_ANGLE = 0; // degrees
@@ -40,9 +40,7 @@ public final class IntakeConstants {
 
         public static final double EJECT_ANGLE = 0;
 
-        public static final double JIGGLE_UP_ANGLE = -5;
-        public static final double JIGGLE_DOWN_ANGLE = 5;
-        public static final double JIGGLE_FREQ_SEC = 0.5;
+        public static final double JIGGLE_FREQ_SEC = 1.5;
 
         public static final double UP_VOLTS = -2.0;
         public static final double DOWN_VOLTS = 1.5;

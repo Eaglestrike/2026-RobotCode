@@ -1,5 +1,6 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
@@ -17,7 +18,6 @@ import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -28,15 +28,11 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.RobotContainer;
 
 public class IntakeWrist extends SubsystemBase {
-    private static final boolean ENABLE_TUNING = false;
-    private static final boolean BANG_BANG = true;
-
     private enum State {
         IDLE, MOVING_TO_GOAL, MANUAL, JIGGLING
     }
 
     private final TalonFX motor = new TalonFX(IntakeConstants.Wrist.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-    private final PositionTorqueCurrentFOC ctl = new PositionTorqueCurrentFOC(0);
     private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
 
     private State state = State.IDLE;
@@ -53,18 +49,7 @@ public class IntakeWrist extends SubsystemBase {
         cfg.Voltage.PeakForwardVoltage = IntakeConstants.Wrist.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -IntakeConstants.Wrist.MAX_VOLTS;
         cfg.Feedback.SensorToMechanismRatio = IntakeConstants.Wrist.GEAR_RATIO;
-        if(BANG_BANG) {
-            cfg.Voltage.PeakForwardVoltage = IntakeConstants.Wrist.MAX_VOLTS;
-            cfg.Voltage.PeakReverseVoltage = -IntakeConstants.Wrist.MAX_VOLTS;
-        } else {
-            cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-            cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = IntakeConstants.Wrist.MAX_ANGLE;
-            cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-            cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = IntakeConstants.Wrist.MIN_ANGLE;
-            cfg.MotionMagic.MotionMagicCruiseVelocity = IntakeConstants.Wrist.MAX_VEL;
-            cfg.MotionMagic.MotionMagicAcceleration = IntakeConstants.Wrist.MAX_ACC;
-        }
-       
+
         cfg.Slot0.kP = IntakeConstants.Wrist.kP;
         cfg.Slot0.kI = IntakeConstants.Wrist.kI;
         cfg.Slot0.kD = IntakeConstants.Wrist.kD;
@@ -75,49 +60,13 @@ public class IntakeWrist extends SubsystemBase {
         cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         motor.getConfigurator().apply(cfg);
-        motor.setControl(BANG_BANG ? voltReq : ctl);
+        motor.setControl(voltReq);
 
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
 
-
         DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
-
-        if (ENABLE_TUNING) {
-            DogLog.tunable("IntakeWrist/EncoderOffset", offset, x -> {
-                offset = x;
-            });
-
-            DogLog.tunable("IntakeWrist/kP", cfg.Slot0.kP, (x) -> {
-                cfg.Slot0.kP = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kI", cfg.Slot0.kI, (x) -> {
-                cfg.Slot0.kI = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kD", cfg.Slot0.kD, (x) -> {
-                cfg.Slot0.kD = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kS", cfg.Slot0.kS, (x) -> {
-                cfg.Slot0.kS = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kV", cfg.Slot0.kV, (x) -> {
-                cfg.Slot0.kV = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kG", cfg.Slot0.kG, (x) -> {
-                cfg.Slot0.kG = x;
-                motor.getConfigurator().apply(cfg);
-            });
-            DogLog.tunable("IntakeWrist/kA", cfg.Slot0.kA, (x) -> {
-                cfg.Slot0.kA = x;
-                motor.getConfigurator().apply(cfg);
-            });
-        }
     }
 
     public Angle getAngle() {
@@ -130,29 +79,24 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command requestPosition(Angle position) {
-        if(BANG_BANG) {
-            if(!zeroed) {
-                return Commands.print("Wrist not zeroed");
-            }
-            double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
-            double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-            DogLog.log("Intake/Intake voltage", voltage);
-            DogLog.log("Intake/stall current", stallCurrent);
-            return new SequentialCommandGroup(
+        if (!zeroed) {
+            return Commands.print("Wrist not zeroed");
+        }
+        double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
+                ? IntakeConstants.Wrist.UP_VOLTS
+                : IntakeConstants.Wrist.DOWN_VOLTS;
+        double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
+                ? IntakeConstants.Wrist.UP_STALL_CURRENT
+                : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+        DogLog.log("Intake/Intake voltage", voltage);
+        DogLog.log("Intake/stall current", stallCurrent);
+        return new SequentialCommandGroup(
                 runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
                 new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
                 runOnce(() -> {
                     motor.setControl(voltReq.withOutput(0));
                     motor.setPosition(position); // Cos stalling messes up the encoder
-                })
-            ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)));
-        }
-
-        return runOnce(() -> {
-            goal = Radians.of(MathUtil.clamp(position.in(Radians), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
-                    Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
-            state = State.MOVING_TO_GOAL;
-        });
+                })).finallyDo(() -> motor.setControl(voltReq.withOutput(0)));
     }
 
     public Command zero() {
@@ -166,9 +110,13 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command jiggle() {
-        return runOnce(() -> {
-            state = State.JIGGLING;
-        });
+        return Commands.repeatingSequence(
+                Commands.race(
+                        requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)),
+
+                Commands.race(requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
+                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)));
     }
 
     public Command kill() {
@@ -196,22 +144,5 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if(ENABLE_TUNING) {
-            DogLog.log("IntakeWrist/Position", motor.getPosition().getValueAsDouble());
-        }
-            
-        if (state == State.JIGGLING) {
-            double jiggleAngle = (Timer.getFPGATimestamp()
-                    % IntakeConstants.Wrist.JIGGLE_FREQ_SEC < IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2)
-                            ? IntakeConstants.Wrist.JIGGLE_UP_ANGLE
-                            : IntakeConstants.Wrist.JIGGLE_DOWN_ANGLE;
-            goal = Degrees.of(jiggleAngle);
-        }
-
-        if (zeroed && !BANG_BANG) {
-            motor.setControl(ctl.withPosition(goal));
-        } else if(!BANG_BANG){
-            motor.disable();
-        }
     }
 }
