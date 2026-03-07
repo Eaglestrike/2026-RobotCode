@@ -44,7 +44,7 @@ public class Shooter extends SubsystemBase {
 
     private final ShooterSolver solver = new LUTSolver();
 
-    private ShooterState currentState = ShooterState.IDLE;
+    private ShooterState currentState = ShooterState.AIMING;
 
     private double distanceToTarget = 0.0;
 
@@ -152,10 +152,10 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
-        if(currentState != ShooterState.IDLE) {
+        if (currentState != ShooterState.IDLE) {
             turret.setAngle(Degrees.of(targetTurretAngleDeg));
         }
-        
+
         // If we're ducking, don't move the hood or spin the flywheel.
         if (currentState != ShooterState.DUCKING && currentState != ShooterState.IDLE) {
             hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
