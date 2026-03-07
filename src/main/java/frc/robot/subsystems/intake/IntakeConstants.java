@@ -7,7 +7,7 @@ public final class IntakeConstants {
         public static final int MOTOR_ID = 16;
         public static final boolean INVERTED = false;
 
-        public static final double VOLTS = 4.0;
+        public static final double VOLTS = 5.0;
         public static final double JIGGLE_VOLTS = 1.0;
     }
 

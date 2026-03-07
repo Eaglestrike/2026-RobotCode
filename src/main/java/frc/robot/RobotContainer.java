@@ -231,6 +231,10 @@ public class RobotContainer {
 
         operatorController.leftBumper()
                 .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
+
+        operatorController.rightBumper()
+                .toggleOnTrue(superstructure.duck())
+                .toggleOnFalse(superstructure.unDuck());
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
     }

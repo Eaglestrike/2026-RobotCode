@@ -136,6 +136,8 @@ public class IntakeWrist extends SubsystemBase {
             }
             double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
             double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+            DogLog.log("Intake/Intake voltage", voltage);
+            DogLog.log("Intake/stall current", stallCurrent);
             return new SequentialCommandGroup(
                 runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
                 new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
