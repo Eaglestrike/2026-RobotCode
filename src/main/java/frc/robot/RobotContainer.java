@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.zone.RebuiltZones;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.climb.Climb;
@@ -51,9 +52,13 @@ import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
     private static final boolean ENABLE_CLIMB_COMMAND = false;
-    /** Meters from the tower to align to (for center of the robot) */
+    /**
+     * Meters from the tower to align to (for center of the robot)
+     */
     private static final double CLIMB_TOWER_DISTANCE = 0.5;
-    /** Meters per second when moving towards the pole */
+    /**
+     * Meters per second when moving towards the pole
+     */
     private static final double CLIMB_SPEED = 1;
 
     public static final double AXIS_DEADBAND = 0.02;
@@ -104,6 +109,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+        configureZoneBindings();
 
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
@@ -248,6 +254,21 @@ public class RobotContainer {
         // serializer getRightY? Since they need to spin simultaneously to launch
     }
 
+    private void configureZoneBindings() {
+        Trigger inTowerZoneTrigger = RebuiltZones.TOWER_ZONES
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inTowerZoneTrigger
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Climb/InTowerZone", true);
+                    superstructure.setShootingOverride(true);
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Climb/InTowerZone", false);
+                    superstructure.setShootingOverride(false);
+                }));
+    }
+
     public Command getOffTower() {
         if (superstructure.getClimbState() == null
                 || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
@@ -294,7 +315,7 @@ public class RobotContainer {
                     Commands.waitSeconds(1.0),
                     new PrintCommand("Finished climbing"),
                     Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-            // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+                    // superstructure.climb(ClimbConstants.ClimbState.STOWED)
             );
         }, java.util.Set.of());
     }

@@ -158,6 +158,11 @@ public class Superstructure extends SubsystemBase {
         shooter.setShooting(shooting);
     }
 
+    // stop kicking but keep shooter/turret running
+    public void setShootingOverride(boolean shooting) {
+        isShooting = shooting;
+    }
+
     private Pose3d applyShootOffset(Pose3d target) {
         boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
         double xSign = isBlue ? 1.0 : -1.0;
