@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.184640697337965,
-        "y": 1.5980279947916678
+        "x": 8.1966940876589,
+        "y": 1.376729232874294
       },
       "isLocked": false,
       "linkedName": "RightFerryPosition"
@@ -30,7 +30,7 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 0.5418277138157894,
+      "waypointRelativePos": 0.37153970665961955,
       "rotationDegrees": 0.0
     }
   ],
@@ -66,7 +66,7 @@
       "command": {
         "type": "named",
         "data": {
-          "name": "Duck"
+          "name": "StartShooting"
         }
       }
     }
@@ -86,8 +86,8 @@
   "reversed": false,
   "folder": null,
   "idealStartingState": {
-    "velocity": 0,
-    "rotation": 124.26031103968407
+    "velocity": 2.0,
+    "rotation": 130.0
   },
   "useDefaultConstraints": true
 }

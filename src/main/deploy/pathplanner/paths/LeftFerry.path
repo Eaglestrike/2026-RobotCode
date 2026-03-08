@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.74908810763889,
-        "y": 6.907429108796297
+        "x": 8.324144762976696,
+        "y": 6.8558018295374294
       },
       "prevControl": null,
       "nextControl": {
-        "x": 8.998837245491979,
-        "y": 6.896232317218382
+        "x": 8.573893900829784,
+        "y": 6.844605037959514
       },
       "isLocked": false,
       "linkedName": "LeftFerryPosition"
@@ -56,13 +56,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 124.26031103968407
+    "rotation": 130.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -110.99515956606233
+    "rotation": -121.40053233259775
   },
   "useDefaultConstraints": true
 }

@@ -26,6 +26,13 @@ public class ClimbConstants {
     public final static double MAX_VOLTS = 4.0;
     public final static double MANUAL_RATIO = 1.0;
 
+    // Bang-bang control constants
+    public final static double UP_VOLTS = 0.0;
+    public final static double DOWN_VOLTS = 0.0;
+    public final static double UP_STALL_CURRENT = 0.0;
+    public final static double DOWN_STALL_CURRENT = 0.0;
+    public final static double UP_RETAINING_VOLTS = 0.0;
+
     public final static double L1_EXTEND_HEIGHT = 0.0;
     public final static double L2_EXTEND_HEIGHT = 0.0;
     public final static double L3_EXTEND_HEIGHT = 0.0;
