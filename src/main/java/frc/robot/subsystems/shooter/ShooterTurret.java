@@ -176,7 +176,11 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public boolean atTarget() {
-        return motor.getPosition().getValue().isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE);
+        return atTarget(TurretConstants.ANGLE_TOLERANCE);
+    }
+
+    public boolean atTarget(Angle tolerance) {
+        return motor.getPosition().getValue().isNear(targetAngle, tolerance);
     }
 
     @Override

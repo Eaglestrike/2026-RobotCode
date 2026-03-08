@@ -215,6 +215,14 @@ public class Shooter extends SubsystemBase {
         return turret.atTarget() && hood.atTarget() && flywheels.atVelocity();
     }
 
+    public boolean isReady(boolean ferry) {
+        if (ferry) {
+            return turret.atTarget(ShooterConstants.TurretConstants.FERRY_ANGLE_TOLERANCE)
+                    && hood.atTarget() && flywheels.atVelocity();
+        }
+        return isReady();
+    }
+
     public ShooterFlywheels getFlywheels() {
         return flywheels;
     }

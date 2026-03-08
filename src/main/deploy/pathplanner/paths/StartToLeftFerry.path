@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.0,
-        "y": 7.526005208333334
+        "x": 3.871535517939815,
+        "y": 7.4693833188657415
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.983896484375,
-        "y": 7.2632350260416665
+        "x": 4.855432002314815,
+        "y": 7.206613136574074
       },
       "isLocked": false,
       "linkedName": null
@@ -36,7 +36,23 @@
       "name": "Duck",
       "waypointRelativePos": 0,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 0.2549574335548173,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
     }
   ],
   "globalConstraints": {

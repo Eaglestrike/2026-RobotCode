@@ -16,19 +16,24 @@
     },
     {
       "anchor": {
-        "x": 1.0471989293981485,
-        "y": 2.5983261718749997
+        "x": 1.0365700231481485,
+        "y": 2.294877459490741
       },
       "prevControl": {
-        "x": 1.9635812355324078,
-        "y": -0.531755497685185
+        "x": 1.9529523292824078,
+        "y": -0.8352042100694437
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "ClimbRight"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5418277138157894,
+      "rotationDegrees": 0.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
@@ -36,13 +41,23 @@
       "name": "Duck",
       "waypointRelativePos": 0.45237230066445167,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
     },
     {
       "name": "Unduck",
       "waypointRelativePos": 0.5836794019933557,
       "endWaypointRelativePos": null,
-      "command": null
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
     }
   ],
   "globalConstraints": {
