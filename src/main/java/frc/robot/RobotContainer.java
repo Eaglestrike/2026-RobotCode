@@ -54,7 +54,7 @@ public class RobotContainer {
     /** Meters from the tower to align to (for center of the robot) */
     private static final double CLIMB_TOWER_DISTANCE = 0.5;
     /** Meters per second when moving towards the pole */
-    private static final double CLIMB_SPEED = 0.5;
+    private static final double CLIMB_SPEED = 1;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -106,9 +106,9 @@ public class RobotContainer {
         configureBindings();
 
         NamedCommands.registerCommand("ClimbL1Left",
-                Commands.defer(() -> climbL1(() -> true), java.util.Set.of()));
+                Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("ClimbL1Right",
-                Commands.defer(() -> climbL1(() -> false), java.util.Set.of()));
+                Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("SetModeFerry",
                 Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)),
                         java.util.Set.of()));
@@ -196,9 +196,7 @@ public class RobotContainer {
                 .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
         rightJoystick.button(4)
-                .onTrue(climbL1(() -> true))
-                .onFalse(drivetrain.applyRequest(
-                        () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
+                .whileTrue(climbL1());
         // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());
@@ -266,32 +264,39 @@ public class RobotContainer {
                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
     }
 
-    public Command climbL1(BooleanSupplier left) {
+    public Command climbL1() {
         if (!ENABLE_CLIMB_COMMAND) {
             return Commands.print("Climb command disabled");
         }
 
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        return Commands.defer(() -> {
+            DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
 
-        Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(left.getAsBoolean());
-        // DogLog.log("Climb/TowerPolePose", towerPolePose);
-        double multiplier = left.getAsBoolean() ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
-        DogLog.log("Climb/DirectionMultiplier", multiplier);
-        Pose3d alignPose = new Pose3d(
-                towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
-                towerPolePose.getRotation());
-        DogLog.log("Climb/AlignPose", alignPose);
+            boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
+            boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
 
-        return Commands.sequence( // TODO: Redo superstructure.climb
-                // superstructure.climb(ClimbConstants.ClimbState.L1),
-                new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-                drivetrain.alignPID(() -> alignPose.toPose2d()),
-                Commands.runOnce(
-                        () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-        // superstructure.climb(ClimbConstants.ClimbState.STOWED)
-        );
+            Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
+            // DogLog.log("Climb/TowerPolePose", towerPolePose);
+            double multiplier = isLeft ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
+            DogLog.log("Climb/DirectionMultiplier", multiplier);
+            Pose3d alignPose = new Pose3d(
+                    towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
+                    towerPolePose.getRotation());
+            DogLog.log("Climb/AlignPose", alignPose);
+
+            return Commands.sequence( // TODO: Redo superstructure.climb
+                    // superstructure.climb(ClimbConstants.ClimbState.L1),
+                    new PrintCommand("Aligning to " + isLeft + " tower"),
+                    drivetrain.alignPID(() -> alignPose.toPose2d()),
+                    new PrintCommand("Moving in..."),
+                    Commands.runOnce(
+                            () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
+                    Commands.waitSeconds(1.0),
+                    new PrintCommand("Finished climbing"),
+                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
+            // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+            );
+        }, java.util.Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
@@ -301,7 +306,7 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return Commands.sequence(
                 superstructure.initialize(),
-                autoChooser.getSelected());
+                autoChooser.getSelected().asProxy());
     }
 
     public Command getTeleopCommand() {

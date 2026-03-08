@@ -57,7 +57,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
-    private static double alignKP = 2.114;
+    private static double alignKP = 3.114;
     private static double alignKI = 0.0;
     private static double alignKD = 0.114;
 
@@ -407,6 +407,9 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                                                                                                                   // b̂
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
+
+                    DogLog.log("Climb/PerpError", perpendicular.getNorm());
+                    DogLog.log("Climb/ProjError", proj.getNorm());
 
                     return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
                             Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target

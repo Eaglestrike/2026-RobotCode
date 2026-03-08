@@ -290,10 +290,10 @@ public class FieldConstants {
         }
 
         int multiplier = -1;
-        double rotation = Math.PI;
+        double rotation = 0;
         if (isLeft ^ (alliance == DriverStation.Alliance.Red)) {
             multiplier = 1;
-            rotation = 0;
+            rotation = Math.PI;
         }
         return new Pose3d(
                 uprightPole.getX(),

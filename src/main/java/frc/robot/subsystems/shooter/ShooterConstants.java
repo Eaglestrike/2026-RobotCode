@@ -13,6 +13,8 @@ public final class ShooterConstants {
         // public static final double MAX_VELOCITY = 0.0;
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 60.0;
+        /** In rotations per minute (for when ducking and moving toward neutral zone) */
+        public static final double DUCK_RPM = 2000.0;
 
         public static final double GEAR_RATIO = 10 / 9.0;
 

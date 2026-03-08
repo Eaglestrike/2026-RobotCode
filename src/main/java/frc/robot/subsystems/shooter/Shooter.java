@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -75,12 +76,15 @@ public class Shooter extends SubsystemBase {
     }
 
     public Command stowShooter() {
-        lastState = currentState;
-        currentState = ShooterState.IDLE;
-        return Commands.parallel(
-                turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
-                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+        return Commands.sequence(
+                runOnce(() -> {
+                    lastState = currentState;
+                    currentState = ShooterState.IDLE;
+                }),
+                Commands.parallel(
+                        turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
+                        hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                        runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY))));
     }
 
     public Command duck() {
@@ -95,6 +99,22 @@ public class Shooter extends SubsystemBase {
 
     public Command unDuck() {
         return runOnce(() -> currentState = lastState);
+    }
+
+    /**
+     * Returns true if the robot is currently moving toward its own alliance zone.
+     * Blue alliance: alliance zone is at lower X, so negative field vX means toward alliance.
+     * Red alliance: alliance zone is at higher X, so positive field vX means toward alliance.
+     */
+    private boolean isMovingTowardAllianceZone() {
+        Pose2d robotPose = drive.getState().Pose;
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                drive.getState().Speeds, robotPose.getRotation());
+        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red)
+                == DriverStation.Alliance.Blue;
+        // Blue: toward alliance = negative vX; Red: toward alliance = positive vX
+        return isBlue ? fieldSpeeds.vxMetersPerSecond < -0.25
+                : fieldSpeeds.vxMetersPerSecond > 0.25;
     }
 
     public void setShooting(boolean shooting) {
@@ -164,8 +184,15 @@ public class Shooter extends SubsystemBase {
             turret.setAngle(Degrees.of(targetTurretAngleDeg));
         }
 
-        // If we're ducking, don't move the hood or spin the flywheel.
-        if (currentState != ShooterState.DUCKING && currentState != ShooterState.IDLE) {
+        // If we're ducking, don't move the hood but spin flywheels at DUCK_RPM
+        // when heading toward our alliance zone so we're ready to shoot on arrival.
+        if (currentState == ShooterState.DUCKING) {
+            if (isMovingTowardAllianceZone()) {
+                flywheels.requestVelocity(ShooterConstants.FlywheelConstants.DUCK_RPM);
+            } else {
+                flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            }
+        } else if (currentState != ShooterState.IDLE) {
             hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
             if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
