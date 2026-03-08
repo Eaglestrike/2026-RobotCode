@@ -42,6 +42,7 @@ public class ShooterTurret extends SubsystemBase {
     private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
                                                                   // broken
     private boolean zeroed = false;
+    private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -91,7 +92,7 @@ public class ShooterTurret extends SubsystemBase {
      * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
      * nearest limit.
      */
-    private static Angle normalizeToSafeRange(Angle angle) {
+    private Angle normalizeToSafeRange(Angle angle) {
         double deg = angle.in(Degrees);
         double lo = TurretConstants.BACKWARD_LIMIT.in(Degrees);
         double hi = TurretConstants.FORWARD_LIMIT.in(Degrees);
@@ -99,9 +100,11 @@ public class ShooterTurret extends SubsystemBase {
         // Shift into range by adding/subtracting full rotations
         while (deg > hi) {
             deg -= 360.0;
+            isRecentering = true;
         }
         while (deg < lo) {
             deg += 360.0;
+            isRecentering = true;
         }
 
         // If still out of range (shouldn't happen with a 360° window, but just in case)
@@ -132,6 +135,9 @@ public class ShooterTurret extends SubsystemBase {
         Angle safePos = normalizeToSafeRange(pos);
         if (!zeroed) {
             return;
+        }
+        if (isRecentering && safePos.isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE)) {
+            isRecentering = false;
         }
         // double omega =
         // RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
@@ -176,11 +182,7 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public boolean atTarget() {
-        return atTarget(TurretConstants.ANGLE_TOLERANCE);
-    }
-
-    public boolean atTarget(Angle tolerance) {
-        return motor.getPosition().getValue().isNear(targetAngle, tolerance);
+        return !isRecentering;
     }
 
     @Override

@@ -222,7 +222,7 @@ public class Superstructure extends SubsystemBase {
             return;
         }
 
-        if (isShooting && shooter.isReady(currentMode == ShootMode.FERRY)) { // for ferrying check if trajectory intersects hub
+        if (isShooting && shooter.isReady()) { // for ferrying check if trajectory intersects hub
             feeder.startMotor();
             hopper.startKicking();
         } else {
