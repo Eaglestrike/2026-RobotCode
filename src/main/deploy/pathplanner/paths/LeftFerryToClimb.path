@@ -16,25 +16,68 @@
     },
     {
       "anchor": {
+        "x": 4.6955381944444445,
+        "y": 7.413942418981481
+      },
+      "prevControl": {
+        "x": 5.07383986753309,
+        "y": 7.413942418981481
+      },
+      "nextControl": {
+        "x": 4.354134320525781,
+        "y": 7.413942418981481
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
         "x": 1.1565060763888895,
         "y": 4.99802973364979
       },
       "prevControl": {
-        "x": 1.664843860502122,
-        "y": 7.895132105286422
+        "x": 1.183340784143519,
+        "y": 7.447010127314814
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "ClimbLeft"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.9838815789473688,
+      "rotationDegrees": 0.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
   "eventMarkers": [
     {
       "name": "Duck",
-      "waypointRelativePos": 0,
+      "waypointRelativePos": 0.7641715116279071,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 1.1724719684385398,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "StartShooting",
+      "waypointRelativePos": 1.2348681478405337,
       "endWaypointRelativePos": null,
       "command": {
         "type": "named",
@@ -45,8 +88,8 @@
     }
   ],
   "globalConstraints": {
-    "maxVelocity": 2.0,
-    "maxAcceleration": 1.0,
+    "maxVelocity": 3.0,
+    "maxAcceleration": 2.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
