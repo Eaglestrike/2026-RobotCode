@@ -41,12 +41,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StowIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "RightFerryToClimb"
