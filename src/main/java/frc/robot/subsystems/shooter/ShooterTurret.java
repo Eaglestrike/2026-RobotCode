@@ -38,15 +38,11 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
-                                                                  // broken
     private boolean zeroed = false;
     private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
-        this.photoelectric = new DigitalInput(TurretConstants.PHOTOELECTRIC_DIO);
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
@@ -176,11 +172,6 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public boolean isZeroSensorGreen() {
-        boolean raw = photoelectric.get();
-        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
-    }
-
     public boolean atTarget() {
         return !isRecentering;
     }
@@ -191,7 +182,6 @@ public class ShooterTurret extends SubsystemBase {
         // motor.getPosition().getValue().in(Degrees), "Degrees");
         // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
         // "Degrees");
-        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
         // DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
 
@@ -219,9 +209,6 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
         DogLog.log("ShooterTurret/SimPosition",
                 sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
-
-        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-
     }
 
     public Pose3d getComponentPose3d() {
