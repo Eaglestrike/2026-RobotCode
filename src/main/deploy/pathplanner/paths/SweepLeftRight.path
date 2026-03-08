@@ -16,16 +16,16 @@
     },
     {
       "anchor": {
-        "x": 7.695579499938969,
-        "y": 5.681338822226169
+        "x": 7.641898508175839,
+        "y": 5.118517298066546
       },
       "prevControl": {
-        "x": 7.658731066207374,
-        "y": 6.2851218755247515
+        "x": 7.605050074444244,
+        "y": 5.722300351365129
       },
       "nextControl": {
-        "x": 7.737839946285186,
-        "y": 4.9888767893880654
+        "x": 7.684158954522056,
+        "y": 4.426055265228443
       },
       "isLocked": false,
       "linkedName": null
@@ -33,79 +33,31 @@
     {
       "anchor": {
         "x": 8.74908810763889,
-        "y": 4.884228928969569
+        "y": 3.7098568939687695
       },
       "prevControl": {
-        "x": 9.543812932677092,
-        "y": 5.088567330094011
+        "x": 9.227525399783008,
+        "y": 4.753055670840411
       },
       "nextControl": {
-        "x": 8.091018067098549,
-        "y": 4.715026991801636
+        "x": 8.465832912156134,
+        "y": 3.0922389149314267
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 7.8198628665748515,
-        "y": 4.304961120547591
+        "x": 7.641898508175839,
+        "y": 2.7268502980410974
       },
       "prevControl": {
-        "x": 7.602464019830479,
-        "y": 4.623672531728101
+        "x": 7.529977764775407,
+        "y": 2.9503983850306676
       },
       "nextControl": {
-        "x": 8.200026298293594,
-        "y": 3.747633307558896
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 8.74908810763889,
-        "y": 3.7429185763626043
-      },
-      "prevControl": {
-        "x": 8.875489870164214,
-        "y": 4.014530173492856
-      },
-      "nextControl": {
-        "x": 8.489660202504583,
-        "y": 3.185460940915725
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 7.8198628665748515,
-        "y": 2.9633758376626225
-      },
-      "prevControl": {
-        "x": 7.681723094123976,
-        "y": 3.1717442692140967
-      },
-      "nextControl": {
-        "x": 8.07522364182497,
-        "y": 2.578192604227389
-      },
-      "isLocked": false,
-      "linkedName": null
-    },
-    {
-      "anchor": {
-        "x": 8.74908810763889,
-        "y": 2.430757565881828
-      },
-      "prevControl": {
-        "x": 8.756350787143807,
-        "y": 2.680652050587691
-      },
-      "nextControl": {
-        "x": 8.72909608955066,
-        "y": 1.7428716341116375
+        "x": 7.921476949860017,
+        "y": 2.1684263285146232
       },
       "isLocked": false,
       "linkedName": null
@@ -116,8 +68,8 @@
         "y": 1.4655603298611117
       },
       "prevControl": {
-        "x": 8.791894820601852,
-        "y": 2.8621461226851856
+        "x": 9.002919512551266,
+        "y": 2.8094440502224485
       },
       "nextControl": null,
       "isLocked": false,
@@ -126,36 +78,20 @@
   ],
   "rotationTargets": [
     {
-      "waypointRelativePos": 1.02,
-      "rotationDegrees": -90.0
+      "waypointRelativePos": 0.9531661184210531,
+      "rotationDegrees": -16.525829590017757
     },
     {
-      "waypointRelativePos": 1.293359375,
-      "rotationDegrees": -16.525829590017757
+      "waypointRelativePos": 1.02,
+      "rotationDegrees": -90.0
     },
     {
       "waypointRelativePos": 1.6792660361842096,
       "rotationDegrees": -90.77971152073884
     },
     {
-      "waypointRelativePos": 2.0570415296052618,
-      "rotationDegrees": -158.72420358644055
-    },
-    {
-      "waypointRelativePos": 3.1435238486842083,
-      "rotationDegrees": -27.85645860230944
-    },
-    {
-      "waypointRelativePos": 3.8278371710526304,
-      "rotationDegrees": -130.64986957015904
-    },
-    {
-      "waypointRelativePos": 4.376151315789473,
-      "rotationDegrees": -88.28734762083688
-    },
-    {
-      "waypointRelativePos": 4.91892475328948,
-      "rotationDegrees": -41.29923385660525
+      "waypointRelativePos": 3.0059621710526305,
+      "rotationDegrees": -41.299233856605255
     }
   ],
   "constraintZones": [],
@@ -168,7 +104,7 @@
       "command": {
         "type": "named",
         "data": {
-            "name": "StopShooting"
+          "name": "StopShooting"
         }
       }
     }
