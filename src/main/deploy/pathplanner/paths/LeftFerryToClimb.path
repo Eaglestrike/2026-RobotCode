@@ -3,13 +3,13 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.74908810763889,
-        "y": 6.907429108796297
+        "x": 8.324144762976696,
+        "y": 6.8558018295374294
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.7819075659984165,
-        "y": 7.673019387187975
+        "x": 7.356964221336222,
+        "y": 7.621392107929108
       },
       "isLocked": false,
       "linkedName": "LeftFerryPosition"
@@ -71,7 +71,7 @@
       "command": {
         "type": "named",
         "data": {
-          "name": "Duck"
+          "name": "Unduck"
         }
       }
     },
@@ -82,7 +82,7 @@
       "command": {
         "type": "named",
         "data": {
-          "name": "Duck"
+          "name": "StartShooting"
         }
       }
     }
@@ -103,7 +103,7 @@
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": -110.99515956606233
+    "rotation": -121.40053233259775
   },
   "useDefaultConstraints": true
 }

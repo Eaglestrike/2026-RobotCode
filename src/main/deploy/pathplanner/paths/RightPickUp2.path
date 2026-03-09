@@ -1,0 +1,77 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 3.745113932291667,
+        "y": 0.5901059873764121
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 4.745113932291667,
+        "y": 0.5901059873764118
+      },
+      "isLocked": false,
+      "linkedName": "RightComeBack1"
+    },
+    {
+      "anchor": {
+        "x": 7.619585429908193,
+        "y": 3.4793266684322033
+      },
+      "prevControl": {
+        "x": 8.219774563029661,
+        "y": -0.048453831214689824
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "RightPickup2"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Duck",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 0.32047112944162415,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 2.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 90.15443568937242
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -0.5092824049775333
+  },
+  "useDefaultConstraints": true
+}

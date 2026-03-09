@@ -17,21 +17,15 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "StartToLeftFerry"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "Intake"
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 0.25
+            "pathName": "StartToLeftFerry"
           }
         },
         {
