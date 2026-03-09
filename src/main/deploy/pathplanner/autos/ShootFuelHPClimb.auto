@@ -1,0 +1,67 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftPickUp1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartShooting"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftComeBack1"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftShootToFuel"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "FuelToHP"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "HPToClimb"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ClimbL1Right"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}
