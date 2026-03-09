@@ -17,6 +17,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "StartToHP"
@@ -25,7 +31,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 1.0
+            "waitTime": 3.0
           }
         },
         {
@@ -43,13 +49,13 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignRightTower"
+            "name": "StopShooting"
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "ClimbL1"
+            "name": "ClimbL1Right"
           }
         }
       ]

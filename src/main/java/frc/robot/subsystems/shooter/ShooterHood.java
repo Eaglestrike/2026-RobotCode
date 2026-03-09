@@ -1,12 +1,16 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
@@ -15,8 +19,9 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
+import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
@@ -24,134 +29,143 @@ import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterHood extends SubsystemBase {
     private TalonFX motor;
-    private final MotionMagicVoltage request = new MotionMagicVoltage(0).withEnableFOC(true);
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
+    private final PositionVoltage request = new PositionVoltage(0);
+    private Angle targetAngle = Degrees.of(HoodConstants.DEFAULT_GOAL);
+    private boolean zeroed = false;
 
     public ShooterHood() {
-        motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        this.motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
-        cfg.MotionMagic.MotionMagicCruiseVelocity = HoodConstants.MAX_VELOCITY;
-        cfg.MotionMagic.MotionMagicAcceleration = HoodConstants.MAX_ACCEL;
         cfg.Slot0.kP = HoodConstants.kP;
         cfg.Slot0.kD = HoodConstants.kD;
         cfg.Slot0.kS = HoodConstants.kS;
         cfg.Slot0.kV = HoodConstants.kV;
         cfg.Slot0.kA = HoodConstants.kA;
         cfg.Slot0.kG = HoodConstants.kG;
-        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
         cfg.Voltage.PeakForwardVoltage = HoodConstants.MAX_VOLTS;
         cfg.Voltage.PeakReverseVoltage = -HoodConstants.MAX_VOLTS;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = HoodConstants.MAX_ANGLE / 360.0;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.MIN_ANGLE / 360.0;
 
         this.motor.getConfigurator().apply(cfg);
-
-        DogLog.tunable("ShooterHood/CruiseVelo", cfg.MotionMagic.MotionMagicCruiseVelocity, x -> {
-            System.out.println("Updating CruiseVelo to " + x);
-            cfg.MotionMagic.MotionMagicCruiseVelocity = x;
-            motor.getConfigurator().apply(cfg);
-        });
-        DogLog.tunable("ShooterHood/Acceleration", cfg.MotionMagic.MotionMagicAcceleration, x -> {
-            System.out.println("Updating Acceleration to " + x);
-            cfg.MotionMagic.MotionMagicAcceleration = x;
-            motor.getConfigurator().apply(cfg);
-        });
-
-        DogLog.tunable("ShooterHood/kP", cfg.Slot0.kP, x -> {
-            System.out.println("Updating kP to " + x);
-            cfg.Slot0.kP = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kD", cfg.Slot0.kD, x -> {
-            System.out.println("Updating kD to " + x);
-            cfg.Slot0.kD = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kS", cfg.Slot0.kS, x -> {
-            System.out.println("Updating kS to " + x);
-            cfg.Slot0.kS = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kV", cfg.Slot0.kV, x -> {
-            System.out.println("Updating kV to " + x);
-            cfg.Slot0.kV = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kA", cfg.Slot0.kA, x -> {
-            System.out.println("Updating kA to " + x);
-            cfg.Slot0.kA = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
-        DogLog.tunable("ShooterHood/kG", cfg.Slot0.kG, x -> {
-            System.out.println("Updating kG to " + x);
-            cfg.Slot0.kG = x;
-            motor.getConfigurator().apply(cfg.Slot0);
-        });
+        motor.getPosition().setUpdateFrequency(50);
+        motor.getVelocity().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
 
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX44);
 
-        DogLog.tunable("HoodRequest", 0.0, x -> {
-            goToPos(Radians.of(x)).schedule();
+        motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+
+        DogLog.tunable("ShooterHood/Request Degrees", HoodConstants.DEFAULT_GOAL, x -> {
+            setGoal(Degrees.of(x));
         });
+
+        if (RobotBase.isSimulation()) {
+            motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+            zeroed = true;
+        }
+        DogLog.log("ShooterHood/isZeroed", zeroed);
     }
 
-    public Command goToPos(Angle position) {
-        return runOnce(() -> {
-            motor.setControl(request.withPosition(position));
-        });
+    /**
+     * @return Current shooting angle
+     */
+    public Angle getAngle() {
+        return motor.getPosition().getValue();
+    }
+
+    public Command requestPosition(Angle shootingAngle) {
+        return runOnce(() -> setGoal(shootingAngle));
+    }
+
+    /**
+     * Set goal in shooting angle (degrees from horizontal).
+     * 75.11° = most horizontal (hard stop), 26° = most tilted
+     */
+    public void setGoal(Angle shootingAngle) {
+        if (!zeroed)
+            return;
+        targetAngle = shootingAngle;
+        motor.setControl(request.withPosition(shootingAngle));
+    }
+
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return startRun(
+                () -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+                    motor.getConfigurator().apply(cfg);
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+                    motor.getConfigurator().apply(cfg);
+                });
     }
 
     public Command stop() {
         return runOnce(() -> {
-            this.motor.stopMotor();
+            motor.setVoltage(0);
         });
     }
 
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(Radians.of(HoodConstants.OFFSET));
+            motor.setPosition(Degrees.of(HoodConstants.OFFSET));
+            zeroed = true;
+            DogLog.log("ShooterHood/isZeroed", zeroed);
         });
+    }
+
+    @Override
+    public void periodic() {
+        // DogLog.log("ShooterHood/ShootingAngle", getAngle().in(Degrees), "Degrees");
+        // DogLog.log("ShooterHood/AtTarget", atTarget());
+    }
+
+    public boolean atTarget() {
+        return getAngle().isNear(targetAngle, HoodConstants.ANGLE_TOLERANCE);
     }
 
     /* sim */
     private static final double gearRatio = HoodConstants.GEAR_RATIO;
-    private final DCMotor gearbox = DCMotor.getKrakenX44Foc(1);
-    private final SingleJointedArmSim sim = new SingleJointedArmSim(
-            LinearSystemId.createSingleJointedArmSystem(
-                    gearbox,
-                    0.022,
-                    gearRatio),
-            gearbox,
-            gearRatio,
-            0.252559,
-            -0.22,
-            0,
-            true,
-            -0.22);
+    private static final Angle SIM_OFFSET = Degrees.of(HoodConstants.OFFSET);
+    private final DCMotor gearbox = DCMotor.getKrakenX44(1);
+    private final DCMotorSim sim = new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(gearbox, 0.001, gearRatio),
+            gearbox);
 
     @Override
     public void simulationPeriodic() {
         var talonFXSim = motor.getSimState();
         talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
         var motorVoltage = talonFXSim.getMotorVoltageMeasure();
-        DogLog.log("ShooterHood/MotorVoltage", motorVoltage.in(Volts), "Volts");
 
         sim.setInputVoltage(motorVoltage.in(Volts));
         sim.update(0.020);
 
-        talonFXSim.setRawRotorPosition(sim.getAngleRads() * gearRatio);
-        talonFXSim.setRotorVelocity(sim.getVelocityRadPerSec() * gearRatio);
-        DogLog.log("ShooterHood/SimPosition", sim.getAngleRads(), "Radians");
+        talonFXSim.setRawRotorPosition(sim.getAngularPosition().times(gearRatio).plus(SIM_OFFSET));
+        talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
+        // DogLog.log("ShooterHood/SimPosition",
+        // sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
     }
 
     public Pose3d getComponentPose3d(Pose3d turretPose) {
-        // offset of the hood relative to the turret frame (forward, lateral, up)
         double offsetX = 0.106;
         double offsetY = 0.0;
 
         var yaw = turretPose.getRotation().getZ();
 
-        // rotate the XY offset by the turret yaw to transform into field coordinates
         double cos = Math.cos(yaw);
         double sin = Math.sin(yaw);
         double fieldOffsetX = cos * offsetX - sin * offsetY;
@@ -161,6 +175,6 @@ public class ShooterHood extends SubsystemBase {
                 turretPose.getX() + fieldOffsetX,
                 turretPose.getY() + fieldOffsetY,
                 turretPose.getZ() + 0.0713,
-                new Rotation3d(0, this.motor.getPosition().getValue().in(Radians), yaw));
+                new Rotation3d(0, -getAngle().in(Radians), yaw));
     }
 }

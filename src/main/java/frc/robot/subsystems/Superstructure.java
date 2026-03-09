@@ -3,30 +3,37 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Degrees;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
+import frc.robot.FieldConstants.RightTrench;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.ShooterConstants;
 
 public class Superstructure extends SubsystemBase {
+    public static Translation2d shootOffset = new Translation2d(0, 0);
+
     public enum ShootMode {
         FERRY,
         SHOOT,
     }
 
     private ShootMode currentMode;
-    private boolean isShooting;
+    public boolean isShooting;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -34,9 +41,11 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
+    private final EagleSwerveDrivetrain drivetrain;
+    private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper) {
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -45,12 +54,21 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
+
+        DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
+                value -> shootOffset = new Translation2d(value, shootOffset.getY()));
+        DogLog.tunable("Superstructure/ShootOffsetY", shootOffset.getY(),
+                value -> shootOffset = new Translation2d(shootOffset.getX(), value));
+
+        DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
+        DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
+
+        this.drivetrain = drivetrain;
     }
 
     public Command initialize() {
-        return Commands.parallel(
-                hopper.startMotor(),
-                shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY));
+        return runOnce(() -> {
+        });
     }
 
     /**
@@ -58,8 +76,9 @@ public class Superstructure extends SubsystemBase {
      */
     public Command intake() {
         return Commands.sequence(
-                intakeRollers.start(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                intakeRollers.start());
+
     }
 
     /**
@@ -68,7 +87,11 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+    }
+
+    public Command stopIntakeRollers() {
+        return intakeRollers.stop();
     }
 
     /**
@@ -77,18 +100,24 @@ public class Superstructure extends SubsystemBase {
     public Command stow() {
         return Commands.parallel(
                 intakeRollers.stop(),
-                intakeWrist.moveTo(Degrees.of(
+                intakeWrist.requestPosition(Degrees.of(
                         IntakeConstants.Wrist.STOW_ANGLE)),
                 shooter.stowShooter(),
+                runOnce(() -> isShooting = false),
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
     }
 
-    public Command outtake() {
+    public Command ejectIntake() {
         return Commands.sequence(
                 intakeWrist.eject(),
                 Commands.waitSeconds(0.5),
-                intakeRollers.eject()
-        );
+                intakeRollers.eject());
+    }
+
+    public Command jiggleIntake() {
+        return Commands.parallel(
+                intakeWrist.jiggle(),
+                intakeRollers.jiggle());
     }
 
     /**
@@ -101,6 +130,16 @@ public class Superstructure extends SubsystemBase {
         return Commands.sequence(
                 stow(),
                 climb.moveTo(level));
+    }
+
+    public Command duck() {
+        return Commands.sequence(
+                shooter.duck(),
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+    }
+
+    public Command unDuck() {
+        return shooter.unDuck();
     }
 
     public ClimbConstants.ClimbState getClimbState() {
@@ -116,29 +155,79 @@ public class Superstructure extends SubsystemBase {
      */
     public void setShooting(boolean shooting) {
         isShooting = shooting;
+        shooter.setShooting(shooting);
+    }
+
+    private Pose3d applyShootOffset(Pose3d target) {
+        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
+        double xSign = isBlue ? 1.0 : -1.0;
+        double ySign = isBlue ? 1.0 : -1.0;
+        return new Pose3d(
+                target.getX() + shootOffset.getX() * xSign,
+                target.getY() + shootOffset.getY() * ySign,
+                target.getZ(),
+                target.getRotation());
+    }
+
+    /**
+     * Computes the Pose3d target for ferry mode (look at the README for sketchy
+     * explanation of the logic).
+     */
+    private Pose3d computeFerryTarget() {
+        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        boolean isBlue = alliance == DriverStation.Alliance.Blue;
+        final double EDGE_OFFSET = 2.0;
+        double targetX = isBlue ? 0 : FieldConstants.fieldLength;
+
+        // Robot's current Y on the field
+        Pose2d robotPose = drivetrain.getState().Pose;
+        double robotY = robotPose.getY();
+
+        double targetY = robotY >= FieldConstants.LinesHorizontal.center ? FieldConstants.fieldWidth - EDGE_OFFSET : EDGE_OFFSET;
+
+        return new Pose3d(targetX, targetY, RightTrench.height, new Rotation3d());
+    }
+
+    private void autoSetMode() {
+        Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        boolean isBlue = alliance == DriverStation.Alliance.Blue;
+        Pose2d robotPose = drivetrain.getState().Pose;
+        if ((isBlue && robotPose.getX() > FieldConstants.Hub.farFace.getX())
+                || (!isBlue && robotPose.getX() < FieldConstants.Hub.oppFarLeftCorner.getX())) {
+            setMode(ShootMode.FERRY);
+        } else {
+            setMode(ShootMode.SHOOT);
+        }
     }
 
     @Override
     public void periodic() {
-        if (isShooting) {
-            if (currentMode == ShootMode.FERRY) {
-                shooter.setFacing(FieldConstants.getAllianceOutpostPosition().toPose2d());
-            } else if (currentMode == ShootMode.SHOOT) {
-                shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            }
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
-            // TODO: set flywheel speeds based on distance to target
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.MAX_VELOCITY);
-
-            if (shooter.isFacingTarget() && shooter.isAtVelocity()) {
-                feeder.startMotor();
-            } else {
-                feeder.stopMotor();
-            }
+        autoSetMode();
+        DogLog.log("Superstructure/Mode", currentMode.toString());
+        if (currentMode == ShootMode.FERRY) {
+            Pose3d ferryTarget = computeFerryTarget();
+            DogLog.log("Superstructure/FerryTarget", ferryTarget);
+            shooter.setFacing(ferryTarget);
         } else {
-            shooter.getFlywheels().startAtVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
+            if (tuning) {
+                shooter.shootManual();
+            }
+        }
+
+        if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
+            isShooting = false;
             feeder.stopMotor();
-            shooter.setFacing(FieldConstants.getAllianceHubPosition().toPose2d());
+            hopper.stopMotor();
+            return;
+        }
+
+        if (isShooting && shooter.isReady()) { // for ferrying check if trajectory intersects hub
+            feeder.startMotor();
+            hopper.startKicking();
+        } else {
+            feeder.stopMotor();
+            hopper.startMotor(); // this starts at like 0.3 volts don't worry
         }
     }
 

@@ -1,0 +1,93 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.74839970647952,
+        "y": 4.632624635858051
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.965365852312853,
+        "y": 7.984519332627119
+      },
+      "isLocked": false,
+      "linkedName": "LeftPickupPosition"
+    },
+    {
+      "anchor": {
+        "x": 4.78345630787037,
+        "y": 7.414204861111111
+      },
+      "prevControl": {
+        "x": 4.448343445380829,
+        "y": 7.432784609767764
+      },
+      "nextControl": {
+        "x": 5.0330729471221325,
+        "y": 7.40036530155687
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.633894169560186,
+        "y": 7.414204861111111
+      },
+      "prevControl": {
+        "x": 3.8590403666898756,
+        "y": 7.52287495781687
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "LeftShoot"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Duck",
+      "waypointRelativePos": 0.5003633720930234,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 1.7373338870431891,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 2.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 179.21969164749902
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -94.13112105794258
+  },
+  "useDefaultConstraints": false
+}

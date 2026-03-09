@@ -3,37 +3,65 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 4.0,
-        "y": 7.526005208333334
+        "x": 3.871535517939815,
+        "y": 7.4693833188657415
       },
       "prevControl": null,
       "nextControl": {
-        "x": 4.983896484375,
-        "y": 7.2632350260416665
+        "x": 5.086346001059322,
+        "y": 7.5750707318149715
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 8.551337962962963,
-        "y": 7.031170572916667
+        "x": 8.324144762976696,
+        "y": 6.8558018295374294
       },
       "prevControl": {
-        "x": 7.551337962962963,
-        "y": 7.031170572916667
+        "x": 7.324144762976696,
+        "y": 6.8558018295374294
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "LeftFerryPosition"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.4217841569767445,
+      "rotationDegrees": 180.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "Duck",
+      "waypointRelativePos": 0,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 0.2549574335548173,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
+    }
+  ],
   "globalConstraints": {
-    "maxVelocity": 3.0,
+    "maxVelocity": 5.0,
     "maxAcceleration": 3.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -41,14 +69,14 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
-    "rotation": 45.0
+    "velocity": 2.0,
+    "rotation": -121.40053233259775
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 178.583192883612
   },
-  "useDefaultConstraints": true
+  "useDefaultConstraints": false
 }

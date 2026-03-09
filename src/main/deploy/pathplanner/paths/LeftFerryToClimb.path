@@ -3,16 +3,32 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 8.551337962962963,
-        "y": 7.031170572916667
+        "x": 8.324144762976696,
+        "y": 6.8558018295374294
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.584157421322489,
-        "y": 7.7967608513083455
+        "x": 7.356964221336222,
+        "y": 7.621392107929108
       },
       "isLocked": false,
       "linkedName": "LeftFerryPosition"
+    },
+    {
+      "anchor": {
+        "x": 4.6955381944444445,
+        "y": 7.413942418981481
+      },
+      "prevControl": {
+        "x": 5.07383986753309,
+        "y": 7.413942418981481
+      },
+      "nextControl": {
+        "x": 4.354134320525781,
+        "y": 7.413942418981481
+      },
+      "isLocked": false,
+      "linkedName": null
     },
     {
       "anchor": {
@@ -20,21 +36,60 @@
         "y": 4.99802973364979
       },
       "prevControl": {
-        "x": 1.664843860502122,
-        "y": 7.895132105286422
+        "x": 1.183340784143519,
+        "y": 7.447010127314814
       },
       "nextControl": null,
       "isLocked": false,
       "linkedName": "ClimbLeft"
     }
   ],
-  "rotationTargets": [],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.9838815789473688,
+      "rotationDegrees": 0.0
+    }
+  ],
   "constraintZones": [],
   "pointTowardsZones": [],
-  "eventMarkers": [],
+  "eventMarkers": [
+    {
+      "name": "Duck",
+      "waypointRelativePos": 0.7641715116279071,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Duck"
+        }
+      }
+    },
+    {
+      "name": "Unduck",
+      "waypointRelativePos": 1.1724719684385398,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "Unduck"
+        }
+      }
+    },
+    {
+      "name": "StartShooting",
+      "waypointRelativePos": 1.2348681478405337,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "StartShooting"
+        }
+      }
+    }
+  ],
   "globalConstraints": {
     "maxVelocity": 3.0,
-    "maxAcceleration": 3.0,
+    "maxAcceleration": 2.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -42,13 +97,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 180.0
   },
   "reversed": false,
   "folder": null,
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 45.0
+    "rotation": -121.40053233259775
   },
   "useDefaultConstraints": true
 }

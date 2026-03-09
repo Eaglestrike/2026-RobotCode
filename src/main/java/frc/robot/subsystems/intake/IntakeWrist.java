@@ -1,97 +1,124 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
+import java.util.Map;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
-import com.revrobotics.PersistMode;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.ResetMode;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 
 import dev.doglog.DogLog;
-
-import com.revrobotics.spark.SparkMax;
-
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import frc.robot.RobotContainer;
+
 
 public class IntakeWrist extends SubsystemBase {
     private enum State {
-        IDLE, MOVING_TO_GOAL, MANUAL
+        IDLE, MOVING_TO_GOAL, MANUAL, JIGGLING
     }
 
-    private final SparkMax motor = new SparkMax(IntakeConstants.Wrist.MOTOR_ID, MotorType.kBrushless);
-
-    private final RelativeEncoder enc;
-    private final ProfiledPIDController pid;
-    private final ArmFeedforward ff;
+    private final TalonFX motor = new TalonFX(IntakeConstants.Wrist.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+    private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
 
     private State state = State.IDLE;
     private Angle goal = Radians.of(0.0);
+    private double offset = IntakeConstants.Wrist.ENCODER_OFFSET;
+
+    private boolean zeroed = false;
 
     public IntakeWrist() {
-        enc = motor.getEncoder();
+        TalonFXConfiguration cfg = new TalonFXConfiguration();
+        cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
-        SparkMaxConfig cfg = new SparkMaxConfig();
-        cfg.idleMode(IdleMode.kBrake).voltageCompensation(12.0);
-        cfg.encoder.positionConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO);
-        cfg.encoder.velocityConversionFactor(2.0 * Math.PI / IntakeConstants.Wrist.GEAR_RATIO / 60.0);
-        motor.configure(cfg, ResetMode.kResetSafeParameters, PersistMode.kNoPersistParameters);
+        cfg.Voltage.PeakForwardVoltage = IntakeConstants.Wrist.MAX_VOLTS;
+        cfg.Voltage.PeakReverseVoltage = -IntakeConstants.Wrist.MAX_VOLTS;
+        cfg.Feedback.SensorToMechanismRatio = IntakeConstants.Wrist.GEAR_RATIO;
 
-        pid = new ProfiledPIDController(
-                IntakeConstants.Wrist.kP,
-                IntakeConstants.Wrist.kI,
-                IntakeConstants.Wrist.kD,
-                new TrapezoidProfile.Constraints(
-                        IntakeConstants.Wrist.MAX_VEL,
-                        IntakeConstants.Wrist.MAX_ACC));
-        pid.setTolerance(Math.toRadians(1.0));
-        pid.reset(getAngle().magnitude());
+        cfg.Slot0.kP = IntakeConstants.Wrist.kP;
+        cfg.Slot0.kI = IntakeConstants.Wrist.kI;
+        cfg.Slot0.kD = IntakeConstants.Wrist.kD;
+        cfg.Slot0.kS = IntakeConstants.Wrist.kS;
+        cfg.Slot0.kV = IntakeConstants.Wrist.kV;
+        cfg.Slot0.kG = IntakeConstants.Wrist.kG;
+        cfg.Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseClosedLoopSign;
+        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
 
-        pid.setIntegratorRange(-IntakeConstants.Wrist.IMAX_VOLTS, IntakeConstants.Wrist.IMAX_VOLTS);
-        pid.setIZone(Math.toRadians(IntakeConstants.Wrist.IZONE_DEG));
-
-        ff = new ArmFeedforward(
-                IntakeConstants.Wrist.kS,
-                IntakeConstants.Wrist.kG,
-                IntakeConstants.Wrist.kV,
-                IntakeConstants.Wrist.kA);
+        motor.getConfigurator().apply(cfg);
+        motor.setControl(voltReq);
 
         DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
-            moveTo(Degrees.of(x)).schedule();
+            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
+
+        DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
     }
 
-    // encoder gives value in radians
     public Angle getAngle() {
-        return Radians.of(enc.getPosition());
+        return motor.getPosition().getValue();
     }
 
-    public Command moveTo(Angle position) {
-        return runOnce(() -> {
-            goal = Radians.of(MathUtil.clamp(position.in(Radians), Math.toRadians(IntakeConstants.Wrist.MIN_ANGLE),
-                    Math.toRadians(IntakeConstants.Wrist.MAX_ANGLE)));
-            state = State.MOVING_TO_GOAL;
-        });
+    public boolean hopperExtended() {
+        // todo: adjust this to be a specific position
+        return getAngle().in(Radians) > 0;
+    }
+
+    public Command requestPosition(Angle position) {
+            double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
+            double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+            DogLog.log("Intake/Intake voltage", voltage);
+            DogLog.log("Intake/stall current", stallCurrent);
+            return Commands.select(
+                    Map.ofEntries(
+                            Map.entry(true,
+                                    new SequentialCommandGroup(
+                                            runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
+                                            new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+                                            runOnce(() -> {
+                                                motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
+                                                motor.setPosition(position); // Cos stalling messes up the encoder
+                                            })
+                                    ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)))),
+                            Map.entry(false, Commands.print("Wrist not zeroed"))),
+                    () -> zeroed);
     }
 
     public Command zero() {
         return runOnce(() -> {
-            System.out.println("Zeroing Intake Wrist");
-            motor.getEncoder().setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
-            goal = Radians.of(motor.getEncoder().getPosition()); // So the robot doesn't automatically move when enabling
+            motor.setPosition(Radians.of(offset));
             state = State.IDLE;
+            zeroed = true;
+
+            DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
         });
+    }
+
+    public Command jiggle() {
+        return Commands.repeatingSequence(
+                Commands.race(
+                        requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)),
+
+                Commands.race(requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
+                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)));
     }
 
     public Command kill() {
@@ -101,16 +128,14 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    public Command eject(){
-        return runOnce(() -> {
-            this.moveTo(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
-        });
+    public Command eject() {
+        return requestPosition(Degrees.of(IntakeConstants.Wrist.EJECT_ANGLE));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             double manualVolts = joystickPosition.getAsDouble() * IntakeConstants.Wrist.MAX_VOLTS;
-            if(manualVolts != 0){
+            if (manualVolts != 0) {
                 state = State.MANUAL;
             } else {
                 state = State.IDLE;
@@ -121,26 +146,5 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (!DriverStation.isEnabled()) {
-            motor.setVoltage(0.0);
-            return;
-        }
-
-        DogLog.log("IntakeWrist/GoalRad", goal);
-        pid.setGoal(goal.in(Radians));
-
-        DogLog.log("IntakeWrist/CurrAngDeg", getAngle().in(Degrees), "Degrees");
-
-        double pidVolts = pid.calculate(getAngle().in(Radians));
-        DogLog.log("IntakeWrist/PIDVolts", pidVolts, "Volts");
-        double ffVolts = ff.calculate(getAngle().in(Radians), pid.getSetpoint().velocity);
-        DogLog.log("IntakeWrist/FeedforwardVolts", ffVolts, "Volts");
-        double volts = pidVolts + ffVolts;
-        DogLog.log("IntakeWrist/TotalRequestedVolts", volts, "Volts");
-        double outputVolts = MathUtil.clamp(volts, -IntakeConstants.Wrist.MAX_VOLTS, IntakeConstants.Wrist.MAX_VOLTS);
-        if(state == State.MOVING_TO_GOAL){
-            motor.setVoltage(outputVolts);
-        }
-        DogLog.log("IntakeWrist/OutputVolts", outputVolts, "Volts");
     }
 }

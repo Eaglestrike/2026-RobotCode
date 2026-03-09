@@ -17,39 +17,33 @@
           }
         },
         {
-          "type": "path",
-          "data": {
-            "pathName": "StartToLeftFerry"
-          }
-        },
-        {
           "type": "named",
           "data": {
             "name": "Intake"
           }
         },
         {
-          "type": "wait",
+          "type": "path",
           "data": {
-            "waitTime": 0.25
+            "pathName": "StartToLeftFerry"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "LeftFerry"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StowIntake"
+            "pathName": "SweepLeftRight"
           }
         },
         {
           "type": "path",
           "data": {
             "pathName": "RightFerryToClimb"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
           }
         },
         {
@@ -61,13 +55,7 @@
         {
           "type": "named",
           "data": {
-            "name": "AlignRightTower"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbL1"
+            "name": "ClimbL1Right"
           }
         }
       ]

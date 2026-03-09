@@ -1,9 +1,6 @@
 package frc.robot.subsystems.drive;
 
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Pounds;
 import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Optional;
@@ -12,31 +9,31 @@ import java.util.function.Supplier;
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.generated.TunerConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -59,6 +56,19 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     private boolean m_hasAppliedOperatorPerspective = false;
 
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
+
+    private static double alignKP = 3.114;
+    private static double alignKI = 0.0;
+    private static double alignKD = 0.114;
+
+    /* PID controllers for auto align */
+    private final PIDController alignXController = new PIDController(alignKP, alignKI, alignKD);
+    private final PIDController alignYController = new PIDController(alignKP, alignKI, alignKD);
+    /* Swerve request for alignment */
+    private SwerveRequest.FieldCentricFacingAngle velocityRequest = new SwerveRequest.FieldCentricFacingAngle()
+            .withForwardPerspective(ForwardPerspectiveValue.BlueAlliance)
+            .withDriveRequestType(DriveRequestType.Velocity)
+            .withHeadingPID(4, 0, 0);
 
     /* Swerve requests to apply during SysId characterization */
     private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
@@ -141,8 +151,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     public EagleSwerveDrivetrain(
             SwerveDrivetrainConstants drivetrainConstants,
             SwerveModuleConstants<?, ?, ?>... modules) {
-        super(drivetrainConstants,
-                RobotBase.isReal() ? modules : MapleSimSwerveDrivetrain.regulateModuleConstantsForSimulation(modules));
+        super(drivetrainConstants, modules);
         configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
@@ -168,8 +177,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
             SwerveDrivetrainConstants drivetrainConstants,
             double odometryUpdateFrequency,
             SwerveModuleConstants<?, ?, ?>... modules) {
-        super(drivetrainConstants, odometryUpdateFrequency, RobotBase.isReal() ? modules
-                : MapleSimSwerveDrivetrain.regulateModuleConstantsForSimulation(modules));
+        super(drivetrainConstants, odometryUpdateFrequency, modules);
         configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
@@ -210,7 +218,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
             Matrix<N3, N1> visionStandardDeviation,
             SwerveModuleConstants<?, ?, ?>... modules) {
         super(drivetrainConstants, odometryUpdateFrequency, odometryStandardDeviation, visionStandardDeviation,
-                RobotBase.isReal() ? modules : MapleSimSwerveDrivetrain.regulateModuleConstantsForSimulation(modules));
+                modules);
         configureAutoBuilder();
         if (Utils.isSimulation()) {
             startSimThread();
@@ -303,51 +311,20 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         }
     }
 
-    private MapleSimSwerveDrivetrain mapleSimSwerveDrivetrain = null;
-
-    public MapleSimSwerveDrivetrain getMapleSimSwerveDrivetrain() {
-        return mapleSimSwerveDrivetrain;
-    }
-
     private void startSimThread() {
-        System.out.println("Starting Swerve Drivetrain Simulation");
-        mapleSimSwerveDrivetrain = new MapleSimSwerveDrivetrain(
-                Seconds.of(kSimLoopPeriod),
-                // TODO: modify the following constants according to your robot
-                Pounds.of(115), // robot weight
-                Inches.of(30), // bumper length
-                Inches.of(30), // bumper width
-                DCMotor.getKrakenX60Foc(1), // drive motor type
-                DCMotor.getKrakenX44Foc(1), // steer motor type
-                1.2, // wheel COF
-                getModuleLocations(),
-                getPigeon2(),
-                getModules(),
-                TunerConstants.FrontLeft,
-                TunerConstants.FrontRight,
-                TunerConstants.BackLeft,
-                TunerConstants.BackRight);
+        m_lastSimTime = Utils.getCurrentTimeSeconds();
+
         /* Run simulation at a faster rate so PID gains behave more reasonably */
-        m_simNotifier = new Notifier(mapleSimSwerveDrivetrain::update);
+        m_simNotifier = new Notifier(() -> {
+            final double currentTime = Utils.getCurrentTimeSeconds();
+            double deltaTime = currentTime - m_lastSimTime;
+            m_lastSimTime = currentTime;
+
+            /* use the measured time delta, get battery voltage from WPILib */
+            updateSimState(deltaTime, RobotController.getBatteryVoltage());
+        });
         m_simNotifier.startPeriodic(kSimLoopPeriod);
     }
-
-    /*
-     * private void startSimThread() {
-     * m_lastSimTime = Utils.getCurrentTimeSeconds();
-     * 
-     * //Run simulation at a faster rate so PID gains behave more reasonably
-     * m_simNotifier = new Notifier(() -> {
-     * final double currentTime = Utils.getCurrentTimeSeconds();
-     * double deltaTime = currentTime - m_lastSimTime;
-     * m_lastSimTime = currentTime;
-     * 
-     * //use the measured time delta, get battery voltage from WPILib
-     * updateSimState(deltaTime, RobotController.getBatteryVoltage());
-     * });
-     * m_simNotifier.startPeriodic(kSimLoopPeriod);
-     * }
-     */
 
     /**
      * Adds a vision measurement to the Kalman Filter. This will correct the
@@ -403,15 +380,42 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    public Command alignPID(Supplier<Pose3d> targetSupplier) {
-        return Commands.none(); // TODO: Alan is rethinking implementation
-    }
+    public Command alignPID(Supplier<Pose2d> targetSupplier) {
+        return this.run(() -> {
+            Pose2d pose = this.getState().Pose;
+            Pose2d target = targetSupplier.get();
+            DogLog.log("AutoAlign/Target Pose", target);
 
-    @Override
-    public void resetPose(Pose2d pose) {
-        if (this.mapleSimSwerveDrivetrain != null)
-            mapleSimSwerveDrivetrain.mapleSimDrive.setSimulationWorldPose(pose);
-        Timer.delay(0.05); // Wait for simulation to update
-        super.resetPose(pose);
+            double veloX = alignXController.calculate(pose.getX(), target.getX());
+            double veloY = alignYController.calculate(pose.getY(), target.getY());
+            Rotation2d headingReference = target.getRotation();
+
+            this.setControl(velocityRequest
+                    .withVelocityX(veloX)
+                    .withVelocityY(veloY)
+                    .withTargetDirection(headingReference));
+        })
+                .until(() -> {
+                    Pose2d pose = this.getState().Pose;
+                    Pose2d target = targetSupplier.get();
+                    Transform2d error = pose.minus(target);
+                    Translation2d errorTrans = error.getTranslation();
+                    Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
+                            target.getRotation().getSin());
+
+                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a ·
+                                                                                                                  // b̂
+                    Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
+                    Translation2d perpendicular = errorTrans.minus(proj);
+
+                    DogLog.log("Climb/PerpError", perpendicular.getNorm());
+                    DogLog.log("Climb/ProjError", proj.getNorm());
+
+                    return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
+                            Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
+                })
+                .finallyDo(() -> {
+                    this.setControl(new SwerveRequest.Idle());
+                });
     }
 }
