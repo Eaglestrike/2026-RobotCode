@@ -193,9 +193,9 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
+            // hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
             if (currentState == ShooterState.SHOOTING) {
-                flywheels.requestVelocity(result.rpm());
+                // flywheels.requestVelocity(result.rpm());
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }

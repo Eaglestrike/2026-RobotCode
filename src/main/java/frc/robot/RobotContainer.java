@@ -50,7 +50,7 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-    private static final boolean ENABLE_CLIMB_COMMAND = false;
+    private static final boolean ENABLE_CLIMB_COMMAND = true;
     /** Meters from the tower to align to (for center of the robot) */
     private static final double CLIMB_TOWER_DISTANCE = 0.5;
     /** Meters per second when moving towards the pole */
@@ -304,7 +304,7 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return Commands.sequence(
+        return Commands.parallel(
                 superstructure.initialize(),
                 autoChooser.getSelected().asProxy());
     }

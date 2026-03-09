@@ -8,6 +8,7 @@ import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.VoltageConfigs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
@@ -21,11 +22,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
 public class Climb extends SubsystemBase {
-    public static final boolean ENABLE_TUNING = true;
+    public static final boolean ENABLE_TUNING = false;
+    public static final boolean BANG_BANG = true;
 
     private final TalonFX left = new TalonFX(ClimbConstants.LEFT_CLIMB_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
     private final TalonFX right = new TalonFX(ClimbConstants.RIGHT_CLIMB_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-    private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0);
+    private final MotionMagicVoltage mmReq = new MotionMagicVoltage(0).withEnableFOC(true);
+    private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
     private final TalonFXConfiguration cfg = new TalonFXConfiguration();
     private final Slot0Configs slot0Configs = cfg.Slot0;
 
@@ -120,6 +123,9 @@ public class Climb extends SubsystemBase {
     }
 
     private Command climbL1() {
+        if (BANG_BANG) {
+            return runToStall(ClimbConstants.UP_VOLTS, ClimbConstants.UP_STALL_CURRENT);
+        }
         return Commands.sequence(
                 moveTo(ClimbConstants.L1_EXTEND_HEIGHT, left),
                 moveTo(ClimbConstants.CLIMBED_POSITION, left));
@@ -141,9 +147,27 @@ public class Climb extends SubsystemBase {
     }
 
     private Command stow() {
+        if (BANG_BANG) {
+            return runToStall(ClimbConstants.DOWN_VOLTS, ClimbConstants.DOWN_STALL_CURRENT);
+        }
         return Commands.sequence(
                 moveTo(ClimbConstants.STOW_HEIGHT, left),
                 moveTo(ClimbConstants.STOW_HEIGHT, right));
+    }
+
+    private Command runToStall(double voltage, double stallCurrent) {
+        return run(() -> {
+            boolean leftStalled = left.getSupplyCurrent().getValueAsDouble() > stallCurrent;
+            boolean rightStalled = right.getSupplyCurrent().getValueAsDouble() > stallCurrent;
+
+            left.setControl(voltReq.withOutput(leftStalled ? 0 : voltage));
+            right.setControl(voltReq.withOutput(rightStalled ? 0 : voltage));
+        })
+        .until(() -> left.getSupplyCurrent().getValueAsDouble() > stallCurrent && right.getSupplyCurrent().getValueAsDouble() > stallCurrent)
+        .finallyDo(() -> {
+            left.setControl(voltReq.withOutput(0));
+            right.setControl(voltReq.withOutput(0));
+        });
     }
 
     private Command moveTo(double position, TalonFX motor) {

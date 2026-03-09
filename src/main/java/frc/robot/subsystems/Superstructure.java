@@ -16,6 +16,7 @@ import frc.robot.FieldConstants;
 import frc.robot.FieldConstants.RightTrench;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
+import frc.robot.subsystems.climb.ClimbConstants.ClimbState;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
@@ -67,8 +68,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command initialize() {
-        return runOnce(() -> {
-        });
+        return climb.moveTo(ClimbState.STOWED);
     }
 
     /**
@@ -208,6 +208,9 @@ public class Superstructure extends SubsystemBase {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
             shooter.setFacing(ferryTarget);
+            if(tuning) {
+                shooter.shootManual();
+            }
         } else {
             shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
             if (tuning) {
