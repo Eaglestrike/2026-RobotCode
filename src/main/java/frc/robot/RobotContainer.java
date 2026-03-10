@@ -260,12 +260,12 @@ public class RobotContainer {
                 .debounce(0.1);
         inTowerZoneTrigger
                 .onTrue(Commands.runOnce(() -> {
-                    DogLog.log("Climb/InTowerZone", true);
-                    superstructure.setShootingOverride(true);
+                    DogLog.log("Zones/InTowerZone", true);
+                    superstructure.setKickerOverride(true);
                 }))
                 .onFalse(Commands.runOnce(() -> {
-                    DogLog.log("Climb/InTowerZone", false);
-                    superstructure.setShootingOverride(false);
+                    DogLog.log("Zones/InTowerZone", false);
+                    superstructure.setKickerOverride(false);
                 }));
     }
 
