@@ -208,9 +208,6 @@ public class Superstructure extends SubsystemBase {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
             shooter.setFacing(ferryTarget);
-            if(tuning) {
-                shooter.shootManual();
-            }
         } else {
             shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
             if (tuning) {
