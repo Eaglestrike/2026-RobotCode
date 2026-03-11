@@ -5,10 +5,10 @@ import frc.robot.FieldConstants;
 
 public class RebuiltZones {
     public static final Zone BLUE_TOWER_ZONE = new Zone(
-            FieldConstants.Tower.leftUpright.getX(),
             FieldConstants.Tower.leftUpright.getX() - FieldConstants.Tower.width,
-            FieldConstants.Tower.leftUpright.getY(),
-            FieldConstants.Tower.rightUpright.getY()
+            FieldConstants.Tower.leftUpright.getX(),
+            FieldConstants.Tower.rightUpright.getY(),
+            FieldConstants.Tower.leftUpright.getY()
     );
     public static final Zone RED_TOWER_ZONE = BLUE_TOWER_ZONE.mirroredX().mirroredY();
 
