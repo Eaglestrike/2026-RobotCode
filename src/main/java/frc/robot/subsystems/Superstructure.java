@@ -34,6 +34,7 @@ public class Superstructure extends SubsystemBase {
 
     private ShootMode currentMode;
     public boolean isShooting;
+    private boolean isKickerOverrided;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -158,6 +159,12 @@ public class Superstructure extends SubsystemBase {
         shooter.setShooting(shooting);
     }
 
+    // stop kicking but keep shooter/turret running
+    // overrided true = no kicking; overrided false = kicking
+    public void setKickerOverride(boolean overrided) {
+        isKickerOverrided = overrided;
+    }
+
     private Pose3d applyShootOffset(Pose3d target) {
         boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
         double xSign = isBlue ? 1.0 : -1.0;
@@ -222,7 +229,7 @@ public class Superstructure extends SubsystemBase {
             return;
         }
 
-        if (isShooting && shooter.isReady()) { // for ferrying check if trajectory intersects hub
+        if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
             feeder.startMotor();
             hopper.startKicking();
         } else {
