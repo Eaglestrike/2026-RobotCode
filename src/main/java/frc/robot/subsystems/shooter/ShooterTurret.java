@@ -38,14 +38,11 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private Angle targetAngle = Degrees.of(0);
 
-    private final DigitalInput photoelectric;
-    private static final boolean PHOTOELECTRIC_ACTIVE_LOW = true; // set to false if your sensor outputs HIGH when
-                                                                  // broken
     private boolean zeroed = false;
+    private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
-        this.photoelectric = new DigitalInput(TurretConstants.PHOTOELECTRIC_DIO);
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
@@ -91,7 +88,7 @@ public class ShooterTurret extends SubsystemBase {
      * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
      * nearest limit.
      */
-    private static Angle normalizeToSafeRange(Angle angle) {
+    private Angle normalizeToSafeRange(Angle angle) {
         double deg = angle.in(Degrees);
         double lo = TurretConstants.BACKWARD_LIMIT.in(Degrees);
         double hi = TurretConstants.FORWARD_LIMIT.in(Degrees);
@@ -99,9 +96,11 @@ public class ShooterTurret extends SubsystemBase {
         // Shift into range by adding/subtracting full rotations
         while (deg > hi) {
             deg -= 360.0;
+            isRecentering = true;
         }
         while (deg < lo) {
             deg += 360.0;
+            isRecentering = true;
         }
 
         // If still out of range (shouldn't happen with a 360° window, but just in case)
@@ -132,6 +131,9 @@ public class ShooterTurret extends SubsystemBase {
         Angle safePos = normalizeToSafeRange(pos);
         if (!zeroed) {
             return;
+        }
+        if (isRecentering && safePos.isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE)) {
+            isRecentering = false;
         }
         // double omega =
         // RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
@@ -170,13 +172,8 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public boolean isZeroSensorGreen() {
-        boolean raw = photoelectric.get();
-        return PHOTOELECTRIC_ACTIVE_LOW ? !raw : raw;
-    }
-
     public boolean atTarget() {
-        return motor.getPosition().getValue().isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE);
+        return !isRecentering;
     }
 
     @Override
@@ -185,7 +182,6 @@ public class ShooterTurret extends SubsystemBase {
         // motor.getPosition().getValue().in(Degrees), "Degrees");
         // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
         // "Degrees");
-        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
         // DogLog.log("ShooterTurret/AtTarget", atTarget());
     }
 
@@ -213,9 +209,6 @@ public class ShooterTurret extends SubsystemBase {
         talonFXSim.setRotorVelocity(sim.getAngularVelocity().times(gearRatio));
         DogLog.log("ShooterTurret/SimPosition",
                 sim.getAngularPosition().times(gearRatio).in(Degrees), "Degrees");
-
-        // DogLog.log("ShooterTurret/Photoelectric", photoelectric.get());
-
     }
 
     public Pose3d getComponentPose3d() {

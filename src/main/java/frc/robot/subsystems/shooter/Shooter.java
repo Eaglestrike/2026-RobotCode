@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -28,6 +29,13 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
+    private enum ShooterState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING
+    }
+
     private final ShooterTurret turret;
     private final ShooterHood hood;
     private final ShooterFlywheels flywheels;
@@ -37,8 +45,9 @@ public class Shooter extends SubsystemBase {
 
     private final ShooterSolver solver = new LUTSolver();
 
-    private boolean isShooting = false;
-    private boolean isDuckOverride = false; // if true, hood & flywheel will stop
+    private ShooterState currentState = ShooterState.AIMING;
+    private ShooterState lastState = currentState;
+
     private double distanceToTarget = 0.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -67,29 +76,62 @@ public class Shooter extends SubsystemBase {
     }
 
     public Command stowShooter() {
-        return Commands.parallel(
-                turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
-                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+        return Commands.sequence(
+                runOnce(() -> {
+                    lastState = currentState;
+                    currentState = ShooterState.IDLE;
+                }),
+                Commands.parallel(
+                        turret.requestPosition(Rotations.of(ShooterConstants.TurretConstants.STOW_POSITION)),
+                        hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
+                        runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY))));
     }
 
     public Command duck() {
         return Commands.sequence(
-                runOnce(() -> isDuckOverride = true),
+                runOnce(() -> {
+                    lastState = currentState;
+                    currentState = ShooterState.DUCKING;
+                }),
                 hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
                 runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
     }
 
     public Command unDuck() {
-        return runOnce(() -> isDuckOverride = false);
+        return runOnce(() -> currentState = lastState);
+    }
+
+    /**
+     * Returns true if the robot is currently moving toward its own alliance zone.
+     * Blue alliance: alliance zone is at lower X, so negative field vX means toward alliance.
+     * Red alliance: alliance zone is at higher X, so positive field vX means toward alliance.
+     */
+    private boolean isMovingTowardAllianceZone() {
+        Pose2d robotPose = drive.getState().Pose;
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                drive.getState().Speeds, robotPose.getRotation());
+        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red)
+                == DriverStation.Alliance.Blue;
+        // Blue: toward alliance = negative vX; Red: toward alliance = positive vX
+        return isBlue ? fieldSpeeds.vxMetersPerSecond < -0.25
+                : fieldSpeeds.vxMetersPerSecond > 0.25;
     }
 
     public void setShooting(boolean shooting) {
-        isShooting = shooting;
+        if (shooting) {
+            lastState = currentState;
+            currentState = ShooterState.SHOOTING;
+        } else {
+            // When shooting is turned off, remain in aiming mode so the hood/turret
+            // will track the target but the flywheel won't spin up.
+            lastState = currentState;
+            currentState = ShooterState.AIMING;
+        }
     }
 
     // called periodically by superstructure
     public void setFacing(Pose3d targetPose) {
+        DogLog.log("Shooter/CurrentState", currentState.toString());
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -138,10 +180,21 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
-        turret.setAngle(Degrees.of(targetTurretAngleDeg));
-        if (!isDuckOverride) {
+        if (currentState != ShooterState.IDLE) {
+            turret.setAngle(Degrees.of(targetTurretAngleDeg));
+        }
+
+        // If we're ducking, don't move the hood but spin flywheels at DUCK_RPM
+        // when heading toward our alliance zone so we're ready to shoot on arrival.
+        if (currentState == ShooterState.DUCKING) {
+            if (isMovingTowardAllianceZone()) {
+                flywheels.requestVelocity(ShooterConstants.FlywheelConstants.DUCK_RPM);
+            } else {
+                flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
+            }
+        } else if (currentState != ShooterState.IDLE) {
             hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
-            if (isShooting) {
+            if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);

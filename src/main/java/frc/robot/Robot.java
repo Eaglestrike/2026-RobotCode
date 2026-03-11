@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import frc.robot.lib.zone.RebuiltZones;
 import org.ironmaple.simulation.SimulatedArena;
 
 import dev.doglog.DogLog;
@@ -66,6 +67,10 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledInit() {
+        if (m_autonomousCommand != null) {
+            m_autonomousCommand.cancel();
+        }
+        CommandScheduler.getInstance().cancelAll();
     }
 
     @Override
@@ -134,5 +139,6 @@ public class Robot extends TimedRobot {
         Pose3d[] fuelPoses = SimulatedArena.getInstance()
                 .getGamePiecesArrayByType("Fuel");
         // DogLog.log("Sim/FuelPoses", fuelPoses);
+        RebuiltZones.logAllZones();
     }
 }

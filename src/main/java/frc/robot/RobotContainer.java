@@ -26,7 +26,6 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
@@ -34,6 +33,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
+import frc.robot.lib.zone.RebuiltZones;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.climb.Climb;
@@ -43,7 +43,6 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
-import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
@@ -53,10 +52,14 @@ import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
     private static final boolean ENABLE_CLIMB_COMMAND = false;
-    /** Meters from the tower to align to (for center of the robot) */
+    /**
+     * Meters from the tower to align to (for center of the robot)
+     */
     private static final double CLIMB_TOWER_DISTANCE = 0.5;
-    /** Meters per second when moving towards the pole */
-    private static final double CLIMB_SPEED = 0.5;
+    /**
+     * Meters per second when moving towards the pole
+     */
+    private static final double CLIMB_SPEED = 1;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -106,20 +109,32 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
+        configureZoneBindings();
 
-        NamedCommands.registerCommand("ClimbL1Left", climbL1(() -> true));
-        NamedCommands.registerCommand("ClimbL1Right", climbL1(() -> false));
+        NamedCommands.registerCommand("ClimbL1Left",
+                Commands.defer(() -> climbL1(), java.util.Set.of()));
+        NamedCommands.registerCommand("ClimbL1Right",
+                Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("SetModeFerry",
-                Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)),
+                        java.util.Set.of()));
         NamedCommands.registerCommand("SetModeShoot",
-                Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.SHOOT)),
+                        java.util.Set.of()));
         NamedCommands.registerCommand("StartShooting",
-                Commands.runOnce(() -> superstructure.setShooting(true)));
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setShooting(true)), java.util.Set.of()));
         NamedCommands.registerCommand("StopShooting",
-                Commands.runOnce(() -> superstructure.setShooting(false)));
-        NamedCommands.registerCommand("Intake", superstructure.intake());
-        NamedCommands.registerCommand("StowIntake", superstructure.stowIntake());
-        NamedCommands.registerCommand("Stow", superstructure.stow());
+                Commands.defer(() -> Commands.runOnce(() -> superstructure.setShooting(false)), java.util.Set.of()));
+        NamedCommands.registerCommand("Intake",
+                Commands.defer(() -> superstructure.intake(), java.util.Set.of()));
+        NamedCommands.registerCommand("StowIntake",
+                Commands.defer(() -> superstructure.stowIntake(), java.util.Set.of()));
+        NamedCommands.registerCommand("Stow",
+                Commands.defer(() -> superstructure.stow(), java.util.Set.of()));
+        NamedCommands.registerCommand("Duck",
+                Commands.defer(() -> superstructure.duck(), java.util.Set.of()));
+        NamedCommands.registerCommand("Unduck",
+                Commands.defer(() -> superstructure.unDuck(), java.util.Set.of()));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);
@@ -170,6 +185,12 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.x())
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
+        operatorController.button(7).and(operatorController.a())
+                .onTrue(shooter.getHood().zero().ignoringDisable(true));
+
+        operatorController.button(7).and(operatorController.b())
+                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+
         operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
@@ -181,10 +202,7 @@ public class RobotContainer {
                 .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
         rightJoystick.button(4)
-                .onTrue(climbL1(() -> true))
-                .onFalse(drivetrain.applyRequest(
-                        () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
-
+                .whileTrue(climbL1());
         // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());
@@ -228,8 +246,27 @@ public class RobotContainer {
 
         operatorController.leftBumper()
                 .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
+
+        operatorController.rightBumper()
+                .toggleOnTrue(superstructure.duck())
+                .toggleOnFalse(superstructure.unDuck());
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
+    }
+
+    private void configureZoneBindings() {
+        Trigger inTowerZoneTrigger = RebuiltZones.TOWER_ZONES
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inTowerZoneTrigger
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InTowerZone", true);
+                    superstructure.setKickerOverride(true);
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InTowerZone", false);
+                    superstructure.setKickerOverride(false);
+                }));
     }
 
     public Command getOffTower() {
@@ -248,32 +285,39 @@ public class RobotContainer {
                 Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
     }
 
-    public Command climbL1(BooleanSupplier left) {
+    public Command climbL1() {
         if (!ENABLE_CLIMB_COMMAND) {
             return Commands.print("Climb command disabled");
         }
 
-        DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
+        return Commands.defer(() -> {
+            DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
 
-        Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(left.getAsBoolean());
-        // DogLog.log("Climb/TowerPolePose", towerPolePose);
-        double multiplier = left.getAsBoolean() ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
-        DogLog.log("Climb/DirectionMultiplier", multiplier);
-        Pose3d alignPose = new Pose3d(
-                towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
-                towerPolePose.getRotation());
-        DogLog.log("Climb/AlignPose", alignPose);
+            boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
+            boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
 
-        return Commands.sequence( // TODO: Redo superstructure.climb
-                // superstructure.climb(ClimbConstants.ClimbState.L1),
-                new PrintCommand("Aligning to " + left.getAsBoolean() + " tower"),
-                drivetrain.alignPID(() -> alignPose.toPose2d()),
-                Commands.runOnce(
-                        () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-        // superstructure.climb(ClimbConstants.ClimbState.STOWED)
-        );
+            Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
+            // DogLog.log("Climb/TowerPolePose", towerPolePose);
+            double multiplier = isLeft ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
+            DogLog.log("Climb/DirectionMultiplier", multiplier);
+            Pose3d alignPose = new Pose3d(
+                    towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
+                    towerPolePose.getRotation());
+            DogLog.log("Climb/AlignPose", alignPose);
+
+            return Commands.sequence( // TODO: Redo superstructure.climb
+                    // superstructure.climb(ClimbConstants.ClimbState.L1),
+                    new PrintCommand("Aligning to " + isLeft + " tower"),
+                    drivetrain.alignPID(() -> alignPose.toPose2d()),
+                    new PrintCommand("Moving in..."),
+                    Commands.runOnce(
+                            () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
+                    Commands.waitSeconds(1.0),
+                    new PrintCommand("Finished climbing"),
+                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
+                    // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+            );
+        }, java.util.Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
@@ -283,7 +327,7 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         return Commands.sequence(
                 superstructure.initialize(),
-                autoChooser.getSelected());
+                autoChooser.getSelected().asProxy());
     }
 
     public Command getTeleopCommand() {

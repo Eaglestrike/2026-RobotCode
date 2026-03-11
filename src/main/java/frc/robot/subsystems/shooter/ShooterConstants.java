@@ -13,6 +13,8 @@ public final class ShooterConstants {
         // public static final double MAX_VELOCITY = 0.0;
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 60.0;
+        /** In rotations per minute (for when ducking and moving toward neutral zone) */
+        public static final double DUCK_RPM = 2000.0;
 
         public static final double GEAR_RATIO = 10 / 9.0;
 
@@ -55,7 +57,8 @@ public final class ShooterConstants {
 
         public static final double MAX_VOLTS = 2;
 
-        public static final Angle ANGLE_TOLERANCE = Degree.of(2);
+        public static final Angle ANGLE_TOLERANCE = Degree.of(5);
+//        public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
 
         public static final double kP = 60.0;
         public static final double kI = 15.0;
@@ -66,8 +69,6 @@ public final class ShooterConstants {
 
         public static final Angle FORWARD_LIMIT = Degree.of(130.0);
         public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
-
-        public static final int PHOTOELECTRIC_DIO = 7;
     }
 
     public final class HoodConstants {
@@ -88,7 +89,7 @@ public final class ShooterConstants {
 
         public static final double MAX_VOLTS = 1.5;
 
-        public static final Angle ANGLE_TOLERANCE = Degree.of(0.5);
+        public static final Angle ANGLE_TOLERANCE = Degree.of(2);
 
         public static final double kP = 300.0;
         public static final double kI = 0.0;

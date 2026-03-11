@@ -28,13 +28,6 @@ public class IntakeRollers extends SubsystemBase {
         });
     }
 
-    public Command startHopperOut() {
-        return runOnce(() -> {
-            System.out.println("starting hopper out");
-            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.HOPPER_OUT_VOLTS));
-        });
-    }
-
     public Command eject() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(-voltage.get()));

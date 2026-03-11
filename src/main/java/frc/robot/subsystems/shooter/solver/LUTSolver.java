@@ -79,12 +79,20 @@ public class LUTSolver implements ShooterSolver {
         HOOD_MAP.put(2.766, Rotation2d.fromDegrees(70));
         TOF_MAP.put(2.766, 1.02);
 
-        RPM_MAP.put(4.36, 2100.0);
+        RPM_MAP.put(4.36, 2000.0);
         HOOD_MAP.put(4.36, Rotation2d.fromDegrees(60));
         TOF_MAP.put(4.36, 1.12);
 
-        RPM_MAP.put(4.99, 2300.0);
-        HOOD_MAP.put(4.99, Rotation2d.fromDegrees(60));
-        TOF_MAP.put(4.99, 1.13);
+        RPM_MAP.put(4.99, 2100.0);
+        HOOD_MAP.put(4.99, Rotation2d.fromDegrees(55));
+        TOF_MAP.put(4.99, 1.24);
+
+        RPM_MAP.put(5.15,2200.0);
+        HOOD_MAP.put(5.15, Rotation2d.fromDegrees(52));
+        TOF_MAP.put(5.15, 1.27);
+
+        RPM_MAP.put(7.07, 2900.0);
+        HOOD_MAP.put(7.07, Rotation2d.fromDegrees(50));
+        TOF_MAP.put(7.07, 1.37);
     }
 }

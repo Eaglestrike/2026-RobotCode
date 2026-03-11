@@ -41,15 +41,15 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StowIntake"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "LeftFerryToClimb"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
           }
         },
         {
