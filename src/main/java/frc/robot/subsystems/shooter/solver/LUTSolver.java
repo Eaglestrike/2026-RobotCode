@@ -13,6 +13,7 @@ import edu.wpi.first.units.measure.Distance;
 
 public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
+    private static final int DRAG_COEFF = 1;
 
     public static Distance getDistanceToTarget(Translation3d launcherPose, Translation3d target) {
         return Meters.of(launcherPose.getDistance(target));
@@ -25,14 +26,18 @@ public class LUTSolver implements ShooterSolver {
         return new Translation3d(futureX, futureY, target.getZ());
     }
 
+    public static double dragCompensatedTOF(double tof) {
+        return (1.0 - Math.exp(-DRAG_COEFF * tof)) / DRAG_COEFF;
+    }
+
     @Override
     public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
-        double tof = TOF_MAP.get(distance);
+        double tof;
 
         for (int i = 0; i < ITERS; i++) {
-            tof = TOF_MAP.get(distance);
+            tof = dragCompensatedTOF(TOF_MAP.get(distance));
             predictedTarget = getFutureTarget(actualTarget, fieldSpeeds, tof);
             distance = getDistanceToTarget(launcherPose.getTranslation(), predictedTarget).in(Meters);
         }
