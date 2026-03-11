@@ -48,12 +48,11 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
-    private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain, LED led) {
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -62,7 +61,6 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
-        this.led = led;
 
         DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
                 value -> shootOffset = new Translation2d(value, shootOffset.getY()));

@@ -100,9 +100,8 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
-    private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder, hopper, drivetrain, led);
+            feeder, hopper, drivetrain);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
@@ -186,7 +185,6 @@ public class RobotContainer {
                 .onFalse(drivetrain.applyRequest(
                         () -> drive.withVelocityX(0).withVelocityY(0).withRotationalRate(0)));
 
-        operatorController.b().onTrue(led.setColor(Color.kGreen)).onFalse(led.setColor(Color.kBlue));
         // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());
