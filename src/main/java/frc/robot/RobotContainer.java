@@ -7,6 +7,7 @@ package frc.robot;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
@@ -19,6 +20,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -39,6 +41,7 @@ import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.drive.DriveMode;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
@@ -72,8 +75,10 @@ public class RobotContainer {
             .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withSteerRequestType(SteerRequestType.MotionMagicExpo);
-    
+
+    private final PIDController alignYController = new PIDController(8, 0, 0.05);
     private final SwerveRequest.FieldCentricFacingAngle trenchDrive = new SwerveRequest.FieldCentricFacingAngle()
+            .withHeadingPID(5, 0, 0)
             .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withSteerRequestType(SteerRequestType.MotionMagicExpo);
@@ -163,10 +168,17 @@ public class RobotContainer {
                                         * driveMult);
                     }
                     if (driveMode == DriveMode.TRENCH_LOCK) {
+                        Pose2d pose = drivetrain.getState().Pose;
+                        double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
                         return trenchDrive
-                            .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                            .withTargetDirection(new Rotation2d());
+                                .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                                .withVelocityY(veloY)
+                                .withTargetDirection(drivetrain.getTrenchLockAngle());
                     }
+                    return drive
+                            .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                            .withVelocityY(-leftJoystick.getX() * MaxSpeed)
+                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate);
                 }));
 
         rightJoystick.button(2)
@@ -280,16 +292,20 @@ public class RobotContainer {
                     superstructure.setKickerOverride(false);
                 }));
         Trigger inTrenchZoneTrigger = RebuiltZones.TRENCH_ZONES
-            .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
+                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
         inTrenchZoneTrigger
-            .onTrue(Commands.runOnce(() -> {
-                    DogLog.log("Zones/InTrenchZone", true);
-                    driveMode = DriveMode.TRENCH_LOCK;
-                }))
-                .onFalse(Commands.runOnce(() -> {
-                    DogLog.log("Zones/InTrenchZone", false);
-                    driveMode = DriveMode.NORMAL;
-                }));
+                .onTrue(Commands.sequence(
+                        Commands.runOnce(() -> {
+                            DogLog.log("Zones/InTrenchZone", true);
+                            driveMode = DriveMode.TRENCH_LOCK;
+                        }),
+                        superstructure.duck()))
+                .onFalse(Commands.sequence(
+                        Commands.runOnce(() -> {
+                            DogLog.log("Zones/InTrenchZone", false);
+                            driveMode = DriveMode.NORMAL;
+                        }),
+                        superstructure.unDuck()));
     }
 
     public Command getOffTower() {
@@ -334,11 +350,12 @@ public class RobotContainer {
                     drivetrain.alignPID(() -> alignPose.toPose2d()),
                     new PrintCommand("Moving in..."),
                     Commands.runOnce(
-                            () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
+                            () -> drivetrain
+                                    .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
                     Commands.waitSeconds(1.0),
                     new PrintCommand("Finished climbing"),
                     Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-                    // superstructure.climb(ClimbConstants.ClimbState.STOWED)
+            // superstructure.climb(ClimbConstants.ClimbState.STOWED)
             );
         }, java.util.Set.of());
     }
