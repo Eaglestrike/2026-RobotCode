@@ -1,16 +1,11 @@
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Degrees;
-
-import java.util.function.DoubleSupplier;
-
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -26,6 +21,10 @@ import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
+
+import java.util.function.DoubleSupplier;
+
+import static edu.wpi.first.units.Units.Degrees;
 
 public class Superstructure extends SubsystemBase {
     public static Translation2d shootOffset = new Translation2d(0, 0);

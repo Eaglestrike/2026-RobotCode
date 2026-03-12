@@ -408,8 +408,4 @@ public class RobotContainer {
     public Command getTeleopCommand() {
         return superstructure.initialize();
     }
-
-    public EagleSwerveDrivetrain getDrivetrain() {
-        return drivetrain;
-    }
 }

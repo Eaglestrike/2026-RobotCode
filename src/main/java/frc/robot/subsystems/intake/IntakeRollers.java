@@ -1,18 +1,15 @@
 package frc.robot.subsystems.intake;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
-
-import dev.doglog.DogLog;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
+import java.util.function.DoubleSupplier;
+
 public class IntakeRollers extends SubsystemBase {
-    private TalonFX motor;
+    private final TalonFX motor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
 
     public IntakeRollers() {

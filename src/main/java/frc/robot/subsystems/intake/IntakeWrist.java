@@ -1,31 +1,23 @@
 package frc.robot.subsystems.intake;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import dev.doglog.DogLog;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.RobotContainer;
 
 import java.util.Map;
 import java.util.function.DoubleSupplier;
 
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-    
-import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.GravityTypeValue;
-import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
-
-import dev.doglog.DogLog;
-    
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import frc.robot.RobotContainer;
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
 
 
 public class IntakeWrist extends SubsystemBase {
@@ -37,7 +29,6 @@ public class IntakeWrist extends SubsystemBase {
     private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
 
     private State state = State.IDLE;
-    private double offset = IntakeConstants.Wrist.ENCODER_OFFSET;
 
     private boolean zeroed = false;
 
@@ -82,7 +73,7 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(Radians.of(offset));
+            motor.setPosition(Radians.of(IntakeConstants.Wrist.ENCODER_OFFSET));
             state = State.IDLE;
             zeroed = true;
 

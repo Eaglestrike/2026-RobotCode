@@ -12,8 +12,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
 public class Spindexer extends SubsystemBase {
-    private TalonFX motor;
-    private VoltageOut voltageOutReq = new VoltageOut(0).withEnableFOC(true);
+    private final TalonFX motor;
+    private final VoltageOut voltageOutReq = new VoltageOut(0).withEnableFOC(true);
 
     public Spindexer() {
         motor = new TalonFX(SerializationConstants.SPINDEXER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
