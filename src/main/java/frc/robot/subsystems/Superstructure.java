@@ -257,11 +257,11 @@ public class Superstructure extends SubsystemBase {
         if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
             kicker.startMotor();
             spindexer.startKicking();
-            intakeWrist.setJiggle(true);
+//            intakeWrist.setJiggle(true);
         } else {
             kicker.stopMotor();
             spindexer.startMotor(); // this starts at like 0.3 volts don't worry
-            intakeWrist.setJiggle(false);
+//            intakeWrist.setJiggle(false);
         }
     }
 
