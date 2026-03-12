@@ -2,12 +2,12 @@ package frc.robot;
 
 import java.util.Optional;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
-public class FMSHelper extends SubsystemBase {
+public class FMSHelper {
     private static Optional<Alliance> alliance = DriverStation.getAlliance();
 
     public static Trigger activeHub() {
@@ -51,6 +51,9 @@ public class FMSHelper extends SubsystemBase {
             case Red -> !redInactiveFirst;
             case Blue -> redInactiveFirst;
         };
+
+        DogLog.log("FMS/Match Time", matchTime);
+        DogLog.log("Who Active First", redInactiveFirst ? "Blue" : "Red");
 
         if (matchTime > 130) {
             // Transition shift, hub is active.

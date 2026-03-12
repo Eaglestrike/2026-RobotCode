@@ -349,6 +349,10 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InCenterZone", true);
                     superstructure.setMode(ShootMode.FERRY);
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InCenterZone", false);
+                    superstructure.setMode(ShootMode.SHOOT);
                 }));
 
         Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
@@ -369,8 +373,7 @@ public class RobotContainer {
                     superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT : ShootMode.FERRY);
                 }));
         
-        Trigger hubActiveTrigger = FMSHelper.activeHub()
-                .debounce(0.1);
+        Trigger hubActiveTrigger = FMSHelper.activeHub();
         hubActiveTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("FMS/HubActive", true);
