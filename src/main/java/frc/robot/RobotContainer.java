@@ -72,11 +72,16 @@ public class RobotContainer {
             .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+    
+    private final SwerveRequest.FieldCentricFacingAngle trenchDrive = new SwerveRequest.FieldCentricFacingAngle()
+            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+            .withSteerRequestType(SteerRequestType.MotionMagicExpo);
 
     private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
     private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-    private boolean slowModeOn = false;
+    private DriveMode driveMode = DriveMode.NORMAL;
 
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
@@ -144,22 +149,29 @@ public class RobotContainer {
     private void configureBindings() {
         drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() -> {
-                    var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
-                    return drive
-                            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
-                                    * driveMult)
-                            .withRotationalDeadband(MaxAngularRate
-                                    * DriveConstants.DRIVE_DEADBAND_MULT
-                                    * driveMult)
-                            .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                            .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
-                                    * driveMult);
+                    if (driveMode == DriveMode.SLOW || driveMode == DriveMode.NORMAL) {
+                        var driveMult = driveMode == DriveMode.SLOW ? DriveConstants.SLOW_MODE_MULT : 1;
+                        return drive
+                                .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
+                                        * driveMult)
+                                .withRotationalDeadband(MaxAngularRate
+                                        * DriveConstants.DRIVE_DEADBAND_MULT
+                                        * driveMult)
+                                .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
+                                .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
+                                .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
+                                        * driveMult);
+                    }
+                    if (driveMode == DriveMode.TRENCH_LOCK) {
+                        return trenchDrive
+                            .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                            .withTargetDirection(new Rotation2d());
+                    }
                 }));
 
         rightJoystick.button(2)
-                .onTrue(Commands.runOnce(() -> slowModeOn = true))
-                .onFalse(Commands.runOnce(() -> slowModeOn = false));
+                .onTrue(Commands.runOnce(() -> driveMode = DriveMode.SLOW))
+                .onFalse(Commands.runOnce(() -> driveMode = DriveMode.NORMAL));
 
         operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
             System.out.println("Zeroing drive");
@@ -266,6 +278,17 @@ public class RobotContainer {
                 .onFalse(Commands.runOnce(() -> {
                     DogLog.log("Zones/InTowerZone", false);
                     superstructure.setKickerOverride(false);
+                }));
+        Trigger inTrenchZoneTrigger = RebuiltZones.TRENCH_ZONES
+            .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
+        inTrenchZoneTrigger
+            .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InTrenchZone", true);
+                    driveMode = DriveMode.TRENCH_LOCK;
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InTrenchZone", false);
+                    driveMode = DriveMode.NORMAL;
                 }));
     }
 
