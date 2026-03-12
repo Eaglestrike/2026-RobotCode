@@ -1,15 +1,13 @@
 package frc.robot.subsystems.intake;
 
-import static edu.wpi.first.units.Units.Degree;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
 import java.util.Map;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+    
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.GravityTypeValue;
@@ -18,7 +16,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.StaticFeedforwardSignValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
+    
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -39,7 +37,7 @@ public class IntakeWrist extends SubsystemBase {
     private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
 
     private State state = State.IDLE;
-    private Angle goal = Radians.of(0.0);
+    // removed goal: jiggling directly drives voltage based on time
     private double offset = IntakeConstants.Wrist.ENCODER_OFFSET;
 
     private boolean zeroed = false;
@@ -76,29 +74,27 @@ public class IntakeWrist extends SubsystemBase {
         return motor.getPosition().getValue();
     }
 
-    public boolean hopperExtended() {
-        // todo: adjust this to be a specific position
-        return getAngle().in(Radians) > 0;
-    }
-
     public Command requestPosition(Angle position) {
-            double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
-            double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-            DogLog.log("Intake/Intake voltage", voltage);
-            DogLog.log("Intake/stall current", stallCurrent);
-            return Commands.select(
-                    Map.ofEntries(
-                            Map.entry(true,
-                                    new SequentialCommandGroup(
-                                            runOnce(() -> motor.setControl(voltReq.withOutput(voltage))),
-                                            new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
-                                            runOnce(() -> {
-                                                motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
-                                                motor.setPosition(position); // Cos stalling messes up the encoder
-                                            })
-                                    ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)))),
-                            Map.entry(false, Commands.print("Wrist not zeroed"))),
-                    () -> zeroed);
+        double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
+        double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+        DogLog.log("Intake/Intake voltage", voltage);
+        DogLog.log("Intake/stall current", stallCurrent);
+        return Commands.select(
+                Map.ofEntries(
+                        Map.entry(true,
+                                new SequentialCommandGroup(
+                                        runOnce(() -> {
+                                            motor.setControl(voltReq.withOutput(voltage));
+                                            state = State.MOVING_TO_GOAL;
+                                        }),
+                                        new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+                                        runOnce(() -> {
+                                            motor.setPosition(position); // Cos stalling messes up the encoder
+                                            state = State.IDLE;
+                                        })
+                                ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)))),
+                        Map.entry(false, Commands.print("Wrist not zeroed"))),
+                () -> zeroed);
     }
 
     public Command zero() {
@@ -111,19 +107,24 @@ public class IntakeWrist extends SubsystemBase {
         });
     }
 
-    public Command jiggle() {
-        return Commands.repeatingSequence(
-                Commands.race(
-                        requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
-                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)),
+    public Command retain() {
+        return runOnce(() -> {
+            motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
+        });
+    }
 
-                Commands.race(requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
-                        Commands.waitSeconds(IntakeConstants.Wrist.JIGGLE_FREQ_SEC)));
+    public void setJiggle(boolean jiggle) {
+        if (jiggle) {
+            state = State.JIGGLING;
+        } else {
+            state = State.IDLE;
+            motor.setControl(voltReq.withOutput(0));
+        }
     }
 
     public Command kill() {
         return runOnce(() -> {
-            motor.setVoltage(0);
+            motor.setControl(voltReq.withOutput(0));
             state = State.IDLE;
         });
     }
@@ -146,5 +147,13 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (state == State.JIGGLING && zeroed) {
+            double phase = Timer.getFPGATimestamp() % IntakeConstants.Wrist.JIGGLE_FREQ_SEC;
+            boolean up = phase < (IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2.0);
+            double volts = up ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
+            motor.setControl(voltReq.withOutput(volts));
+        } else if(state == State.IDLE) {
+            motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
+        }
     }
 }

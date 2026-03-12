@@ -2,6 +2,8 @@ package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Degrees;
 
+import java.util.function.DoubleSupplier;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -21,6 +23,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
@@ -35,6 +38,8 @@ public class Superstructure extends SubsystemBase {
 
     private ShootMode currentMode;
     public boolean isShooting;
+    private boolean isKickerOverrided;
+    private boolean isManual = false;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -63,7 +68,7 @@ public class Superstructure extends SubsystemBase {
 
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
         DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
-
+        DogLog.log("Superstructure/ManualShooter", isManual);
         this.drivetrain = drivetrain;
     }
 
@@ -87,7 +92,8 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 intakeRollers.stop(),
-                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)));
+                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
+                intakeWrist.retain());
     }
 
     public Command stopIntakeRollers() {
@@ -99,9 +105,7 @@ public class Superstructure extends SubsystemBase {
      */
     public Command stow() {
         return Commands.parallel(
-                intakeRollers.stop(),
-                intakeWrist.requestPosition(Degrees.of(
-                        IntakeConstants.Wrist.STOW_ANGLE)),
+                stowIntake(),
                 shooter.stowShooter(),
                 runOnce(() -> isShooting = false),
                 climb.moveTo(ClimbConstants.ClimbState.STOWED));
@@ -116,8 +120,9 @@ public class Superstructure extends SubsystemBase {
 
     public Command jiggleIntake() {
         return Commands.parallel(
-                intakeWrist.jiggle(),
-                intakeRollers.jiggle());
+                runOnce(() -> intakeWrist.setJiggle(true)),
+                intakeRollers.jiggle())
+                .finallyDo(() -> intakeWrist.setJiggle(false));
     }
 
     /**
@@ -135,6 +140,10 @@ public class Superstructure extends SubsystemBase {
     public Command duck() {
         return Commands.sequence(
                 shooter.duck(),
+                Commands.runOnce(() -> {
+                    isShooting = false;
+                    intakeWrist.setJiggle(false);
+                }),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
     }
 
@@ -150,12 +159,26 @@ public class Superstructure extends SubsystemBase {
         currentMode = mode;
     }
 
+    public Command changeOffsetY(DoubleSupplier delta) {
+        return runOnce(() -> shootOffset = new Translation2d(shootOffset.getX(), shootOffset.getY() + delta.getAsDouble()));
+    }
+
+    public Command changeOffsetX(DoubleSupplier delta) {
+        return runOnce(() -> shootOffset = new Translation2d(shootOffset.getX() + delta.getAsDouble(), shootOffset.getY()));
+    }
+
     /**
      * Turns shooting on or off
      */
     public void setShooting(boolean shooting) {
         isShooting = shooting;
         shooter.setShooting(shooting);
+    }
+
+    // stop kicking but keep shooter/turret running
+    // overrided true = no kicking; overrided false = kicking
+    public void setKickerOverride(boolean overrided) {
+        isKickerOverrided = overrided;
     }
 
     private Pose3d applyShootOffset(Pose3d target) {
@@ -177,7 +200,8 @@ public class Superstructure extends SubsystemBase {
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         boolean isBlue = alliance == DriverStation.Alliance.Blue;
         final double EDGE_OFFSET = 2.0;
-        double targetX = isBlue ? 0 : FieldConstants.fieldLength;
+        final double X_OFFSET_FROM_WALL = 2.0; // how far from the wall we want to be in ferry mode, in meters
+        double targetX = isBlue ? X_OFFSET_FROM_WALL : FieldConstants.fieldLength - X_OFFSET_FROM_WALL;
 
         // Robot's current Y on the field
         Pose2d robotPose = drivetrain.getState().Pose;
@@ -189,6 +213,10 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void autoSetMode() {
+        if(isManual) {
+            return;
+        }
+
         Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
         boolean isBlue = alliance == DriverStation.Alliance.Blue;
         Pose2d robotPose = drivetrain.getState().Pose;
@@ -200,10 +228,32 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
+    private void autoSetShooting() {
+        if(isManual) {
+            return;
+        }
+        // TODO: do hub / alliance based logic to turn shooting on or off
+        // TODO: make this trigger based so it only calls once
+    }
+
+    public void toggleManualOverride() {
+        isManual = !isManual;
+    }
+
+    public void toggleMode() {
+        if (currentMode == ShootMode.FERRY) {
+            setMode(ShootMode.SHOOT);
+        } else {
+            setMode(ShootMode.FERRY);
+        }
+    }
+
     @Override
     public void periodic() {
         autoSetMode();
+        autoSetShooting();
         DogLog.log("Superstructure/Mode", currentMode.toString());
+        DogLog.log("Superstructure/ManualShooter", isManual);
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
@@ -219,15 +269,18 @@ public class Superstructure extends SubsystemBase {
             isShooting = false;
             feeder.stopMotor();
             hopper.stopMotor();
+            intakeWrist.setJiggle(false);
             return;
         }
 
-        if (isShooting && shooter.isReady()) { // for ferrying check if trajectory intersects hub
+        if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
             feeder.startMotor();
             hopper.startKicking();
+            intakeWrist.setJiggle(true);
         } else {
             feeder.stopMotor();
             hopper.startMotor(); // this starts at like 0.3 volts don't worry
+            intakeWrist.setJiggle(false);
         }
     }
 
