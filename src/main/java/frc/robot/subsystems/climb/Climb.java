@@ -122,7 +122,7 @@ public class Climb extends SubsystemBase {
                         () -> state));
     }
 
-    private Command climbL1() {
+    public Command climbL1() {
         if (BANG_BANG) {
             return runToStall(ClimbConstants.UP_VOLTS, ClimbConstants.UP_STALL_CURRENT);
         }
@@ -146,7 +146,7 @@ public class Climb extends SubsystemBase {
                 moveTo(ClimbConstants.CLIMBED_POSITION, left));
     }
 
-    private Command stow() {
+    public Command stow() {
         if (BANG_BANG) {
             return runToStall(ClimbConstants.DOWN_VOLTS, ClimbConstants.DOWN_STALL_CURRENT);
         }
@@ -160,14 +160,18 @@ public class Climb extends SubsystemBase {
             boolean leftStalled = left.getSupplyCurrent().getValueAsDouble() > stallCurrent;
             boolean rightStalled = right.getSupplyCurrent().getValueAsDouble() > stallCurrent;
 
+            DogLog.log("Climb/LeftStalled", leftStalled);
+
             left.setControl(voltReq.withOutput(leftStalled ? 0 : voltage));
             right.setControl(voltReq.withOutput(rightStalled ? 0 : voltage));
-        })
-        .until(() -> left.getSupplyCurrent().getValueAsDouble() > stallCurrent && right.getSupplyCurrent().getValueAsDouble() > stallCurrent)
-        .finallyDo(() -> {
-            left.setControl(voltReq.withOutput(0));
-            right.setControl(voltReq.withOutput(0));
-        });
+            })
+            .until(() -> left.getSupplyCurrent().getValueAsDouble() > stallCurrent
+                    || right.getSupplyCurrent().getValueAsDouble() > stallCurrent)
+            .finallyDo(() -> {
+                DogLog.log("Climb/LeftDone", true);
+                left.setControl(voltReq.withOutput(0));
+                right.setControl(voltReq.withOutput(0));
+            });
     }
 
     private Command moveTo(double position, TalonFX motor) {
