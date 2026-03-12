@@ -204,11 +204,6 @@ public class Superstructure extends SubsystemBase {
         return new Pose3d(targetX, targetY, RightTrench.height, new Rotation3d());
     }
 
-    private void autoSetShooting() {
-        // TODO: do hub / alliance based logic to turn shooting on or off
-        // TODO: make this trigger based so it only calls once
-    }
-
     public void toggleMode() {
         if (currentMode == ShootMode.FERRY) {
             setMode(ShootMode.SHOOT);
@@ -217,9 +212,12 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
+    public ShootMode getMode() {
+        return currentMode;
+    }
+
     @Override
     public void periodic() {
-        autoSetShooting();
         DogLog.log("Superstructure/Mode", currentMode.toString());
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
@@ -261,4 +259,5 @@ public class Superstructure extends SubsystemBase {
                 new Pose3d(0, 0, 0, new Rotation3d()),
         });
     }
+
 }

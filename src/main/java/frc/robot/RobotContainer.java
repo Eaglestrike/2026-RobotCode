@@ -366,6 +366,22 @@ public class RobotContainer {
                     DogLog.log("Zones/InBlueZone", true);
                     superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT : ShootMode.FERRY);
                 }));
+        
+        Trigger hubActiveTrigger = FMSHelper.activeHub()
+                .debounce(0.1);
+        hubActiveTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("FMS/HubActive", true);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(true);
+                    }
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("FMS/HubActive", false);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(false);
+                    }
+                }));
     }
 
     public Command climbL1() {
