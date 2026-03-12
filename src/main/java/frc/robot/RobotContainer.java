@@ -184,10 +184,15 @@ public class RobotContainer {
                     if (driveMode == DriveMode.TRENCH_LOCK) {
                         Pose2d pose = drivetrain.getState().Pose;
                         double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
-                        return trenchDrive
+                        // return trenchDrive
+                        // .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                        // .withVelocityY(veloY);
+                        drive
                                 .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                                .withVelocityY(veloY)
-                                .withTargetDirection(drivetrain.getTrenchLockAngle());
+                                .withVelocityY(
+                                        veloY)
+                                .withRotationalRate(-rightJoystick.getX() * MaxAngularRate);
+                        // .withTargetDirection(drivetrain.getTrenchLockAngle())
                     }
                     return drive
                             .withVelocityX(-leftJoystick.getY() * MaxSpeed)
@@ -273,14 +278,14 @@ public class RobotContainer {
         // ---------------------------------
 
         // ------ Stow Manual Commands ------
-        // buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
-        // .onTrue(superstructure.stowIntake());
+        buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
+                .onTrue(superstructure.stowIntake());
 
-        // buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
-        // .onTrue(shooter.stowShooter());
+        buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
+                .onTrue(shooter.stowShooter());
 
-        // buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
-        // .onTrue(shooter.stowShooter());
+        buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
+                .onTrue(shooter.stowShooter());
 
         // ---------------------------------
 

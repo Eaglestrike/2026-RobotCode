@@ -17,8 +17,8 @@ public class RebuiltZones {
     public static final ZoneCollection TOWER_ZONES = new ZoneCollection(BLUE_TOWER_ZONE, RED_TOWER_ZONE);
 
     public static final Zone BLUE_RIGHT_TRENCH_ZONE = new Zone(
-            FieldConstants.RightTrench.openingTopLeft.getX() - FieldConstants.RightTrench.width / 2,
-            FieldConstants.RightTrench.openingTopLeft.getX() + FieldConstants.RightTrench.width / 2,
+            FieldConstants.RightTrench.openingTopLeft.getX() - FieldConstants.RightTrench.width,
+            FieldConstants.RightTrench.openingTopLeft.getX() + FieldConstants.RightTrench.width,
             0,
             FieldConstants.RightTrench.openingTopLeft.getY());
     public static final Zone BLUE_LEFT_TRENCH_ZONE = BLUE_RIGHT_TRENCH_ZONE.mirroredY();
