@@ -423,9 +423,9 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
 
     public Rotation2d getTrenchLockAngle() {
         if (Math.abs(MathUtil.inputModulus(getState().Pose.getRotation().getDegrees() - 90, -180, 180)) < 90) {
-            return Rotation2d.kZero;
+            return Rotation2d.k180deg;
         }
-        return Rotation2d.k180deg;
+        return Rotation2d.kZero;
     }
 
     public double getTrenchY() {

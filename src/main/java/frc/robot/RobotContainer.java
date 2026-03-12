@@ -46,6 +46,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
+import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Feeder;
 import frc.robot.subsystems.serialization.Hopper;
 import frc.robot.subsystems.shooter.Shooter;
@@ -64,7 +65,7 @@ public class RobotContainer {
      */
     private static final double CLIMB_SPEED = 1;
     /** Trim the target pose */
-    private static final double TRIM_DISTANCE = 0.1; 
+    private static final double TRIM_DISTANCE = 0.1;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -123,8 +124,9 @@ public class RobotContainer {
     private final Feeder feeder = new Feeder();
     private final Hopper hopper = new Hopper();
     private final Climb climb = new Climb();
+    private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder, hopper, drivetrain);
+            feeder, hopper, drivetrain, led);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
@@ -180,10 +182,15 @@ public class RobotContainer {
                     if (driveMode == DriveMode.TRENCH_LOCK) {
                         Pose2d pose = drivetrain.getState().Pose;
                         double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
-                        return trenchDrive
+                        // return trenchDrive
+                        // .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                        // .withVelocityY(veloY);
+                        drive
                                 .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                                .withVelocityY(veloY)
-                                .withTargetDirection(drivetrain.getTrenchLockAngle());
+                                .withVelocityY(
+                                        veloY)
+                                .withRotationalRate(-rightJoystick.getX() * MaxAngularRate);
+                        // .withTargetDirection(drivetrain.getTrenchLockAngle())
                     }
                     return drive
                             .withVelocityX(-leftJoystick.getY() * MaxSpeed)
@@ -286,21 +293,20 @@ public class RobotContainer {
         // ------ Stow Manual Commands ------
         buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
                 .onTrue(superstructure.stowIntake());
-        
+
         buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
                 .onTrue(shooter.stowShooter());
-        
+
         buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
-            .onTrue(shooter.stowShooter());
+                .onTrue(shooter.stowShooter());
 
         // ---------------------------------
 
-
         buttonBoard.button(SHOOT_BUTTON)
-            .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
-        
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+
         buttonBoard.button(TOGGLE_MODE_BUTTON)
-            .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
+                .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
 
         operatorController.rightBumper()
                 .onTrue(Commands.runOnce(() -> superstructure.toggleManualOverride())).debounce(0.1);
@@ -310,13 +316,13 @@ public class RobotContainer {
                 .toggleOnFalse(superstructure.unDuck());
 
         operatorController.povUp()
-            .onTrue(superstructure.changeOffsetY(() -> TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeOffsetY(() -> TRIM_DISTANCE)).debounce(0.1);
         operatorController.povDown()
-            .onTrue(superstructure.changeOffsetY(() -> -TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeOffsetY(() -> -TRIM_DISTANCE)).debounce(0.1);
         operatorController.povRight()
-            .onTrue(superstructure.changeOffsetX(() -> TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeOffsetX(() -> TRIM_DISTANCE)).debounce(0.1);
         operatorController.povLeft()
-            .onTrue(superstructure.changeOffsetX(() -> -TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeOffsetX(() -> -TRIM_DISTANCE)).debounce(0.1);
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
     }

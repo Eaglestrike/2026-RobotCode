@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -47,10 +48,11 @@ public class Superstructure extends SubsystemBase {
     private final Feeder feeder;
     private final Hopper hopper;
     private final EagleSwerveDrivetrain drivetrain;
+    private final LED led;
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain) {
+            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -59,6 +61,7 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.feeder = feeder;
         this.hopper = hopper;
+        this.led = led;
 
         DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
                 value -> shootOffset = new Translation2d(value, shootOffset.getY()));
@@ -72,8 +75,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command initialize() {
-        return runOnce(() -> {
-        });
+        return led.setColor(Color.kBlue);
     }
 
     /**
@@ -160,11 +162,13 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command changeOffsetY(DoubleSupplier delta) {
-        return runOnce(() -> shootOffset = new Translation2d(shootOffset.getX(), shootOffset.getY() + delta.getAsDouble()));
+        return runOnce(
+                () -> shootOffset = new Translation2d(shootOffset.getX(), shootOffset.getY() + delta.getAsDouble()));
     }
 
     public Command changeOffsetX(DoubleSupplier delta) {
-        return runOnce(() -> shootOffset = new Translation2d(shootOffset.getX() + delta.getAsDouble(), shootOffset.getY()));
+        return runOnce(
+                () -> shootOffset = new Translation2d(shootOffset.getX() + delta.getAsDouble(), shootOffset.getY()));
     }
 
     /**
@@ -207,13 +211,14 @@ public class Superstructure extends SubsystemBase {
         Pose2d robotPose = drivetrain.getState().Pose;
         double robotY = robotPose.getY();
 
-        double targetY = robotY >= FieldConstants.LinesHorizontal.center ? FieldConstants.fieldWidth - EDGE_OFFSET : EDGE_OFFSET;
+        double targetY = robotY >= FieldConstants.LinesHorizontal.center ? FieldConstants.fieldWidth - EDGE_OFFSET
+                : EDGE_OFFSET;
 
         return new Pose3d(targetX, targetY, RightTrench.height, new Rotation3d());
     }
 
     private void autoSetMode() {
-        if(isManual) {
+        if (isManual) {
             return;
         }
 
@@ -229,7 +234,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void autoSetShooting() {
-        if(isManual) {
+        if (isManual) {
             return;
         }
         // TODO: do hub / alliance based logic to turn shooting on or off
@@ -242,8 +247,10 @@ public class Superstructure extends SubsystemBase {
 
     public void toggleMode() {
         if (currentMode == ShootMode.FERRY) {
+            led.setColor(Color.kGreen);
             setMode(ShootMode.SHOOT);
         } else {
+            led.setColor(Color.kOrange);
             setMode(ShootMode.FERRY);
         }
     }
