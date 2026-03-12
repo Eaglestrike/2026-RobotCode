@@ -182,15 +182,10 @@ public class RobotContainer {
                     if (driveMode == DriveMode.TRENCH_LOCK) {
                         Pose2d pose = drivetrain.getState().Pose;
                         double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
-                        // return trenchDrive
-                        // .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                        // .withVelocityY(veloY);
-                        drive
+                        return trenchDrive
                                 .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                                .withVelocityY(
-                                        veloY)
-                                .withRotationalRate(-rightJoystick.getX() * MaxAngularRate);
-                        // .withTargetDirection(drivetrain.getTrenchLockAngle())
+                                .withVelocityY(veloY)
+                                .withTargetDirection(drivetrain.getTrenchLockAngle());
                     }
                     return drive
                             .withVelocityX(-leftJoystick.getY() * MaxSpeed)
