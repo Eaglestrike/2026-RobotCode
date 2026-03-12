@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
 
@@ -100,6 +101,8 @@ public class RobotContainer {
     // auto
     private final SendableChooser<Command> autoChooser;
 
+    private boolean overrideTriggers = false;
+
     // Button Board constants
     private final int CLIMB_BUTTON = 4;
     private final int INTAKE_BUTTON = 5;
@@ -132,6 +135,7 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
         configureZoneBindings();
+        DogLog.tunable("Override Triggers", overrideTriggers, value -> overrideTriggers = value);
 
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
@@ -289,7 +293,7 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
 
         operatorController.rightBumper()
-                .onTrue(Commands.runOnce(() -> superstructure.toggleManualOverride())).debounce(0.1);
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
 
         operatorController.leftBumper()
                 .toggleOnTrue(superstructure.duck())
@@ -311,7 +315,7 @@ public class RobotContainer {
         Trigger inTowerZoneTrigger = RebuiltZones.TOWER_ZONES
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
-        inTowerZoneTrigger
+        inTowerZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InTowerZone", true);
                     superstructure.setKickerOverride(true);
@@ -322,7 +326,7 @@ public class RobotContainer {
                 }));
         Trigger inTrenchZoneTrigger = RebuiltZones.TRENCH_ZONES
                 .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
-        inTrenchZoneTrigger
+        inTrenchZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.sequence(
                         Commands.runOnce(() -> {
                             DogLog.log("Zones/InTrenchZone", true);
@@ -335,31 +339,31 @@ public class RobotContainer {
                             driveMode = DriveMode.NORMAL;
                         }),
                         superstructure.unDuck()));
+
         Trigger inCenterZoneTrigger = RebuiltZones.CENTER_ZONE
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
-        inCenterZoneTrigger
+        inCenterZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InCenterZone", true);
-                    if (superstructure.getIsManual()) return;
                     superstructure.setMode(ShootMode.FERRY);
                 }));
+
         Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
-        inRedZoneTrigger
+        inRedZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InRedZone", true);
-                    if (superstructure.getIsManual()) return;
                     superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ? ShootMode.SHOOT : ShootMode.FERRY);
                 }));
+
         Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
-        inBlueZoneTrigger
+        inBlueZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InBlueZone", true);
-                    if (superstructure.getIsManual()) return;
                     superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT : ShootMode.FERRY);
                 }));
     }

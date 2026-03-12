@@ -37,7 +37,6 @@ public class Superstructure extends SubsystemBase {
     private ShootMode currentMode;
     public boolean isShooting;
     private boolean isKickerOverrided;
-    private boolean isManual = false;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -68,7 +67,6 @@ public class Superstructure extends SubsystemBase {
 
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
         DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
-        DogLog.log("Superstructure/ManualShooter", isManual);
         this.drivetrain = drivetrain;
     }
 
@@ -207,15 +205,8 @@ public class Superstructure extends SubsystemBase {
     }
 
     private void autoSetShooting() {
-        if (isManual) {
-            return;
-        }
         // TODO: do hub / alliance based logic to turn shooting on or off
         // TODO: make this trigger based so it only calls once
-    }
-
-    public void toggleManualOverride() {
-        isManual = !isManual;
     }
 
     public void toggleMode() {
@@ -226,15 +217,10 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
-    public boolean getIsManual() {
-        return isManual;
-    }
-
     @Override
     public void periodic() {
         autoSetShooting();
         DogLog.log("Superstructure/Mode", currentMode.toString());
-        DogLog.log("Superstructure/ManualShooter", isManual);
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
