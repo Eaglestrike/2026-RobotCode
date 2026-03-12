@@ -19,7 +19,6 @@ import frc.robot.FieldConstants;
 import frc.robot.FieldConstants.RightTrench;
 import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.climb.ClimbConstants;
-import frc.robot.subsystems.climb.ClimbConstants.ClimbState;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
@@ -78,7 +77,7 @@ public class Superstructure extends SubsystemBase {
     public Command initialize() {
         return Commands.sequence(
                 led.setColor(Color.kGreen),
-                climb.moveTo(ClimbState.STOWED));
+                climb.moveToStow());
     }
 
     /**
@@ -113,7 +112,7 @@ public class Superstructure extends SubsystemBase {
                 stowIntake(),
                 shooter.stowShooter(),
                 runOnce(() -> isShooting = false),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED));
+                climb.moveToStow());
     }
 
     public Command ejectIntake() {
@@ -130,18 +129,6 @@ public class Superstructure extends SubsystemBase {
                 .finallyDo(() -> intakeWrist.setJiggle(false));
     }
 
-    /**
-     * Command to climb to a specified level
-     * 
-     * @param level The level to climb to
-     * @return SequenceCommand that performs the climbing action
-     */
-    public Command climb(ClimbConstants.ClimbState level) {
-        return Commands.sequence(
-                stow(),
-                climb.moveTo(level));
-    }
-
     public Command duck() {
         return Commands.sequence(
                 shooter.duck(),
@@ -154,10 +141,6 @@ public class Superstructure extends SubsystemBase {
 
     public Command unDuck() {
         return shooter.unDuck();
-    }
-
-    public ClimbConstants.ClimbState getClimbState() {
-        return climb.getState();
     }
 
     public void setMode(ShootMode mode) {
