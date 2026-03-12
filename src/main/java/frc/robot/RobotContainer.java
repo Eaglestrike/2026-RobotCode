@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
 
@@ -135,8 +134,8 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
         configureZoneBindings();
-        DogLog.tunable("Override Triggers", overrideTriggers, value -> overrideTriggers = value);
-
+        DogLog.log("Override Triggers", overrideTriggers);
+        
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("ClimbL1Right",
@@ -293,7 +292,10 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
 
         operatorController.rightBumper()
-                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+                .onTrue(Commands.runOnce(() -> {
+                    overrideTriggers = !overrideTriggers;
+                    DogLog.log("Override Triggers", overrideTriggers);
+                })).debounce(0.1);
 
         operatorController.leftBumper()
                 .toggleOnTrue(superstructure.duck())
