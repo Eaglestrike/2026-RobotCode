@@ -37,7 +37,6 @@ public class IntakeWrist extends SubsystemBase {
     private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
 
     private State state = State.IDLE;
-    // removed goal: jiggling directly drives voltage based on time
     private double offset = IntakeConstants.Wrist.ENCODER_OFFSET;
 
     private boolean zeroed = false;
@@ -51,48 +50,32 @@ public class IntakeWrist extends SubsystemBase {
         cfg.Voltage.PeakReverseVoltage = -IntakeConstants.Wrist.MAX_VOLTS;
         cfg.Feedback.SensorToMechanismRatio = IntakeConstants.Wrist.GEAR_RATIO;
 
-        cfg.Slot0.kP = IntakeConstants.Wrist.kP;
-        cfg.Slot0.kI = IntakeConstants.Wrist.kI;
-        cfg.Slot0.kD = IntakeConstants.Wrist.kD;
-        cfg.Slot0.kS = IntakeConstants.Wrist.kS;
-        cfg.Slot0.kV = IntakeConstants.Wrist.kV;
-        cfg.Slot0.kG = IntakeConstants.Wrist.kG;
-        cfg.Slot0.StaticFeedforwardSign = StaticFeedforwardSignValue.UseClosedLoopSign;
-        cfg.Slot0.GravityType = GravityTypeValue.Arm_Cosine;
-
         motor.getConfigurator().apply(cfg);
         motor.setControl(voltReq);
 
-        DogLog.tunable("IntakeWrist/RequestDegrees", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
-        });
-
         DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
-    }
-
-    public Angle getAngle() {
-        return motor.getPosition().getValue();
     }
 
     public Command requestPosition(Angle position) {
         double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
         double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-        DogLog.log("Intake/Intake voltage", voltage);
-        DogLog.log("Intake/stall current", stallCurrent);
+        DogLog.log("Intake/WristVoltage", voltage);
+        DogLog.log("Intake/StallCurrent", stallCurrent);
         return Commands.select(
                 Map.ofEntries(
                         Map.entry(true,
-                                new SequentialCommandGroup(
+                                Commands.sequence(
                                         runOnce(() -> {
                                             motor.setControl(voltReq.withOutput(voltage));
                                             state = State.MOVING_TO_GOAL;
                                         }),
-                                        new WaitUntilCommand(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+                                        Commands.waitUntil(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
                                         runOnce(() -> {
+                                            motor.setControl(voltReq.withOutput(0));
                                             motor.setPosition(position); // Cos stalling messes up the encoder
                                             state = State.IDLE;
                                         })
-                                ).finallyDo(() -> motor.setControl(voltReq.withOutput(0)))),
+                                )),
                         Map.entry(false, Commands.print("Wrist not zeroed"))),
                 () -> zeroed);
     }
@@ -120,13 +103,6 @@ public class IntakeWrist extends SubsystemBase {
             state = State.IDLE;
             motor.setControl(voltReq.withOutput(0));
         }
-    }
-
-    public Command kill() {
-        return runOnce(() -> {
-            motor.setControl(voltReq.withOutput(0));
-            state = State.IDLE;
-        });
     }
 
     public Command eject() {

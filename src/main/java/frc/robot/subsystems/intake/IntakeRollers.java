@@ -14,7 +14,6 @@ import frc.robot.RobotContainer;
 public class IntakeRollers extends SubsystemBase {
     private TalonFX motor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
-    private final DoubleSubscriber voltage = DogLog.tunable("IntakeRollers/Voltage", IntakeConstants.Rollers.VOLTS);
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -23,14 +22,13 @@ public class IntakeRollers extends SubsystemBase {
 
     public Command start() {
         return runOnce(() -> {
-            System.out.println("starting normal intake voltage");
-            motor.setControl(voltageRequest.withOutput(voltage.get()));
+            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.VOLTS));
         });
     }
 
     public Command eject() {
         return runOnce(() -> {
-            motor.setControl(voltageRequest.withOutput(-voltage.get()));
+            motor.setControl(voltageRequest.withOutput(-IntakeConstants.Rollers.EJECT_VOLTS));
         });
     }
 
