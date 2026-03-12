@@ -335,6 +335,33 @@ public class RobotContainer {
                             driveMode = DriveMode.NORMAL;
                         }),
                         superstructure.unDuck()));
+        Trigger inCenterZoneTrigger = RebuiltZones.CENTER_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inCenterZoneTrigger
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InCenterZone", true);
+                    if (superstructure.getIsManual()) return;
+                    superstructure.setMode(ShootMode.FERRY);
+                }));
+        Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inRedZoneTrigger
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InRedZone", true);
+                    if (superstructure.getIsManual()) return;
+                    superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ? ShootMode.SHOOT : ShootMode.FERRY);
+                }));
+        Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inBlueZoneTrigger
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InBlueZone", true);
+                    if (superstructure.getIsManual()) return;
+                    superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT : ShootMode.FERRY);
+                }));
     }
 
     public Command climbL1() {

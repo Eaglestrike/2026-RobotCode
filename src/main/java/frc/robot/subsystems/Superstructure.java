@@ -144,6 +144,11 @@ public class Superstructure extends SubsystemBase {
 
     public void setMode(ShootMode mode) {
         currentMode = mode;
+        if (mode == ShootMode.FERRY) {
+            led.setColor(Color.kOrange);
+        } else if (mode == ShootMode.SHOOT) {
+            led.setColor(Color.kGreen);
+        }
     }
 
     public Command changeOffsetY(DoubleSupplier delta) {
@@ -202,22 +207,6 @@ public class Superstructure extends SubsystemBase {
         return new Pose3d(targetX, targetY, RightTrench.height, new Rotation3d());
     }
 
-    private void autoSetMode() {
-        if (isManual) {
-            return;
-        }
-
-        Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
-        boolean isBlue = alliance == DriverStation.Alliance.Blue;
-        Pose2d robotPose = drivetrain.getState().Pose;
-        if ((isBlue && robotPose.getX() > FieldConstants.Hub.farFace.getX())
-                || (!isBlue && robotPose.getX() < FieldConstants.Hub.oppFarLeftCorner.getX())) {
-            setMode(ShootMode.FERRY);
-        } else {
-            setMode(ShootMode.SHOOT);
-        }
-    }
-
     private void autoSetShooting() {
         if (isManual) {
             return;
@@ -233,16 +222,17 @@ public class Superstructure extends SubsystemBase {
     public void toggleMode() {
         if (currentMode == ShootMode.FERRY) {
             setMode(ShootMode.SHOOT);
-            led.setColor(Color.kGreen);
         } else {
             setMode(ShootMode.FERRY);
-            led.setColor(Color.kOrange);
         }
+    }
+
+    public boolean getIsManual() {
+        return isManual;
     }
 
     @Override
     public void periodic() {
-        autoSetMode();
         autoSetShooting();
         DogLog.log("Superstructure/Mode", currentMode.toString());
         DogLog.log("Superstructure/ManualShooter", isManual);

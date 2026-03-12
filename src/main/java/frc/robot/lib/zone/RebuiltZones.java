@@ -28,6 +28,20 @@ public class RebuiltZones {
     public static final ZoneCollection TRENCH_ZONES = new ZoneCollection(
             BLUE_RIGHT_TRENCH_ZONE, BLUE_LEFT_TRENCH_ZONE, RED_RIGHT_TRENCH_ZONE, RED_LEFT_TRENCH_ZONE);
 
+    public static final Zone CENTER_ZONE = new Zone(
+            FieldConstants.Hub.topCenterPoint.getX(),
+            FieldConstants.Hub.oppTopCenterPoint.getX(),
+            0,
+            FieldConstants.fieldWidth
+    );
+    public static final Zone BLUE_ALLIANCE_ZONE = new Zone(
+            0,
+            FieldConstants.Hub.topCenterPoint.getX(),
+            0,
+            FieldConstants.fieldWidth
+    );
+    public static final Zone RED_ALLIANCE_ZONE = BLUE_ALLIANCE_ZONE.mirroredX();
+
     public static void logAllZones() {
         DogLog.log("RebuiltZones/Blue Tower Zone", BLUE_TOWER_ZONE.getCorners());
         DogLog.log("RebuiltZones/Red Tower Zone", RED_TOWER_ZONE.getCorners());
@@ -39,5 +53,8 @@ public class RebuiltZones {
                 BLUE_LEFT_TRENCH_ZONE.getCorners());
         DogLog.log("RebuiltZones/Blue Right Trench Zone",
                 BLUE_RIGHT_TRENCH_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Center Zone", CENTER_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Red Alliance Zone", RED_ALLIANCE_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Blue Alliance Zone", BLUE_ALLIANCE_ZONE.getCorners());
     }
 }
