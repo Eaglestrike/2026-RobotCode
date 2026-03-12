@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -37,7 +38,7 @@ public class ShooterTurret extends SubsystemBase {
     private PositionVoltage position = new PositionVoltage(0);
     private EagleSwerveDrivetrain drive;
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
-    private Angle targetAngle = Degrees.of(0);
+    private StatusSignal<Angle> positionSignal;
 
     private boolean zeroed = false;
     private boolean isRecentering = false;
@@ -45,6 +46,7 @@ public class ShooterTurret extends SubsystemBase {
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        this.positionSignal = motor.getPosition();
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
@@ -133,12 +135,11 @@ public class ShooterTurret extends SubsystemBase {
         if (!zeroed) {
             return;
         }
-        if (isRecentering && safePos.isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE)) {
+        if (isRecentering && motor.getPosition().getValue().isNear(safePos, TurretConstants.ANGLE_TOLERANCE)) {
             isRecentering = false;
         }
         double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
         // double omega = 0;
-        this.targetAngle = safePos;
         this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
     }
 
@@ -216,7 +217,7 @@ public class ShooterTurret extends SubsystemBase {
                 ShooterConstants.TurretConstants.OFFSET.getX(),
                 ShooterConstants.TurretConstants.OFFSET.getY(),
                 ShooterConstants.TurretConstants.OFFSET_HEIGHT,
-                new Rotation3d(0, 0, -this.motor.getPosition().getValue().in(Radians)));
+                new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
     }
 
 }
