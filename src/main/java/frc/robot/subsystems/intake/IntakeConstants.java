@@ -4,7 +4,7 @@ import edu.wpi.first.units.measure.Voltage;
 
 public final class IntakeConstants {
     public static final class Rollers {
-        public static final int MOTOR_ID = 16;
+        public static final int MOTOR_ID = 34;
         public static final boolean INVERTED = false;
 
         public static final double VOLTS = 5.0;
@@ -12,8 +12,6 @@ public final class IntakeConstants {
     }
 
     public static final class Wrist {
-        // FIXME: i'm intentionally commenting this out because the all the constants
-        // below are wrong. PLEASE FIX THEM!!!! -max
         public static final int MOTOR_ID = 36;
 
         public static final double MAX_VEL = 14;
@@ -27,7 +25,7 @@ public final class IntakeConstants {
         public static final double MAX_ANGLE = 0; // degrees
         public static final double STOW_ANGLE = MIN_ANGLE; // degrees
 
-        public static final double MAX_VOLTS = 8.0;
+        public static final double MAX_VOLTS = 4.0;
 
         public static final double kP = 40;
         public static final double kI = 100;
@@ -42,12 +40,12 @@ public final class IntakeConstants {
 
         public static final double JIGGLE_FREQ_SEC = 1.5;
 
-        public static final double UP_VOLTS = -2.0;
-        public static final double DOWN_VOLTS = 1.5;
+        public static final double UP_VOLTS = 2.0;
+        public static final double DOWN_VOLTS = -1.5;
 
         public static final double UP_STALL_CURRENT = 15;
-        public static final double DOWN_STALL_CURRENT = 8;
+        public static final double DOWN_STALL_CURRENT = 5;
 
-        public static final double RETAINING_VOLTS = 0.5;
+        public static final double RETAINING_VOLTS = 0.2;
     }
 }

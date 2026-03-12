@@ -63,6 +63,8 @@ public class RobotContainer {
      * Meters per second when moving towards the pole
      */
     private static final double CLIMB_SPEED = 1;
+    /** Trim the target pose */
+    private static final double TRIM_DISTANCE = 0.1; 
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -103,6 +105,14 @@ public class RobotContainer {
     private final int HOOD_BUTTON = 2;
     private final int TURRET_BUTTON = 1;
     private final int SERIALIZER_BUTTON = 3;
+
+    private final int POS_1_BUTTON = 6;
+    private final int POS_2_BUTTON = 7;
+    private final int POS_3_BUTTON = 8;
+    private final int POS_4_BUTTON = 9;
+
+    private final int TOGGLE_MODE_BUTTON = 10;
+    private final int SHOOT_BUTTON = 11;
 
     // subsystems
     private final Shooter shooter = new Shooter(drivetrain);
@@ -225,9 +235,13 @@ public class RobotContainer {
                         operatorController::getRightY))
                 .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
 
+        // ---------------------------------
+
         rightJoystick.button(4)
                 .whileTrue(climbL1());
-        // ---------------------------------
+
+        leftJoystick.button(4)
+                .whileTrue(getOffTower());
 
         rightJoystick.trigger().onTrue(superstructure.intake());
         leftJoystick.trigger().onTrue(superstructure.stopIntakeRollers());
@@ -238,7 +252,7 @@ public class RobotContainer {
         // jiggle intake
         rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
-        // Manual Commands
+        // -------- Manual Commands --------
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
                 .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
@@ -267,13 +281,42 @@ public class RobotContainer {
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
                 .onFalse(hopper.setManualVoltage(() -> 0));
+        // ---------------------------------
 
-        operatorController.leftBumper()
-                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
+        // ------ Stow Manual Commands ------
+        buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
+                .onTrue(superstructure.stowIntake());
+        
+        buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
+                .onTrue(shooter.stowShooter());
+        
+        buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
+            .onTrue(shooter.stowShooter());
+
+        // ---------------------------------
+
+
+        buttonBoard.button(SHOOT_BUTTON)
+            .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+        
+        buttonBoard.button(TOGGLE_MODE_BUTTON)
+            .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
 
         operatorController.rightBumper()
+                .onTrue(Commands.runOnce(() -> superstructure.toggleManualOverride())).debounce(0.1);
+
+        operatorController.leftBumper()
                 .toggleOnTrue(superstructure.duck())
                 .toggleOnFalse(superstructure.unDuck());
+
+        operatorController.povUp()
+            .onTrue(superstructure.changeOffsetY(() -> TRIM_DISTANCE)).debounce(0.1);
+        operatorController.povDown()
+            .onTrue(superstructure.changeOffsetY(() -> -TRIM_DISTANCE)).debounce(0.1);
+        operatorController.povRight()
+            .onTrue(superstructure.changeOffsetX(() -> TRIM_DISTANCE)).debounce(0.1);
+        operatorController.povLeft()
+            .onTrue(superstructure.changeOffsetX(() -> -TRIM_DISTANCE)).debounce(0.1);
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
     }

@@ -2,7 +2,9 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
@@ -20,7 +22,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
@@ -135,9 +136,8 @@ public class ShooterTurret extends SubsystemBase {
         if (isRecentering && safePos.isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE)) {
             isRecentering = false;
         }
-        // double omega =
-        // RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
-        double omega = 0;
+        double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
+        // double omega = 0;
         this.targetAngle = safePos;
         this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
     }
