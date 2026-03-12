@@ -18,14 +18,13 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.FieldConstants.RightTrench;
 import frc.robot.subsystems.climb.Climb;
-import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.led.LED;
-import frc.robot.subsystems.serialization.Feeder;
-import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.serialization.Kicker;
+import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 
 public class Superstructure extends SubsystemBase {
@@ -45,22 +44,22 @@ public class Superstructure extends SubsystemBase {
     private final Shooter shooter;
     private final IntakeRollers intakeRollers;
     private final IntakeWrist intakeWrist;
-    private final Feeder feeder;
-    private final Hopper hopper;
+    private final Kicker kicker;
+    private final Spindexer spindexer;
     private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Feeder feeder, Hopper hopper, EagleSwerveDrivetrain drivetrain, LED led) {
+                          IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
         this.shooter = shooter;
         this.intakeRollers = intakeRollers;
         this.intakeWrist = intakeWrist;
-        this.feeder = feeder;
-        this.hopper = hopper;
+        this.kicker = kicker;
+        this.spindexer = spindexer;
         this.led = led;
 
         DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
@@ -260,19 +259,19 @@ public class Superstructure extends SubsystemBase {
 
         if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
             isShooting = false;
-            feeder.stopMotor();
-            hopper.stopMotor();
+            kicker.stopMotor();
+            spindexer.stopMotor();
             intakeWrist.setJiggle(false);
             return;
         }
 
         if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
-            feeder.startMotor();
-            hopper.startKicking();
+            kicker.startMotor();
+            spindexer.startKicking();
             intakeWrist.setJiggle(true);
         } else {
-            feeder.stopMotor();
-            hopper.startMotor(); // this starts at like 0.3 volts don't worry
+            kicker.stopMotor();
+            spindexer.startMotor(); // this starts at like 0.3 volts don't worry
             intakeWrist.setJiggle(false);
         }
     }

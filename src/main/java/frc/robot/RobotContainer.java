@@ -10,7 +10,6 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.ctre.phoenix6.CANBus;
@@ -40,7 +39,6 @@ import frc.robot.lib.zone.RebuiltZones;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.climb.Climb;
-import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.drive.DriveMode;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
@@ -48,8 +46,8 @@ import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.led.LED;
-import frc.robot.subsystems.serialization.Feeder;
-import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.serialization.Kicker;
+import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
@@ -123,12 +121,12 @@ public class RobotContainer {
     private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
     private final IntakeRollers intakeRollers = new IntakeRollers();
     private final IntakeWrist intakeWrist = new IntakeWrist();
-    private final Feeder feeder = new Feeder();
-    private final Hopper hopper = new Hopper();
+    private final Kicker kicker = new Kicker();
+    private final Spindexer spindexer = new Spindexer();
     private final Climb climb = new Climb();
     private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder, hopper, drivetrain, led);
+            kicker, spindexer, drivetrain, led);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
@@ -273,8 +271,8 @@ public class RobotContainer {
                 .onFalse(shooter.getHood().setManualVoltage(() -> 0));
 
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
-                .onFalse(hopper.setManualVoltage(() -> 0));
+                .whileTrue(spindexer.setManualVoltage(operatorController::getLeftY))
+                .onFalse(spindexer.setManualVoltage(() -> 0));
         // ---------------------------------
 
         // ------ Stow Manual Commands ------
