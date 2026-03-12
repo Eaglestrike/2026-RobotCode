@@ -47,8 +47,8 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Feeder feeder;
     private final Hopper hopper;
-    private final EagleSwerveDrivetrain drivetrain;
     private final LED led;
+    private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
@@ -75,7 +75,9 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command initialize() {
-        return led.setColor(Color.kBlue);
+        return Commands.sequence(
+                led.setColor(Color.kGreen),
+                climb.moveToStow());
     }
 
     /**
@@ -110,7 +112,7 @@ public class Superstructure extends SubsystemBase {
                 stowIntake(),
                 shooter.stowShooter(),
                 runOnce(() -> isShooting = false),
-                climb.moveTo(ClimbConstants.ClimbState.STOWED));
+                climb.moveToStow());
     }
 
     public Command ejectIntake() {
@@ -127,18 +129,6 @@ public class Superstructure extends SubsystemBase {
                 .finallyDo(() -> intakeWrist.setJiggle(false));
     }
 
-    /**
-     * Command to climb to a specified level
-     * 
-     * @param level The level to climb to
-     * @return SequenceCommand that performs the climbing action
-     */
-    public Command climb(ClimbConstants.ClimbState level) {
-        return Commands.sequence(
-                stow(),
-                climb.moveTo(level));
-    }
-
     public Command duck() {
         return Commands.sequence(
                 shooter.duck(),
@@ -151,10 +141,6 @@ public class Superstructure extends SubsystemBase {
 
     public Command unDuck() {
         return shooter.unDuck();
-    }
-
-    public ClimbConstants.ClimbState getClimbState() {
-        return climb.getState();
     }
 
     public void setMode(ShootMode mode) {
@@ -247,11 +233,11 @@ public class Superstructure extends SubsystemBase {
 
     public void toggleMode() {
         if (currentMode == ShootMode.FERRY) {
-            led.setColor(Color.kGreen);
             setMode(ShootMode.SHOOT);
+            led.setColor(Color.kGreen);
         } else {
-            led.setColor(Color.kOrange);
             setMode(ShootMode.FERRY);
+            led.setColor(Color.kOrange);
         }
     }
 

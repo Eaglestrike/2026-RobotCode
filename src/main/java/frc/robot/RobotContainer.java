@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
+import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
@@ -55,7 +56,6 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-    private static final boolean ENABLE_CLIMB_COMMAND = false;
     /**
      * Meters from the tower to align to (for center of the robot)
      */
@@ -64,7 +64,9 @@ public class RobotContainer {
      * Meters per second when moving towards the pole
      */
     private static final double CLIMB_SPEED = 1;
-    /** Trim the target pose */
+    /**
+     * Trim the target pose
+     */
     private static final double TRIM_DISTANCE = 0.1;
 
     public static final double AXIS_DEADBAND = 0.02;
@@ -210,9 +212,6 @@ public class RobotContainer {
 
         drivetrain.registerTelemetry(logger::telemeterize);
 
-        operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
-                .onTrue(climb.zero().ignoringDisable(true));
-
         operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
@@ -237,18 +236,7 @@ public class RobotContainer {
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-        operatorController.a()
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                        operatorController::getRightY))
-                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
-
         // ---------------------------------
-
-        rightJoystick.button(4)
-                .whileTrue(climbL1());
-
-        leftJoystick.button(4)
-                .whileTrue(getOffTower());
 
         rightJoystick.trigger().onTrue(superstructure.intake());
         leftJoystick.trigger().onTrue(superstructure.stopIntakeRollers());
@@ -269,9 +257,8 @@ public class RobotContainer {
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
         buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                        operatorController::getRightY))
-                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
+                .whileTrue(climb.setManualVoltage(operatorController::getLeftY))
+                .onFalse(climb.setManualVoltage(() -> 0));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
@@ -357,27 +344,7 @@ public class RobotContainer {
                         superstructure.unDuck()));
     }
 
-    public Command getOffTower() {
-        if (superstructure.getClimbState() == null
-                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
-            return Commands.print("Not currently climbing, cannot get off tower");
-        }
-
-        int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
-        return Commands.sequence(
-                superstructure.climb(ClimbConstants.ClimbState.STOWED),
-                Commands.runOnce(() -> drivetrain.setControl(
-                        drive.withVelocityY(MaxSpeed * direction
-                                * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
-    }
-
     public Command climbL1() {
-        if (!ENABLE_CLIMB_COMMAND) {
-            return Commands.print("Climb command disabled");
-        }
-
         return Commands.defer(() -> {
             DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
 
@@ -385,28 +352,27 @@ public class RobotContainer {
             boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
 
             Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
-            // DogLog.log("Climb/TowerPolePose", towerPolePose);
-            double multiplier = isLeft ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
+            DogLog.log("Climb/TowerPolePose", towerPolePose);
+            double multiplier = isLeft != (alliance == DriverStation.Alliance.Red) ? 1 : -1;
             DogLog.log("Climb/DirectionMultiplier", multiplier);
             Pose3d alignPose = new Pose3d(
                     towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
                     towerPolePose.getRotation());
             DogLog.log("Climb/AlignPose", alignPose);
 
-            return Commands.sequence( // TODO: Redo superstructure.climb
-                    // superstructure.climb(ClimbConstants.ClimbState.L1),
-                    new PrintCommand("Aligning to " + isLeft + " tower"),
+            return Commands.sequence(
+                    new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
                     drivetrain.alignPID(() -> alignPose.toPose2d()),
                     new PrintCommand("Moving in..."),
                     Commands.runOnce(
                             () -> drivetrain
                                     .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
                     Commands.waitSeconds(1.0),
+                    climb.moveToUp(),
                     new PrintCommand("Finished climbing"),
                     Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-            // superstructure.climb(ClimbConstants.ClimbState.STOWED)
             );
-        }, java.util.Set.of());
+        }, Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
@@ -414,7 +380,7 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return Commands.sequence(
+        return Commands.parallel(
                 superstructure.initialize(),
                 autoChooser.getSelected().asProxy());
     }
