@@ -26,7 +26,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -244,6 +246,9 @@ public class RobotContainer {
         // jiggle intake
         rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
+        rightJoystick.button(4).whileTrue(climbL1());
+        leftJoystick.button(4).whileTrue(climb.moveToUp());
+
         // -------- Manual Commands --------
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
                 .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
@@ -309,6 +314,8 @@ public class RobotContainer {
                 .onTrue(superstructure.changeOffsetX(() -> -TRIM_DISTANCE)).debounce(0.1);
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
+
+        SmartDashboard.putData("Reset trim", superstructure.resetShootOffset());
     }
 
     private void configureZoneBindings() {
@@ -330,7 +337,7 @@ public class RobotContainer {
                 .onTrue(Commands.sequence(
                         Commands.runOnce(() -> {
                             DogLog.log("Zones/InTrenchZone", true);
-                            driveMode = DriveMode.TRENCH_LOCK;
+                            // driveMode = DriveMode.TRENCH_LOCK;
                         }),
                         superstructure.duck()))
                 .onFalse(Commands.sequence(
@@ -355,7 +362,10 @@ public class RobotContainer {
         inRedZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InRedZone", true);
-                    superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red ? ShootMode.SHOOT : ShootMode.FERRY);
+                    superstructure.setMode(
+                            DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red
+                                    ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
                 }));
 
         Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
@@ -364,7 +374,9 @@ public class RobotContainer {
         inBlueZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InBlueZone", true);
-                    superstructure.setMode(DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT : ShootMode.FERRY);
+                    superstructure.setMode(DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
                 }));
     }
 
@@ -380,22 +392,27 @@ public class RobotContainer {
             double multiplier = isLeft != (alliance == DriverStation.Alliance.Red) ? 1 : -1;
             DogLog.log("Climb/DirectionMultiplier", multiplier);
             Pose3d alignPose = new Pose3d(
-                    towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
+                    towerPolePose.getTranslation()
+                            .plus(new Translation3d(-Units.inchesToMeters(6), multiplier * CLIMB_TOWER_DISTANCE, 0)),
                     towerPolePose.getRotation());
             DogLog.log("Climb/AlignPose", alignPose);
+            Timer t = new Timer();
 
             return Commands.sequence(
                     new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
                     drivetrain.alignPID(() -> alignPose.toPose2d()),
                     new PrintCommand("Moving in..."),
-                    Commands.runOnce(
+                    Commands.runOnce(() -> {
+                        t.reset();
+                        t.start();
+                    }),
+                    Commands.run(
                             () -> drivetrain
-                                    .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
-                    Commands.waitSeconds(1.0),
+                                    .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
+                            .until(() -> t.get() > 1),
                     climb.moveToUp(),
                     new PrintCommand("Finished climbing"),
-                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-            );
+                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0))));
         }, Set.of());
     }
 

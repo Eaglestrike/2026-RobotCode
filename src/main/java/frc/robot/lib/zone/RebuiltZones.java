@@ -1,6 +1,7 @@
 package frc.robot.lib.zone;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.util.Units;
 import frc.robot.FieldConstants;
 
 public class RebuiltZones {
@@ -14,8 +15,11 @@ public class RebuiltZones {
     public static final ZoneCollection TOWER_ZONES = new ZoneCollection(BLUE_TOWER_ZONE, RED_TOWER_ZONE);
 
     public static final Zone BLUE_RIGHT_TRENCH_ZONE = new Zone(
-            FieldConstants.RightTrench.openingTopLeft.getX() - FieldConstants.RightTrench.width,
-            FieldConstants.RightTrench.openingTopLeft.getX() + FieldConstants.RightTrench.width,
+            FieldConstants.RightTrench.openingTopLeft.getX() - FieldConstants.RightTrench.width / 2
+                    - Units.inchesToMeters(11),
+            FieldConstants.RightTrench.openingTopLeft.getX() + FieldConstants.RightTrench.width / 2
+                    + Units.inchesToMeters(
+                            11),
             0,
             FieldConstants.RightTrench.openingTopLeft.getY());
     public static final Zone BLUE_LEFT_TRENCH_ZONE = BLUE_RIGHT_TRENCH_ZONE.mirroredY();
@@ -29,14 +33,12 @@ public class RebuiltZones {
             FieldConstants.Hub.topCenterPoint.getX(),
             FieldConstants.Hub.oppTopCenterPoint.getX(),
             0,
-            FieldConstants.fieldWidth
-    );
+            FieldConstants.fieldWidth);
     public static final Zone BLUE_ALLIANCE_ZONE = new Zone(
             0,
             FieldConstants.Hub.topCenterPoint.getX(),
             0,
-            FieldConstants.fieldWidth
-    );
+            FieldConstants.fieldWidth);
     public static final Zone RED_ALLIANCE_ZONE = BLUE_ALLIANCE_ZONE.mirroredX();
 
     public static void logAllZones() {

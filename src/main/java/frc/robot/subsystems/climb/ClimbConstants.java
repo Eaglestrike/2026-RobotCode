@@ -1,7 +1,7 @@
 package frc.robot.subsystems.climb;
 
 public class ClimbConstants {
-    public static final int CLIMB_MOTOR_ID = 0;
+    public static final int CLIMB_MOTOR_ID = 1;
     public final static double MAX_VOLTS = 4.0;
     public final static double MANUAL_RATIO = 1.0;
 

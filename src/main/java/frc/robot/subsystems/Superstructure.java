@@ -49,7 +49,7 @@ public class Superstructure extends SubsystemBase {
     private boolean tuning = false;
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-                          IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
+            IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -72,8 +72,8 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.sequence(
-                led.setColor(Color.kGreen),
-                climb.moveToStow());
+                led.setColor(Color.kGreen)
+        /* climb.moveToStow() */);
     }
 
     /**
@@ -107,8 +107,8 @@ public class Superstructure extends SubsystemBase {
         return Commands.parallel(
                 stowIntake(),
                 shooter.stowShooter(),
-                runOnce(() -> isShooting = false),
-                climb.moveToStow());
+                runOnce(() -> isShooting = false)
+        /* climb.moveToStow() */);
     }
 
     public Command ejectIntake() {
@@ -156,6 +156,10 @@ public class Superstructure extends SubsystemBase {
     public Command changeOffsetX(DoubleSupplier delta) {
         return runOnce(
                 () -> shootOffset = new Translation2d(shootOffset.getX() + delta.getAsDouble(), shootOffset.getY()));
+    }
+
+    public Command resetShootOffset() {
+        return runOnce(() -> shootOffset = new Translation2d(0, 0));
     }
 
     /**
@@ -243,11 +247,11 @@ public class Superstructure extends SubsystemBase {
         if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
             kicker.startMotor();
             spindexer.startKicking();
-//            intakeWrist.setJiggle(true);
+            // intakeWrist.setJiggle(true);
         } else {
             kicker.stopMotor();
             spindexer.startMotor(); // this starts at like 0.3 volts don't worry
-//            intakeWrist.setJiggle(false);
+            // intakeWrist.setJiggle(false);
         }
     }
 
