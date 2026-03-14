@@ -163,6 +163,10 @@ public class RobotContainer {
                 Commands.defer(() -> superstructure.duck(), java.util.Set.of()));
         NamedCommands.registerCommand("Unduck",
                 Commands.defer(() -> superstructure.unDuck(), java.util.Set.of()));
+        NamedCommands.registerCommand("StartJiggling",
+                Commands.defer(() -> Commands.runOnce(() -> intakeWrist.setJiggle(true)), java.util.Set.of()));
+        NamedCommands.registerCommand("StopJiggling",
+                Commands.defer(() -> Commands.runOnce(() -> intakeWrist.setJiggle(false)), java.util.Set.of()));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
         SmartDashboard.putData("Auto Chooser", autoChooser);

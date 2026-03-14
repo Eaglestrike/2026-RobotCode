@@ -93,6 +93,7 @@ public class Superstructure extends SubsystemBase {
         return Commands.sequence(
                 intakeRollers.stop(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
+                Commands.runOnce(() -> intakeWrist.setJiggle(false)),
                 intakeWrist.retain());
     }
 
@@ -107,7 +108,7 @@ public class Superstructure extends SubsystemBase {
         return Commands.parallel(
                 stowIntake(),
                 shooter.stowShooter(),
-                runOnce(() -> isShooting = false)
+                Commands.runOnce(() -> isShooting = false)
         /* climb.moveToStow() */);
     }
 
@@ -120,7 +121,7 @@ public class Superstructure extends SubsystemBase {
 
     public Command jiggleIntake() {
         return Commands.parallel(
-                runOnce(() -> intakeWrist.setJiggle(true)),
+                Commands.runOnce(() -> intakeWrist.setJiggle(true)),
                 intakeRollers.jiggle())
                 .finallyDo(() -> intakeWrist.setJiggle(false));
     }

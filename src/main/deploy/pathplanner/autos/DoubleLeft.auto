@@ -31,6 +31,12 @@
         {
           "type": "named",
           "data": {
+            "name": "StartJiggling"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "StartShooting"
           }
         },
@@ -38,6 +44,12 @@
           "type": "wait",
           "data": {
             "waitTime": 5.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopJiggling"
           }
         },
         {
@@ -62,6 +74,12 @@
           "type": "named",
           "data": {
             "name": "SetModeShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartJiggling"
           }
         },
         {

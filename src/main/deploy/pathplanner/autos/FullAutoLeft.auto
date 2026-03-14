@@ -25,6 +25,12 @@
         {
           "type": "named",
           "data": {
+            "name": "StartShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
             "name": "Intake"
           }
         },
@@ -44,6 +50,12 @@
           "type": "path",
           "data": {
             "pathName": "LeftToRight"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartJiggling"
           }
         },
         {

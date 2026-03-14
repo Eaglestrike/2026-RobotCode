@@ -131,7 +131,7 @@ public class Shooter extends SubsystemBase {
 
     // called periodically by superstructure
     public void setFacing(Pose3d targetPose) {
-        DogLog.log("Shooter/CurrentState", currentState.toString());
+        DogLog.forceNt.log("Shooter/CurrentState", currentState.toString());
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -271,10 +271,10 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/DistanceToTarget", distanceToTarget);
         DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
         DogLog.log("Shooter/ActualHoodAngle_deg", hood.getAngle().in(Degrees));
-        DogLog.log("Shooter/TurretOnTarget", turret.atTarget());
-        DogLog.log("Shooter/HoodOnTarget", hood.atTarget());
-        DogLog.log("Shooter/FlywheelReady", flywheels.atVelocity());
-        DogLog.log("Shooter/ReadyToShoot", isReady());
+        DogLog.forceNt.log("Shooter/TurretOnTarget", turret.atTarget());
+        DogLog.forceNt.log("Shooter/HoodOnTarget", hood.atTarget());
+        DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
+        DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
 
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());

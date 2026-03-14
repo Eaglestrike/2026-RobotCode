@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "RightPickUp1"
@@ -29,9 +35,21 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "StartJiggling"
+          }
+        },
+        {
           "type": "wait",
           "data": {
             "waitTime": 5.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopJiggling"
           }
         },
         {
@@ -62,6 +80,12 @@
           "type": "named",
           "data": {
             "name": "StartShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartJiggling"
           }
         }
       ]
