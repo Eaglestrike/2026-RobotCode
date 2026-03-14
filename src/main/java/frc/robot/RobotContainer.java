@@ -68,6 +68,7 @@ public class RobotContainer {
      * Trim the target pose
      */
     private static final double TRIM_DISTANCE = 0.1;
+    private static final boolean CLIMB_AUTONOMOUS = false;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -136,7 +137,7 @@ public class RobotContainer {
     public RobotContainer() {
         configureBindings();
         configureZoneBindings();
-        DogLog.log("Override Triggers", overrideTriggers);
+        DogLog.forceNt.log("Override Triggers", overrideTriggers);
         
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
@@ -305,7 +306,7 @@ public class RobotContainer {
         operatorController.rightBumper()
                 .onTrue(Commands.runOnce(() -> {
                     overrideTriggers = !overrideTriggers;
-                    DogLog.log("Override Triggers", overrideTriggers);
+                    DogLog.forceNt.log("Override Triggers", overrideTriggers);
                 })).debounce(0.1);
 
         operatorController.leftBumper()
@@ -404,6 +405,10 @@ public class RobotContainer {
 
     public Command climbL1() {
         return Commands.defer(() -> {
+            if(!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
+                return new PrintCommand("Skipping climb since we're in autonomous and CLIMB_AUTONOMOUS is false");
+            }
+
             DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
 
             boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
@@ -421,6 +426,7 @@ public class RobotContainer {
             Timer t = new Timer();
 
             return Commands.sequence(
+                    superstructure.stow(),
                     new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
                     drivetrain.alignPID(() -> alignPose.toPose2d()),
                     new PrintCommand("Moving in..."),

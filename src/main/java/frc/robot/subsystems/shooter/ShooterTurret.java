@@ -81,7 +81,7 @@ public class ShooterTurret extends SubsystemBase {
         if (RobotBase.isSimulation()) {
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+            DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         }
     }
 
@@ -169,7 +169,7 @@ public class ShooterTurret extends SubsystemBase {
         return runOnce(() -> {
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+            DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         });
     }
 

@@ -44,7 +44,7 @@ public class IntakeWrist extends SubsystemBase {
         motor.getConfigurator().apply(cfg);
         motor.setControl(voltReq);
 
-        DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+        DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
     }
 
     public Command requestPosition(Angle position) {
@@ -77,7 +77,7 @@ public class IntakeWrist extends SubsystemBase {
             state = State.IDLE;
             zeroed = true;
 
-            DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+            DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
         });
     }
 

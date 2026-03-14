@@ -29,12 +29,6 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.25
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "RightFerry"
@@ -50,12 +44,6 @@
           "type": "wait",
           "data": {
             "waitTime": 2.0
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stow"
           }
         },
         {

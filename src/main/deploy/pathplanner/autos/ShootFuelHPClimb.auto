@@ -49,12 +49,6 @@
         {
           "type": "named",
           "data": {
-            "name": "StopShooting"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
             "name": "ClimbL1Right"
           }
         }
