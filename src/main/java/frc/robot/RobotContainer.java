@@ -171,8 +171,14 @@ public class RobotContainer {
     private void configureBindings() {
         drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() -> {
-                    if (driveMode == DriveMode.SLOW || driveMode == DriveMode.NORMAL) {
-                        var driveMult = driveMode == DriveMode.SLOW ? DriveConstants.SLOW_MODE_MULT : 1;
+                    if (driveMode == DriveMode.SLOW  || driveMode == DriveMode.TRENCH_SLOW|| driveMode == DriveMode.NORMAL) {
+                        var driveMult = 1.0;
+                        if (driveMode == DriveMode.SLOW) {
+                            driveMult = DriveConstants.SLOW_MODE_MULT;
+                        }
+                        if (driveMode == DriveMode.TRENCH_SLOW) {
+                            driveMult = DriveConstants.TRENCH_SLOW_MODE_MULT;
+                        }
                         return drive
                                 .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
                                         * driveMult)
@@ -379,6 +385,20 @@ public class RobotContainer {
                     superstructure.setMode(DriverStation.getAlliance()
                             .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
                                     : ShootMode.FERRY);
+                }));
+
+        Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
+                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
+        inSlowTrenchZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InSlowTrenchZone", true);
+                    if (driveMode == DriveMode.SLOW) return;
+                    driveMode = DriveMode.TRENCH_SLOW;
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InSlowTrenchZone", false);
+                    if (driveMode == DriveMode.SLOW) return;
+                    driveMode = DriveMode.NORMAL;
                 }));
     }
 

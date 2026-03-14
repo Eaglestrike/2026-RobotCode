@@ -29,6 +29,18 @@ public class RebuiltZones {
     public static final ZoneCollection TRENCH_ZONES = new ZoneCollection(
             BLUE_RIGHT_TRENCH_ZONE, BLUE_LEFT_TRENCH_ZONE, RED_RIGHT_TRENCH_ZONE, RED_LEFT_TRENCH_ZONE);
 
+    public static final Zone SLOW_BLUE_RIGHT_TRENCH_ZONE = new Zone(
+            FieldConstants.RightTrench.openingTopLeft.getX() - Units.inchesToMeters(60),
+            FieldConstants.RightTrench.openingTopLeft.getX() + Units.inchesToMeters(60),
+            0,
+            FieldConstants.RightTrench.openingTopLeft.getY());
+    public static final Zone SLOW_BLUE_LEFT_TRENCH_ZONE = SLOW_BLUE_RIGHT_TRENCH_ZONE.mirroredY();
+    public static final Zone SLOW_RED_RIGHT_TRENCH_ZONE = SLOW_BLUE_RIGHT_TRENCH_ZONE.mirroredX();
+    public static final Zone SLOW_RED_LEFT_TRENCH_ZONE = SLOW_BLUE_RIGHT_TRENCH_ZONE.mirroredX().mirroredY();
+
+    public static final ZoneCollection SLOW_TRENCH_ZONES = new ZoneCollection(
+            SLOW_BLUE_RIGHT_TRENCH_ZONE, SLOW_BLUE_LEFT_TRENCH_ZONE, SLOW_RED_RIGHT_TRENCH_ZONE, SLOW_RED_LEFT_TRENCH_ZONE);
+
     public static final Zone CENTER_ZONE = new Zone(
             FieldConstants.Hub.topCenterPoint.getX(),
             FieldConstants.Hub.oppTopCenterPoint.getX(),
@@ -55,5 +67,13 @@ public class RebuiltZones {
         DogLog.log("RebuiltZones/Center Zone", CENTER_ZONE.getCorners());
         DogLog.log("RebuiltZones/Red Alliance Zone", RED_ALLIANCE_ZONE.getCorners());
         DogLog.log("RebuiltZones/Blue Alliance Zone", BLUE_ALLIANCE_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Slow Red Left Trench Zone",
+                SLOW_RED_LEFT_TRENCH_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Slow Red Right Trench Zone",
+                SLOW_RED_RIGHT_TRENCH_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Slow Blue Left Trench Zone",
+                SLOW_BLUE_LEFT_TRENCH_ZONE.getCorners());
+        DogLog.log("RebuiltZones/Slow Blue Right Trench Zone",
+                SLOW_BLUE_RIGHT_TRENCH_ZONE.getCorners());
     }
 }
