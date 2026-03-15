@@ -19,7 +19,7 @@ public final class ShooterConstants {
         public static final double GEAR_RATIO = 10 / 9.0;
 
         /** In rotations per second */
-        public static final double VELOCITY_TOLERANCE = 2.0;
+        public static final double VELOCITY_TOLERANCE = 5.0;
 
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;

@@ -138,7 +138,7 @@ public class RobotContainer {
         configureBindings();
         configureZoneBindings();
         DogLog.forceNt.log("Override Triggers", overrideTriggers);
-        
+
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("ClimbL1Right",
@@ -176,7 +176,8 @@ public class RobotContainer {
     private void configureBindings() {
         drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() -> {
-                    if (driveMode == DriveMode.SLOW  || driveMode == DriveMode.TRENCH_SLOW|| driveMode == DriveMode.NORMAL) {
+                    if (driveMode == DriveMode.SLOW || driveMode == DriveMode.TRENCH_SLOW
+                            || driveMode == DriveMode.NORMAL) {
                         var driveMult = 1.0;
                         if (driveMode == DriveMode.SLOW) {
                             driveMult = DriveConstants.SLOW_MODE_MULT;
@@ -328,7 +329,7 @@ public class RobotContainer {
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
 
-        SmartDashboard.putData("Reset trim", superstructure.resetShootOffset());
+        buttonBoard.button(POS_2_BUTTON).onTrue(superstructure.resetShootOffset());
     }
 
     private void configureZoneBindings() {
@@ -397,19 +398,21 @@ public class RobotContainer {
         inSlowTrenchZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InSlowTrenchZone", true);
-                    if (driveMode == DriveMode.SLOW) return;
+                    if (driveMode == DriveMode.SLOW)
+                        return;
                     driveMode = DriveMode.TRENCH_SLOW;
                 }))
                 .onFalse(Commands.runOnce(() -> {
                     DogLog.log("Zones/InSlowTrenchZone", false);
-                    if (driveMode == DriveMode.SLOW) return;
+                    if (driveMode == DriveMode.SLOW)
+                        return;
                     driveMode = DriveMode.NORMAL;
                 }));
     }
 
     public Command climbL1() {
         return Commands.defer(() -> {
-            if(!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
+            if (!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
                 return new PrintCommand("Skipping climb since we're in autonomous and CLIMB_AUTONOMOUS is false");
             }
 
