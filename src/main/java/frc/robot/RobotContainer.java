@@ -67,7 +67,8 @@ public class RobotContainer {
     /**
      * Trim the target pose
      */
-    private static final double TRIM_DISTANCE = 0.1;
+    private static final double TRIM_ANGLE_TURRET = 2.5; // degrees per press for turret
+    private static final double TRIM_ANGLE_HOOD = 1; // degrees per press for hood
     private static final boolean CLIMB_AUTONOMOUS = false;
 
     public static final double AXIS_DEADBAND = 0.02;
@@ -257,7 +258,12 @@ public class RobotContainer {
         // jiggle intake
         rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
-        rightJoystick.button(4).whileTrue(climbL1());
+        rightJoystick.button(4)
+            .onTrue(Commands.runOnce(() -> {
+                turret.zeroed = !turret.zeroed;
+                DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", turret.zeroed);            
+            }));
+
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 
         // -------- Manual Commands --------
@@ -286,8 +292,15 @@ public class RobotContainer {
                 .onFalse(shooter.getHood().setManualVoltage(() -> 0));
 
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(spindexer.setManualVoltage(operatorController::getLeftY))
-                .onFalse(spindexer.setManualVoltage(() -> 0));
+                .whileTrue(
+                    Commands.parallel(
+                        spindexer.setManualVoltage(operatorController::getLeftY),
+                        kicker.setManualVoltage(operatorController::getLeftY))
+                )   
+                .onFalse(
+                    Commands.parallel(
+                        spindexer.setManualVoltage(() -> 0),
+                        kicker.setManualVoltage(() -> 0)));
         // ---------------------------------
 
         // ------ Stow Manual Commands ------
@@ -319,13 +332,13 @@ public class RobotContainer {
                 .toggleOnFalse(superstructure.unDuck());
 
         operatorController.povUp()
-                .onTrue(superstructure.changeOffsetY(() -> TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeHoodTrim(() -> TRIM_ANGLE_HOOD)).debounce(0.1);
         operatorController.povDown()
-                .onTrue(superstructure.changeOffsetY(() -> -TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeHoodTrim(() -> -TRIM_ANGLE_HOOD)).debounce(0.1);
         operatorController.povRight()
-                .onTrue(superstructure.changeOffsetX(() -> TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeTurretTrim(() -> TRIM_ANGLE_TURRET)).debounce(0.1);
         operatorController.povLeft()
-                .onTrue(superstructure.changeOffsetX(() -> -TRIM_DISTANCE)).debounce(0.1);
+                .onTrue(superstructure.changeTurretTrim(() -> -TRIM_ANGLE_TURRET)).debounce(0.1);
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
 
@@ -367,7 +380,7 @@ public class RobotContainer {
         inCenterZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InCenterZone", true);
-                    superstructure.setMode(ShootMode.FERRY);
+                    // superstructure.setMode(ShootMode.FERRY);
                 }));
 
         Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
@@ -376,10 +389,11 @@ public class RobotContainer {
         inRedZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InRedZone", true);
-                    superstructure.setMode(
-                            DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red
-                                    ? ShootMode.SHOOT
-                                    : ShootMode.FERRY);
+                    // superstructure.setMode(
+                    // DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) ==
+                    // DriverStation.Alliance.Red
+                    // ? ShootMode.SHOOT
+                    // : ShootMode.FERRY);
                 }));
 
         Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
@@ -388,9 +402,10 @@ public class RobotContainer {
         inBlueZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InBlueZone", true);
-                    superstructure.setMode(DriverStation.getAlliance()
-                            .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
-                                    : ShootMode.FERRY);
+                    // superstructure.setMode(DriverStation.getAlliance()
+                    // .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ?
+                    // ShootMode.SHOOT
+                    // : ShootMode.FERRY);
                 }));
 
         Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES

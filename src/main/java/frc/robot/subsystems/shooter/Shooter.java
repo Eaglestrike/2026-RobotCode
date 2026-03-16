@@ -177,6 +177,8 @@ public class Shooter extends SubsystemBase {
 
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
+        targetTurretAngleDeg += frc.robot.subsystems.Superstructure.turretTrimDegrees;
+
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
@@ -193,7 +195,8 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
+            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + frc.robot.subsystems.Superstructure.hoodTrimDegrees;
+            hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
             } else {
