@@ -21,6 +21,7 @@ import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 
+import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
 import static edu.wpi.first.units.Units.Degrees;
@@ -37,6 +38,7 @@ public class Superstructure extends SubsystemBase {
     private ShootMode currentMode;
     public boolean isShooting;
     private boolean isKickerOverrided;
+    private Pose3d targetPose;
 
     private final Climb climb;
     private final Shooter shooter;
@@ -47,6 +49,13 @@ public class Superstructure extends SubsystemBase {
     private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
+
+    public Optional<Pose2d> getTargetPose2d() {
+        if (targetPose == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new Pose2d(targetPose.getX(), targetPose.getY(), targetPose.getRotation().toRotation2d()));
+    }
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
             IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
@@ -178,15 +187,6 @@ public class Superstructure extends SubsystemBase {
         isKickerOverrided = overrided;
     }
 
-    // getters for trims so other classes can read current trim values
-    public double getTurretTrimDegrees() {
-        return turretTrimDegrees;
-    }
-
-    public double getHoodTrimDegrees() {
-        return hoodTrimDegrees;
-    }
-
     /**
      * Computes the Pose3d target for ferry mode (look at the README for sketchy
      * explanation of the logic).
@@ -228,8 +228,10 @@ public class Superstructure extends SubsystemBase {
             Pose3d ferryTarget = computeFerryTarget();
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
             shooter.setFacing(ferryTarget);
+            targetPose = ferryTarget;
         } else {
-            shooter.setFacing(FieldConstants.getAllianceHubPosition());
+            targetPose = FieldConstants.getAllianceHubPosition();
+            shooter.setFacing(targetPose);
             if (tuning) {
                 shooter.shootManual();
             }

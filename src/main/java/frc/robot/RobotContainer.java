@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
+import java.util.*;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
 
@@ -18,6 +19,8 @@ import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.controller.PIDController;
@@ -25,9 +28,12 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NTSendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -221,7 +227,10 @@ public class RobotContainer {
             drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
         }).ignoringDisable(true));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
+        drivetrain.registerTelemetry(state -> {
+            logger.telemeterize(state);
+            logger.setSuperstructureTargetPose(superstructure.getTargetPose2d());
+        });
 
         operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
@@ -242,6 +251,9 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.b())
                 .onTrue(shooter.getTurret().zero().ignoringDisable(true));
 
+        operatorController.leftTrigger()
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+
         operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
@@ -259,10 +271,10 @@ public class RobotContainer {
         rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
 
         rightJoystick.button(4)
-            .onTrue(Commands.runOnce(() -> {
-                turret.zeroed = !turret.zeroed;
-                DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", turret.zeroed);            
-            }));
+                .onTrue(Commands.runOnce(() -> {
+                    turret.zeroed = !turret.zeroed;
+                    DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", turret.zeroed);
+                }));
 
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 
@@ -293,14 +305,13 @@ public class RobotContainer {
 
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(
-                    Commands.parallel(
-                        spindexer.setManualVoltage(operatorController::getLeftY),
-                        kicker.setManualVoltage(operatorController::getLeftY))
-                )   
+                        Commands.parallel(
+                                spindexer.setManualVoltage(operatorController::getLeftY),
+                                kicker.setManualVoltage(operatorController::getLeftY)))
                 .onFalse(
-                    Commands.parallel(
-                        spindexer.setManualVoltage(() -> 0),
-                        kicker.setManualVoltage(() -> 0)));
+                        Commands.parallel(
+                                spindexer.setManualVoltage(() -> 0),
+                                kicker.setManualVoltage(() -> 0)));
         // ---------------------------------
 
         // ------ Stow Manual Commands ------
@@ -425,6 +436,31 @@ public class RobotContainer {
                 }));
     }
 
+    private String previousAutoName = "";
+
+    private void updateAutonomousTrajectory() {
+        if (DriverStation.isTeleopEnabled()) {
+            logger.setAutonomousTrajectory(null);
+            return;
+        }
+
+        String selectedAutoName = SmartDashboard.getString("Auto Chooser/active", "");
+        if (!selectedAutoName.equals(previousAutoName) && !selectedAutoName.isEmpty()) {
+            previousAutoName = selectedAutoName;
+            try {
+                List<PathPlannerPath> paths = PathPlannerAuto.getPathGroupFromAutoFile(selectedAutoName);
+                ArrayList<Pose2d> pathPoses = new ArrayList<>();
+                for (PathPlannerPath path : paths) {
+                    pathPoses.addAll(path.getAllPathPoints().stream()
+                            .map(pt -> new Pose2d(pt.position, new Rotation2d())).toList());
+                }
+                logger.setAutonomousTrajectory(pathPoses);
+            } catch (Exception e) {
+                System.out.println("Failed to load auto path for visualization: " + selectedAutoName);
+            }
+        }
+    }
+
     public Command climbL1() {
         return Commands.defer(() -> {
             if (!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
@@ -482,5 +518,9 @@ public class RobotContainer {
 
     public Superstructure getSuperstructure() {
         return superstructure;
+    }
+
+    public void robotPeriodic() {
+        updateAutonomousTrajectory();
     }
 }
