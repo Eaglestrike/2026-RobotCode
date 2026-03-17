@@ -23,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
@@ -153,9 +154,21 @@ public class Shooter extends SubsystemBase {
         distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
                 + deltaField.getY() * deltaField.getY());
 
-        // Compute field-relative robot velocity
-        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(drive.getState().Speeds,
+        ChassisSpeeds robotSpeeds = drive.getState().Speeds;
+
+        // Calculate tangential velocity of the offset (robot frame)
+        double vTanX = -robotSpeeds.omegaRadiansPerSecond * ShooterConstants.TurretConstants.OFFSET.getY();
+        double vTanY = robotSpeeds.omegaRadiansPerSecond * ShooterConstants.TurretConstants.OFFSET.getX();
+
+        double shooterVx = robotSpeeds.vxMetersPerSecond + vTanX;
+        double shooterVy = robotSpeeds.vyMetersPerSecond + vTanY;
+
+        // 3. Convert the total shooter velocity to the Field Frame
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                new ChassisSpeeds(shooterVx, shooterVy, robotSpeeds.omegaRadiansPerSecond),
                 robotPose.getRotation());
+        
+        DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
