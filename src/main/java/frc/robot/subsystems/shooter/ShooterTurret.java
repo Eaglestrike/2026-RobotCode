@@ -140,7 +140,7 @@ public class ShooterTurret extends SubsystemBase {
         }
         double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
         // double omega = 0;
-        this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
+        this.motor.setControl(this.position.withPosition(safePos).withVelocity(omega));
     }
 
     public Command stop() {
