@@ -479,4 +479,8 @@ public class RobotContainer {
     public Command getTeleopCommand() {
         return superstructure.initialize();
     }
+
+    public Superstructure getSuperstructure() {
+        return superstructure;
+    }
 }

@@ -60,8 +60,8 @@ public final class ShooterConstants {
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
         // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
 
-        public static final double kP = 60.0;
-        public static final double kI = 15.0;
+        public static final double kP = 100;
+        public static final double kI = 0;
         public static final double kD = 3.0;
         public static final double kS = 0.15;
         public static final double kV = 0.124 * GEAR_RATIO;
