@@ -4,7 +4,6 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -27,7 +26,8 @@ import java.util.function.DoubleSupplier;
 import static edu.wpi.first.units.Units.Degrees;
 
 public class Superstructure extends SubsystemBase {
-    public static Translation2d shootOffset = new Translation2d(0, 0);
+    public static double turretTrimDegrees = 0;
+    public static double hoodTrimDegrees = 0;
 
     public enum ShootMode {
         FERRY,
@@ -60,10 +60,10 @@ public class Superstructure extends SubsystemBase {
         this.spindexer = spindexer;
         this.led = led;
 
-        DogLog.tunable("Superstructure/ShootOffsetX", shootOffset.getX(),
-                value -> shootOffset = new Translation2d(value, shootOffset.getY()));
-        DogLog.tunable("Superstructure/ShootOffsetY", shootOffset.getY(),
-                value -> shootOffset = new Translation2d(shootOffset.getX(), value));
+        DogLog.tunable("Superstructure/TurretTrimDegrees", turretTrimDegrees,
+                value -> turretTrimDegrees = value);
+        DogLog.tunable("Superstructure/HoodTrimDegrees", hoodTrimDegrees,
+                value -> hoodTrimDegrees = value);
 
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
         DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
@@ -149,18 +149,19 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
-    public Command changeOffsetY(DoubleSupplier delta) {
-        return runOnce(
-                () -> shootOffset = new Translation2d(shootOffset.getX(), shootOffset.getY() + delta.getAsDouble()));
+    public Command changeHoodTrim(DoubleSupplier delta) {
+        return runOnce(() -> hoodTrimDegrees += delta.getAsDouble());
     }
 
-    public Command changeOffsetX(DoubleSupplier delta) {
-        return runOnce(
-                () -> shootOffset = new Translation2d(shootOffset.getX() + delta.getAsDouble(), shootOffset.getY()));
+    public Command changeTurretTrim(DoubleSupplier delta) {
+        return runOnce(() -> turretTrimDegrees += delta.getAsDouble());
     }
 
     public Command resetShootOffset() {
-        return runOnce(() -> shootOffset = new Translation2d(0, 0));
+        return runOnce(() -> {
+            turretTrimDegrees = 0;
+            hoodTrimDegrees = 0;
+        });
     }
 
     /**
@@ -177,15 +178,13 @@ public class Superstructure extends SubsystemBase {
         isKickerOverrided = overrided;
     }
 
-    private Pose3d applyShootOffset(Pose3d target) {
-        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
-        double xSign = isBlue ? 1.0 : -1.0;
-        double ySign = isBlue ? 1.0 : -1.0;
-        return new Pose3d(
-                target.getX() + shootOffset.getX() * xSign,
-                target.getY() + shootOffset.getY() * ySign,
-                target.getZ(),
-                target.getRotation());
+    // getters for trims so other classes can read current trim values
+    public double getTurretTrimDegrees() {
+        return turretTrimDegrees;
+    }
+
+    public double getHoodTrimDegrees() {
+        return hoodTrimDegrees;
     }
 
     /**
@@ -231,7 +230,7 @@ public class Superstructure extends SubsystemBase {
             DogLog.log("Superstructure/FerryTarget", ferryTarget);
             shooter.setFacing(ferryTarget);
         } else {
-            shooter.setFacing(applyShootOffset(FieldConstants.getAllianceHubPosition()));
+            shooter.setFacing(FieldConstants.getAllianceHubPosition());
             if (tuning) {
                 shooter.shootManual();
             }

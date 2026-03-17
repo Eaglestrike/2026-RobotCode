@@ -40,7 +40,7 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private StatusSignal<Angle> positionSignal;
 
-    private boolean zeroed = false;
+    public boolean zeroed = false;
     private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {

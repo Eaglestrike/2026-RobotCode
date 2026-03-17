@@ -16,10 +16,10 @@ public class IntakeRollers extends SubsystemBase {
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = motor.getConfigurator();
-        // var currentCfg = new CurrentLimitsConfigs();
-        // currentCfg.SupplyCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
-        // currentCfg.SupplyCurrentLimitEnable = true;
-        // cfg.apply(currentCfg);
+        var currentCfg = new CurrentLimitsConfigs();
+        currentCfg.SupplyCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
+        currentCfg.SupplyCurrentLimitEnable = true;
+        cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
     }
 
