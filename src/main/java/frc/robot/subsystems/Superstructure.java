@@ -77,6 +77,7 @@ public class Superstructure extends SubsystemBase {
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
         DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
         this.drivetrain = drivetrain;
+        DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
     }
 
     public Command initialize() {
@@ -151,6 +152,7 @@ public class Superstructure extends SubsystemBase {
 
     public void setMode(ShootMode mode) {
         currentMode = mode;
+        DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
         if (mode == ShootMode.FERRY) {
             led.setColor(Color.kOrange);
         } else if (mode == ShootMode.SHOOT) {
@@ -219,11 +221,6 @@ public class Superstructure extends SubsystemBase {
         } else {
             setMode(ShootMode.FERRY);
         }
-    }
-
-    @Override
-    public void periodic() {
-        DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
     }
 
     public void fastPeriodic() {
