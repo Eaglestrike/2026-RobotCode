@@ -221,12 +221,15 @@ public class Superstructure extends SubsystemBase {
         }
     }
 
+    @Override
+    public void periodic() {
+        DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
+    }
+
     public void fastPeriodic() {
         autoSetShooting();
-        DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
-            DogLog.log("Superstructure/FerryTarget", ferryTarget);
             shooter.setFacing(ferryTarget);
             targetPose = ferryTarget;
         } else {

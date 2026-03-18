@@ -9,9 +9,11 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
+import java.io.IOException;
 import java.util.*;
-import java.util.Set;
 import java.util.function.DoubleSupplier;
+
+import org.json.simple.parser.ParseException;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
@@ -21,6 +23,8 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.path.PathPoint;
+import com.pathplanner.lib.util.FileVersionException;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.controller.PIDController;
@@ -109,6 +113,7 @@ public class RobotContainer {
 
     // auto
     private final SendableChooser<Command> autoChooser;
+    private final SendableChooser<Boolean> autoMirrorChooser;
 
     private boolean overrideTriggers = false;
 
@@ -176,8 +181,13 @@ public class RobotContainer {
                 Commands.defer(() -> Commands.runOnce(() -> intakeWrist.setJiggle(false)), java.util.Set.of()));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
-        SmartDashboard.putData("Auto Chooser", autoChooser);
+        autoMirrorChooser = new SendableChooser<>();
+        autoMirrorChooser.addOption("Mirror", true);
+        autoMirrorChooser.addOption("Not Mirrored", false);
+        autoMirrorChooser.setDefaultOption("Not Mirrored", false);
 
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+        SmartDashboard.putData("Auto Side Chooser", autoMirrorChooser);
     }
 
     private void configureBindings() {
@@ -437,26 +447,36 @@ public class RobotContainer {
     }
 
     private String previousAutoName = "";
+    private boolean prevMirrored = false;
+    private Command cachedAutoCommand = null;
 
-    private void updateAutonomousTrajectory() {
+    public void disabledPeriodic() {
         if (DriverStation.isTeleopEnabled()) {
-            logger.setAutonomousTrajectory(null);
+            logger.setAutonomousTrajectory(new ArrayList<>());
             return;
         }
 
         String selectedAutoName = SmartDashboard.getString("Auto Chooser/active", "");
-        if (!selectedAutoName.equals(previousAutoName) && !selectedAutoName.isEmpty()) {
+        boolean isMirrored = autoMirrorChooser.getSelected();
+        if (!selectedAutoName.isEmpty() && (!selectedAutoName.equals(previousAutoName) || (isMirrored != prevMirrored))) {
             previousAutoName = selectedAutoName;
+            prevMirrored = isMirrored;
             try {
                 List<PathPlannerPath> paths = PathPlannerAuto.getPathGroupFromAutoFile(selectedAutoName);
                 ArrayList<Pose2d> pathPoses = new ArrayList<>();
                 for (PathPlannerPath path : paths) {
+                    if (isMirrored) {
+                        path = path.mirrorPath();
+                    }
                     pathPoses.addAll(path.getAllPathPoints().stream()
-                            .map(pt -> new Pose2d(pt.position, new Rotation2d())).toList());
+                            .map(pt -> new Pose2d(pt.position, new Rotation2d(0))).toList());
                 }
                 logger.setAutonomousTrajectory(pathPoses);
+
+                cachedAutoCommand = new PathPlannerAuto(selectedAutoName, isMirrored);
             } catch (Exception e) {
-                System.out.println("Failed to load auto path for visualization: " + selectedAutoName);
+                System.out.println("Failed to load path/auto for visualization or command construction: " + selectedAutoName);
+                cachedAutoCommand = null;
             }
         }
     }
@@ -507,9 +527,13 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return Commands.parallel(
+        if (cachedAutoCommand != null) {
+            return Commands.parallel(
                 superstructure.initialize(),
-                autoChooser.getSelected().asProxy());
+                cachedAutoCommand.asProxy()
+            );
+        }
+        return new PrintCommand("Failed to load autonomous command");
     }
 
     public Command getTeleopCommand() {
@@ -518,9 +542,5 @@ public class RobotContainer {
 
     public Superstructure getSuperstructure() {
         return superstructure;
-    }
-
-    public void robotPeriodic() {
-        updateAutonomousTrajectory();
     }
 }
