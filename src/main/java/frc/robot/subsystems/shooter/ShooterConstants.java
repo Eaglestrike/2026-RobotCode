@@ -67,8 +67,8 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Degree.of(130.0);
-        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
+        public static final Angle FORWARD_LIMIT = Degree.of(130.0); // Rotations.of(0.6)
+        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0); // Rotations.of(-0.85) - with new tensioner. Without new tensioner is -0.75
     }
 
     public final class HoodConstants {
