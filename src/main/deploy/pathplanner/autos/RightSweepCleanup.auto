@@ -42,21 +42,9 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StartJiggling"
-          }
-        },
-        {
           "type": "wait",
           "data": {
             "waitTime": 4.0
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StopJiggling"
           }
         },
         {
@@ -81,12 +69,6 @@
           "type": "named",
           "data": {
             "name": "StartShooting"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StartJiggling"
           }
         }
       ]

@@ -8,8 +8,8 @@
       },
       "prevControl": null,
       "nextControl": {
-        "x": 7.376187717009664,
-        "y": -0.39154578993409583
+        "x": 9.647099464699075,
+        "y": 0.7486996527777785
       },
       "isLocked": false,
       "linkedName": "RightComeBack1"
@@ -57,7 +57,7 @@
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": "RightPickup2"
+      "linkedName": null
     }
   ],
   "rotationTargets": [
@@ -124,7 +124,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 179.1600424104651
+    "rotation": 179.16004241046514
   },
   "reversed": false,
   "folder": null,

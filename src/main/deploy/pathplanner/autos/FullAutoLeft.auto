@@ -35,12 +35,6 @@
           }
         },
         {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.25
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "IntakeFuel"
@@ -53,34 +47,15 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "StartJiggling"
-          }
-        },
-        {
           "type": "wait",
           "data": {
             "waitTime": 4.0
           }
         },
         {
-          "type": "parallel",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "HPToClimb"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "StowIntake"
-                }
-              }
-            ]
+            "pathName": "HPToClimb"
           }
         },
         {
