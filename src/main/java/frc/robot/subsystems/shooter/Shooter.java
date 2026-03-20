@@ -30,6 +30,8 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
+    private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
+
     private enum ShooterState {
         IDLE,
         AIMING,
@@ -49,6 +51,7 @@ public class Shooter extends SubsystemBase {
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
 
+    private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -132,7 +135,6 @@ public class Shooter extends SubsystemBase {
 
     // called periodically by superstructure
     public void setFacing(Pose3d targetPose) {
-        DogLog.forceNt.log("Shooter/CurrentState", currentState.toString());
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -181,18 +183,9 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        DogLog.log("Shooter/PredictedTargetTranslation3d",
-                new Translation3d[] { result.predictedTarget() });
-
-        DogLog.log("Shooter/Solver/TargetFieldTurretAngle_deg", result.turretAngle().getDegrees());
-        DogLog.log("Shooter/Solver/TargetHoodAngle_deg", result.hoodAngle().getDegrees());
-        DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", result.rpm());
-
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         targetTurretAngleDeg += frc.robot.subsystems.Superstructure.turretTrimDegrees;
-
-        DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
@@ -283,6 +276,15 @@ public class Shooter extends SubsystemBase {
     }
 
     private void logValues() {
+        ntPublishCount++;
+        if (ntPublishCount >= NT_PUBLISH_LIMIT) {
+            ntPublishCount = 0;
+        } else {
+            return;
+        }
+        
+        DogLog.forceNt.log("Shooter/CurrentState", currentState.toString());
+
         DogLog.log("Shooter/HasTarget", targetPose != null);
         DogLog.log("Shooter/DistanceToTarget", distanceToTarget);
         DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
@@ -292,8 +294,14 @@ public class Shooter extends SubsystemBase {
         DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
         DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
 
+        DogLog.log("Shooter/PredictedTargetTranslation3d",
+                new Translation3d[] { lastSolverResult.predictedTarget() });
+
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());
+        DogLog.log("Shooter/Solver/TargetTurretAngle_deg", lastSolverResult.turretAngle().getDegrees());
+        DogLog.log("Shooter/Solver/TargetHoodAngle_deg", lastSolverResult.hoodAngle().getDegrees());
+        DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", lastSolverResult.rpm());
 
         // 3D visualization poses (field-absolute, with odom)
         Pose2d robotPose = drive.getState().Pose;
