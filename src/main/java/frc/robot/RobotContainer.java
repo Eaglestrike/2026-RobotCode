@@ -451,18 +451,18 @@ public class RobotContainer {
         
         Trigger hubActiveTrigger = FMSHelper.activeHub();
         hubActiveTrigger.and(() -> !overrideTriggers)
-                .onTrue(Commands.runOnce(() -> {
-                    DogLog.log("FMS/HubActive", true);
+                .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", true);
                     if (superstructure.getMode() == ShootMode.SHOOT) {
                         superstructure.setShooting(true);
                     }
-                }))
-                .onFalse(Commands.runOnce(() -> {
-                    DogLog.log("FMS/HubActive", false);
+                }), java.util.Set.of()))
+                .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", false);
                     if (superstructure.getMode() == ShootMode.SHOOT) {
                         superstructure.setShooting(false);
                     }
-                }));
+                }), java.util.Set.of()));
     }
 
     private String previousAutoName = "";

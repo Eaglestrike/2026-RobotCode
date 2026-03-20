@@ -52,7 +52,7 @@ public class FMSHelper {
             case Blue -> redInactiveFirst;
         };
 
-        DogLog.log("FMS/Match Time", matchTime);
+        DogLog.forceNt.log("FMS/Match Time", matchTime);
         DogLog.log("Who Active First", redInactiveFirst ? "Blue" : "Red");
 
         if (matchTime > 130) {
