@@ -40,6 +40,7 @@ public final class ShooterConstants {
 
     public final class TurretConstants {
         public static final int MOTOR_ID = 19;
+        public static final int CANCODER_ID = -1; // TODO: assign cancoder ID
 
         /**
          * Offset of the turret center, relative to the robot's center point (meters)
@@ -49,11 +50,14 @@ public final class ShooterConstants {
 
         /** In rotations of the turret — zero sensor is at back, so offset by -180° */
         public static final double ENCODER_OFFSET = -0.5;
+        public static final double CANCODER_OFFSET = 0; // TODO: read the value of the cancoder when the turret is in 0 position
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
         public static final double GEAR_RATIO = 9.2;
+        public static final double ROTOR_TO_SENSOR = 46/3.0; 
+        public static final double SENSOR_TO_MECHANISM = 0.6;
 
         public static final double MAX_VOLTS = 1.5;
 
@@ -67,6 +71,7 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
+        // MAYBE: change for cancoder
         public static final Angle FORWARD_LIMIT = Degree.of(130.0); // Rotations.of(0.6)
         public static final Angle BACKWARD_LIMIT = Degree.of(-230.0); // Rotations.of(-0.85) - with new tensioner. Without new tensioner is -0.75
     }
