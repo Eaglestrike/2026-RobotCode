@@ -401,7 +401,7 @@ public class RobotContainer {
         inCenterZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InCenterZone", true);
-                    // superstructure.setMode(ShootMode.FERRY);
+                    superstructure.setMode(ShootMode.FERRY);
                 }));
 
         Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
@@ -410,11 +410,11 @@ public class RobotContainer {
         inRedZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InRedZone", true);
-                    // superstructure.setMode(
-                    // DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) ==
-                    // DriverStation.Alliance.Red
-                    // ? ShootMode.SHOOT
-                    // : ShootMode.FERRY);
+                    superstructure.setMode(
+                    DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) ==
+                    DriverStation.Alliance.Red
+                    ? ShootMode.SHOOT
+                    : ShootMode.FERRY);
                 }));
 
         Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
@@ -423,10 +423,10 @@ public class RobotContainer {
         inBlueZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InBlueZone", true);
-                    // superstructure.setMode(DriverStation.getAlliance()
-                    // .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ?
-                    // ShootMode.SHOOT
-                    // : ShootMode.FERRY);
+                    superstructure.setMode(DriverStation.getAlliance()
+                    .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ?
+                    ShootMode.SHOOT
+                    : ShootMode.FERRY);
                 }));
 
         Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
