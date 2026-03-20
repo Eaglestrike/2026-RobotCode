@@ -13,6 +13,7 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
@@ -54,6 +55,11 @@ public class ShooterTurret extends SubsystemBase {
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.BACKWARD_LIMIT.in(Rotations);
 
         cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
+        // cfg.Feedback.RotorToSensorRatio = TurretConstants.ROTOR_TO_SENSOR;
+        // cfg.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+        // cfg.Feedback.FeedbackRemoteSensorID = TurretConstants.CANCODER_ID;
+        // cfg.Feedback.FeedbackRotorOffset = TurretConstants.ENCODER_OFFSET;
+
 
         cfg.Slot0.kP = TurretConstants.kP;
         cfg.Slot0.kI = TurretConstants.kI;
