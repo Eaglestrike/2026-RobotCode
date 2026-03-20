@@ -5,8 +5,9 @@ public final class IntakeConstants {
         public static final int MOTOR_ID = 34;
 
         public static final double VOLTS = 5.0;
-        public static final double JIGGLE_VOLTS = 1.0;
+        public static final double JIGGLE_VOLTS = 2.0;
         public static final double EJECT_VOLTS = -5.0;
+        public static final int CURRENT_LIMIT = 30;
     }
 
     public static final class Wrist {
@@ -27,8 +28,10 @@ public final class IntakeConstants {
 
         public static final double UP_VOLTS = 2.0;
         public static final double DOWN_VOLTS = -1.5;
+        public static final double JIGGLE_DOWN_VOLTS = 0;
+        public static final double JIGGLE_UP_VOLTS = 1.5;
 
-        public static final double UP_STALL_CURRENT = 15;
+        public static final double UP_STALL_CURRENT = 12;
         public static final double DOWN_STALL_CURRENT = 5;
 
         public static final double RETAINING_VOLTS = 0.2;

@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Milliseconds;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -33,6 +35,7 @@ public class Robot extends TimedRobot {
                 .withLogExtras(false));
         cleanupOldLogs();
         m_robotContainer = new RobotContainer();
+        addPeriodic(m_robotContainer.getSuperstructure()::fastPeriodic, Milliseconds.of(5));
     }
 
     private void cleanupOldLogs() {
@@ -75,6 +78,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledPeriodic() {
+        if (m_robotContainer != null) {
+            m_robotContainer.disabledPeriodic();
+        }
     }
 
     @Override

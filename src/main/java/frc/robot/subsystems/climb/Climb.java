@@ -33,20 +33,30 @@ public class Climb extends SubsystemBase {
     }
 
     public Command moveToStow() {
-        return runToStall(ClimbConstants.DOWN_VOLTS, ClimbConstants.DOWN_STALL_CURRENT);
+        return run(() -> {
+            DogLog.log("Climb/VoltageOut", ClimbConstants.DOWN_VOLTS);
+            motor.setControl(voltReq.withOutput(ClimbConstants.DOWN_VOLTS));
+        })
+                .until(() -> {
+                    boolean motorStalled = motor.getSupplyCurrent()
+                            .getValueAsDouble() > ClimbConstants.DOWN_STALL_CURRENT;
+                    DogLog.log("Climb/MotorStalled", motorStalled);
+                    return motorStalled;
+                })
+                .finallyDo(() -> {
+                    DogLog.log("Climb/FinallyDone", true);
+                    motor.setControl(voltReq.withOutput(0));
+                });
     }
 
     public Command moveToUp() {
-        return runToStall(ClimbConstants.UP_VOLTS, ClimbConstants.UP_STALL_CURRENT);
-    }
-
-    private Command runToStall(double voltage, double stallCurrent) {
         return run(() -> {
-            DogLog.log("Climb/VoltageOut", voltage);
-            motor.setControl(voltReq.withOutput(voltage));
+            DogLog.log("Climb/VoltageOut", ClimbConstants.UP_VOLTS);
+            motor.setControl(voltReq.withOutput(ClimbConstants.UP_VOLTS));
         })
                 .until(() -> {
-                    boolean motorStalled = motor.getSupplyCurrent().getValueAsDouble() > stallCurrent;
+                    boolean motorStalled = motor.getSupplyCurrent()
+                            .getValueAsDouble() > ClimbConstants.UP_STALL_CURRENT;
                     DogLog.log("Climb/MotorStalled", motorStalled);
                     return motorStalled;
                 })

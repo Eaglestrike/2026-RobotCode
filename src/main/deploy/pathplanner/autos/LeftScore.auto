@@ -61,12 +61,6 @@
         {
           "type": "named",
           "data": {
-            "name": "Stow"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
             "name": "ClimbL1Left"
           }
         }

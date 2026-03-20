@@ -72,7 +72,7 @@ public class ShooterHood extends SubsystemBase {
             motor.setPosition(Degrees.of(HoodConstants.OFFSET));
             zeroed = true;
         }
-        DogLog.log("ShooterHood/isZeroed", zeroed);
+        DogLog.forceNt.log("ShooterHood/isZeroed", zeroed);
     }
 
     /**
@@ -123,7 +123,7 @@ public class ShooterHood extends SubsystemBase {
         return runOnce(() -> {
             motor.setPosition(Degrees.of(HoodConstants.OFFSET));
             zeroed = true;
-            DogLog.log("ShooterHood/isZeroed", zeroed);
+            DogLog.forceNt.log("ShooterHood/isZeroed", zeroed);
         });
     }
 

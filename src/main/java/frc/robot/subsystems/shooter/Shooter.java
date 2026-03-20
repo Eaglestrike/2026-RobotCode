@@ -23,12 +23,15 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
+    private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
+
     private enum ShooterState {
         IDLE,
         AIMING,
@@ -48,6 +51,7 @@ public class Shooter extends SubsystemBase {
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
 
+    private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
@@ -131,7 +135,6 @@ public class Shooter extends SubsystemBase {
 
     // called periodically by superstructure
     public void setFacing(Pose3d targetPose) {
-        DogLog.log("Shooter/CurrentState", currentState.toString());
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -153,9 +156,21 @@ public class Shooter extends SubsystemBase {
         distanceToTarget = Math.sqrt(deltaField.getX() * deltaField.getX()
                 + deltaField.getY() * deltaField.getY());
 
-        // Compute field-relative robot velocity
-        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(drive.getState().Speeds,
+        ChassisSpeeds robotSpeeds = drive.getState().Speeds;
+
+        // Calculate tangential velocity of the offset (robot frame)
+        double vTanX = -robotSpeeds.omegaRadiansPerSecond * ShooterConstants.TurretConstants.OFFSET.getY();
+        double vTanY = robotSpeeds.omegaRadiansPerSecond * ShooterConstants.TurretConstants.OFFSET.getX();
+
+        double shooterVx = robotSpeeds.vxMetersPerSecond + vTanX;
+        double shooterVy = robotSpeeds.vyMetersPerSecond + vTanY;
+
+        // 3. Convert the total shooter velocity to the Field Frame
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+                new ChassisSpeeds(shooterVx, shooterVy, robotSpeeds.omegaRadiansPerSecond),
                 robotPose.getRotation());
+        
+        DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
@@ -168,16 +183,9 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        DogLog.log("Shooter/PredictedTargetTranslation3d",
-                new Translation3d[] { result.predictedTarget() });
-
-        DogLog.log("Shooter/Solver/TargetFieldTurretAngle_deg", result.turretAngle().getDegrees());
-        DogLog.log("Shooter/Solver/TargetHoodAngle_deg", result.hoodAngle().getDegrees());
-        DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", result.rpm());
-
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
-        DogLog.log("Shooter/Solver/TargetTurretAngle_deg", targetTurretAngleDeg);
+        targetTurretAngleDeg += frc.robot.subsystems.Superstructure.turretTrimDegrees;
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
@@ -193,7 +201,8 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            hood.setGoal(Degrees.of(result.hoodAngle().getDegrees()));
+            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + frc.robot.subsystems.Superstructure.hoodTrimDegrees;
+            hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
             } else {
@@ -267,17 +276,32 @@ public class Shooter extends SubsystemBase {
     }
 
     private void logValues() {
+        ntPublishCount++;
+        if (ntPublishCount >= NT_PUBLISH_LIMIT) {
+            ntPublishCount = 0;
+        } else {
+            return;
+        }
+        
+        DogLog.forceNt.log("Shooter/CurrentState", currentState.toString());
+
         DogLog.log("Shooter/HasTarget", targetPose != null);
         DogLog.log("Shooter/DistanceToTarget", distanceToTarget);
         DogLog.log("Shooter/RobotYaw_deg", drive.getState().Pose.getRotation().getDegrees());
         DogLog.log("Shooter/ActualHoodAngle_deg", hood.getAngle().in(Degrees));
-        DogLog.log("Shooter/TurretOnTarget", turret.atTarget());
-        DogLog.log("Shooter/HoodOnTarget", hood.atTarget());
-        DogLog.log("Shooter/FlywheelReady", flywheels.atVelocity());
-        DogLog.log("Shooter/ReadyToShoot", isReady());
+        DogLog.forceNt.log("Shooter/TurretOnTarget", turret.atTarget());
+        DogLog.forceNt.log("Shooter/HoodOnTarget", hood.atTarget());
+        DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
+        DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
+
+        DogLog.log("Shooter/PredictedTargetTranslation3d",
+                new Translation3d[] { lastSolverResult.predictedTarget() });
 
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());
+        DogLog.log("Shooter/Solver/TargetTurretAngle_deg", lastSolverResult.turretAngle().getDegrees());
+        DogLog.log("Shooter/Solver/TargetHoodAngle_deg", lastSolverResult.hoodAngle().getDegrees());
+        DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", lastSolverResult.rpm());
 
         // 3D visualization poses (field-absolute, with odom)
         Pose2d robotPose = drive.getState().Pose;

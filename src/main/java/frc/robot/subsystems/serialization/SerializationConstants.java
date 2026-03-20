@@ -6,6 +6,6 @@ public class SerializationConstants {
     public static final int CURRENT_LIMIT = 20;
 
     public static final int SPINDEXER_MOTOR_ID = 4;
-    public static final double SPINDEXER_MAX_VOLTS = -3;
+    public static final double SPINDEXER_MAX_VOLTS = -4;
     public static final double SPINDEXER_NORMAL_VOLTS = -0.3;
 }

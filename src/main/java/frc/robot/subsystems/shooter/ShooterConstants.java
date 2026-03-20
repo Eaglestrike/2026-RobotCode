@@ -14,12 +14,12 @@ public final class ShooterConstants {
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 60.0;
         /** In rotations per minute (for when ducking and moving toward neutral zone) */
-        public static final double DUCK_RPM = 2000.0;
+        public static final double DUCK_RPM = 1800.0;
 
         public static final double GEAR_RATIO = 10 / 9.0;
 
         /** In rotations per second */
-        public static final double VELOCITY_TOLERANCE = 2.0;
+        public static final double VELOCITY_TOLERANCE = 5.0;
 
         /** Current limit in Amps */
         public static final int CURRENT_LIMIT = 40;
@@ -55,20 +55,20 @@ public final class ShooterConstants {
 
         public static final double GEAR_RATIO = 9.2;
 
-        public static final double MAX_VOLTS = 2;
+        public static final double MAX_VOLTS = 1.5;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
-//        public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
+        // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
 
-        public static final double kP = 60.0;
-        public static final double kI = 15.0;
+        public static final double kP = 100;
+        public static final double kI = 0;
         public static final double kD = 3.0;
         public static final double kS = 0.15;
-        public static final double kV = 0.0;
+        public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Degree.of(130.0);
-        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0);
+        public static final Angle FORWARD_LIMIT = Degree.of(130.0); // Rotations.of(0.6)
+        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0); // Rotations.of(-0.85) - with new tensioner. Without new tensioner is -0.75
     }
 
     public final class HoodConstants {

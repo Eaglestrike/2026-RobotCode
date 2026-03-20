@@ -25,13 +25,13 @@
         {
           "type": "named",
           "data": {
-            "name": "Intake"
+            "name": "StartShooting"
           }
         },
         {
-          "type": "wait",
+          "type": "named",
           "data": {
-            "waitTime": 0.25
+            "name": "Intake"
           }
         },
         {
@@ -49,32 +49,13 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 1.0
+            "waitTime": 4.0
           }
         },
         {
-          "type": "parallel",
+          "type": "path",
           "data": {
-            "commands": [
-              {
-                "type": "path",
-                "data": {
-                  "pathName": "HPToClimb"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "StowIntake"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stow"
+            "pathName": "HPToClimb"
           }
         },
         {

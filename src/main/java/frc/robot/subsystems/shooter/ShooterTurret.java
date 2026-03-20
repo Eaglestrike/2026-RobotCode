@@ -40,7 +40,7 @@ public class ShooterTurret extends SubsystemBase {
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private StatusSignal<Angle> positionSignal;
 
-    private boolean zeroed = false;
+    public boolean zeroed = false;
     private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
@@ -81,7 +81,7 @@ public class ShooterTurret extends SubsystemBase {
         if (RobotBase.isSimulation()) {
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+            DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         }
     }
 
@@ -140,7 +140,7 @@ public class ShooterTurret extends SubsystemBase {
         }
         double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
         // double omega = 0;
-        this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
+        this.motor.setControl(this.position.withPosition(safePos).withVelocity(omega));
     }
 
     public Command stop() {
@@ -169,7 +169,7 @@ public class ShooterTurret extends SubsystemBase {
         return runOnce(() -> {
             motor.setPosition(TurretConstants.ENCODER_OFFSET);
             zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
+            DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", zeroed);
         });
     }
 

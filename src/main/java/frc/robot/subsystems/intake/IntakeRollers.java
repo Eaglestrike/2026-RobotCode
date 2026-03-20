@@ -1,5 +1,6 @@
 package frc.robot.subsystems.intake;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -14,6 +15,11 @@ public class IntakeRollers extends SubsystemBase {
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        var cfg = motor.getConfigurator();
+        var currentCfg = new CurrentLimitsConfigs();
+        currentCfg.SupplyCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
+        currentCfg.SupplyCurrentLimitEnable = true;
+        cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
     }
 
@@ -25,7 +31,7 @@ public class IntakeRollers extends SubsystemBase {
 
     public Command eject() {
         return runOnce(() -> {
-            motor.setControl(voltageRequest.withOutput(-IntakeConstants.Rollers.EJECT_VOLTS));
+            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.EJECT_VOLTS));
         });
     }
 

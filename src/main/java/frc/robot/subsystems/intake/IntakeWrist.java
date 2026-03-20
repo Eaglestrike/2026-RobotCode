@@ -44,7 +44,7 @@ public class IntakeWrist extends SubsystemBase {
         motor.getConfigurator().apply(cfg);
         motor.setControl(voltReq);
 
-        DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+        DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
     }
 
     public Command requestPosition(Angle position) {
@@ -77,7 +77,7 @@ public class IntakeWrist extends SubsystemBase {
             state = State.IDLE;
             zeroed = true;
 
-            DogLog.log("IntakeWrist/IntakeWristZeroed", zeroed);
+            DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
         });
     }
 
@@ -114,10 +114,14 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if(state == State.JIGGLING) {
+            return;
+        }
+        
         if (state == State.JIGGLING && zeroed) {
             double phase = Timer.getFPGATimestamp() % IntakeConstants.Wrist.JIGGLE_FREQ_SEC;
             boolean up = phase < (IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2.0);
-            double volts = up ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
+            double volts = up ? IntakeConstants.Wrist.JIGGLE_UP_VOLTS : IntakeConstants.Wrist.JIGGLE_DOWN_VOLTS;
             motor.setControl(voltReq.withOutput(volts));
         } else if(state == State.IDLE) {
             motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
