@@ -22,11 +22,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
+import frc.robot.subsystems.shooter.solver.LUTSolver.ManualPosition;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 public class Shooter extends SubsystemBase {
@@ -36,7 +38,8 @@ public class Shooter extends SubsystemBase {
         IDLE,
         AIMING,
         SHOOTING,
-        DUCKING
+        DUCKING,
+        MANUAL,
     }
 
     private final ShooterTurret turret;
@@ -50,6 +53,8 @@ public class Shooter extends SubsystemBase {
 
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
+
+    private ManualPosition manualPosition = null;
 
     private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
@@ -185,11 +190,20 @@ public class Shooter extends SubsystemBase {
 
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
-        targetTurretAngleDeg += frc.robot.subsystems.Superstructure.turretTrimDegrees;
+        targetTurretAngleDeg += Superstructure.turretTrimDegrees;
+        DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
             turret.setAngle(Degrees.of(targetTurretAngleDeg));
+        }
+
+        if (currentState == ShooterState.MANUAL) {
+            if (manualPosition != null) {
+                double manualTurretAngleDeg = targetTurretAngleDeg; // keep aiming at target
+                double manualHoodAngleDeg = result.hoodAngle().getDegrees() + frc.robot.subsystems.Superstructure.hoodTrimDegrees;
+            }
+            return;
         }
 
         // If we're ducking, don't move the hood but spin flywheels at DUCK_RPM

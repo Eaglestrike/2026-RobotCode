@@ -2,6 +2,9 @@ package frc.robot.subsystems.shooter.solver;
 
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -87,12 +90,36 @@ public class LUTSolver implements ShooterSolver {
         HOOD_MAP.put(4.99, Rotation2d.fromDegrees(55));
         TOF_MAP.put(4.99, 1.24);
 
-        RPM_MAP.put(5.15,2200.0);
+        RPM_MAP.put(5.15, 2200.0);
         HOOD_MAP.put(5.15, Rotation2d.fromDegrees(52));
         TOF_MAP.put(5.15, 1.27);
 
         RPM_MAP.put(7.07, 2900.0);
         HOOD_MAP.put(7.07, Rotation2d.fromDegrees(50));
         TOF_MAP.put(7.07, 1.37);
+    }
+
+    public enum ManualPosition {
+        Position1, // in front of hub
+        Position2, // any trench (tuned with left)
+        Position3, // any corner (tuned with right)
+        Position4, // IFO tower
+    }
+
+    public static final Map<ManualPosition, Double> MANUAL_RPM_MAP = new HashMap<>();
+    public static final Map<ManualPosition, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
+
+    static {
+        MANUAL_RPM_MAP.put(ManualPosition.Position1, 0.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position1, Rotation2d.fromDegrees(0));
+
+        MANUAL_RPM_MAP.put(ManualPosition.Position2, 0.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position2, Rotation2d.fromDegrees(0));
+
+        MANUAL_RPM_MAP.put(ManualPosition.Position3, 0.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position3, Rotation2d.fromDegrees(0));
+
+        MANUAL_RPM_MAP.put(ManualPosition.Position4, 0.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position4, Rotation2d.fromDegrees(0));
     }
 }
