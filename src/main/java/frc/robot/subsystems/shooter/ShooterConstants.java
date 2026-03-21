@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degree;
+import static edu.wpi.first.units.Units.Rotations;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.Angle;
@@ -40,7 +41,7 @@ public final class ShooterConstants {
 
     public final class TurretConstants {
         public static final int MOTOR_ID = 19;
-        public static final int CANCODER_ID = -1; // TODO: assign cancoder ID
+        public static final int CANCODER_ID = 18;
 
         /**
          * Offset of the turret center, relative to the robot's center point (meters)
@@ -48,18 +49,20 @@ public final class ShooterConstants {
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
         public static final double OFFSET_HEIGHT = 0.59673; // meters
 
-        /** In rotations of the turret — zero sensor is at back, so offset by -180° */
-        public static final double ENCODER_OFFSET = -0.5;
-        public static final double CANCODER_OFFSET = 0; // TODO: read the value of the cancoder when the turret is in 0 position
+        public static final double MAGNET_OFFSET = -0.257568;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
-        public static final double GEAR_RATIO = 9.2;
-        public static final double ROTOR_TO_SENSOR = 46/3.0; 
+        // distance from turret actual zero to turret when at expected pos -0.5
+        public static final Angle ENCODER_OFFSET = Rotations.of(0.334229 + 0.5);
+        // if we request zero: turret should go to 0 + 0.334229 + 0.5 (or 0 + ENCODER_OFFSET)
+        // if we request -0.5: turret should go to -0.5 + 0.334229 + 0.5 (or -0.5 + ENCODER_OFFSET)
+        public static final double ROTOR_TO_SENSOR = 15.333333333333333333333333;
         public static final double SENSOR_TO_MECHANISM = 0.6;
+        public static final double GEAR_RATIO = ROTOR_TO_SENSOR * SENSOR_TO_MECHANISM;
 
-        public static final double MAX_VOLTS = 1.5;
+        public static final double MAX_VOLTS = 3;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
         // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
@@ -71,9 +74,8 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        // MAYBE: change for cancoder
-        public static final Angle FORWARD_LIMIT = Degree.of(130.0); // Rotations.of(0.6)
-        public static final Angle BACKWARD_LIMIT = Degree.of(-230.0); // Rotations.of(-0.85) - with new tensioner. Without new tensioner is -0.75
+        public static final Angle FORWARD_LIMIT = Rotations.of(1+0.334229);
+        public static final Angle BACKWARD_LIMIT = Rotations.of(0);
     }
 
     public final class HoodConstants {

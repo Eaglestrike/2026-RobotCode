@@ -248,18 +248,12 @@ public class RobotContainer {
         operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
                 .onTrue(shooter.getHood().zero().ignoringDisable(true));
 
-        operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
-                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
-
         // -------- FOR TESTING ONLY --------
         operatorController.button(7).and(operatorController.x())
                 .onTrue(intakeWrist.zero().ignoringDisable(true));
 
         operatorController.button(7).and(operatorController.a())
                 .onTrue(shooter.getHood().zero().ignoringDisable(true));
-
-        operatorController.button(7).and(operatorController.b())
-                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
 
         operatorController.leftTrigger()
                 .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
@@ -279,12 +273,6 @@ public class RobotContainer {
         leftJoystick.button(2).onTrue(superstructure.stow());
         // jiggle intake
         rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
-
-        rightJoystick.button(4)
-                .onTrue(Commands.runOnce(() -> {
-                    turret.zeroed = !turret.zeroed;
-                    DogLog.forceNt.log("ShooterTurret/ShooterTurretZeroed", turret.zeroed);
-                }));
 
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 
