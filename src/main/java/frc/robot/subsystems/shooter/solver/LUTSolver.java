@@ -29,7 +29,7 @@ public class LUTSolver implements ShooterSolver {
     }
 
     @Override
-    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget) {
+    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget, boolean isFerrying) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
         double tof = TOF_MAP.get(distance);
@@ -44,12 +44,28 @@ public class LUTSolver implements ShooterSolver {
                 .minus(launcherPose.getTranslation().toTranslation2d())
                 .getAngle().minus(launcherPose.getRotation().toRotation2d());
 
+        if(isFerrying) {
+            return new ShotData(
+                FERRY_HOOD_MAP.get(distance), 
+                turretAngle, 
+                FERRY_RPM_MAP.get(distance), 
+                predictedTarget,
+                true);
+        }
         return new ShotData(
-                HOOD_MAP.get(distance),
+                // HOOD_MAP.get(distance),
+                getHoodAngle(distance),
                 turretAngle,
                 RPM_MAP.get(distance),
                 predictedTarget,
                 true);
+    }
+
+    private Rotation2d getHoodAngle(double distance) {
+        final double A = -0.553677;
+        final double B = -1.46417;
+        final double C = 79.62148;
+        return Rotation2d.fromDegrees(A * distance * distance + B * distance + C);
     }
 
     /**
@@ -58,10 +74,14 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingTreeMap<Double, Rotation2d> HOOD_MAP = new InterpolatingTreeMap<>(
             InverseInterpolator.forDouble(), Rotation2d::interpolate);
 
+    public static final InterpolatingTreeMap<Double, Rotation2d> FERRY_HOOD_MAP = new InterpolatingTreeMap<>(
+            InverseInterpolator.forDouble(), Rotation2d::interpolate);
+
     /**
      * Map from shooting distance to flywheel RPM
      */
     public static final InterpolatingDoubleTreeMap RPM_MAP = new InterpolatingDoubleTreeMap();
+    public static final InterpolatingDoubleTreeMap FERRY_RPM_MAP = new InterpolatingDoubleTreeMap();
 
     /**
      * Map from shooting distance to time of flight (seconds); used
@@ -70,33 +90,52 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
 
     static {
-        // max: please recalibrate TOF usings lomo camera
-        // 1.937, 1s, 74º, 1500rpm
-        // 3.05, 1.2s, 73º, 1800rpm
-        // 5.51, 1.22s, 58º, 2050rpm
-        RPM_MAP.put(1.877, 1600.0);
-        HOOD_MAP.put(1.877, Rotation2d.fromDegrees(75));
-        TOF_MAP.put(1.877, 0.95);
+        RPM_MAP.clear();
+        HOOD_MAP.clear();
+        TOF_MAP.clear();
+        FERRY_RPM_MAP.clear();
+        FERRY_HOOD_MAP.clear();
 
-        RPM_MAP.put(2.766, 1700.0);
-        HOOD_MAP.put(2.766, Rotation2d.fromDegrees(70));
-        TOF_MAP.put(2.766, 1.02);
+        // ----- SHOOT MAP -----
+        RPM_MAP.put(1.75, 1400.0);
+        HOOD_MAP.put(1.75, Rotation2d.fromDegrees(75));
+        TOF_MAP.put(1.75, 4.2);
 
-        RPM_MAP.put(4.36, 2000.0);
-        HOOD_MAP.put(4.36, Rotation2d.fromDegrees(60));
-        TOF_MAP.put(4.36, 1.12);
+        RPM_MAP.put(2.37, 1500.0);
+        HOOD_MAP.put(2.37, Rotation2d.fromDegrees(74));
+        TOF_MAP.put(2.37, 3.9);
 
-        RPM_MAP.put(4.99, 2100.0);
-        HOOD_MAP.put(4.99, Rotation2d.fromDegrees(55));
-        TOF_MAP.put(4.99, 1.24);
+        RPM_MAP.put(2.97, 1596.0);
+        HOOD_MAP.put(2.97, Rotation2d.fromDegrees(69));
+        TOF_MAP.put(2.97, 4.53);
 
-        RPM_MAP.put(5.15, 2200.0);
-        HOOD_MAP.put(5.15, Rotation2d.fromDegrees(52));
-        TOF_MAP.put(5.15, 1.27);
+        RPM_MAP.put(3.31, 1650.0);
+        HOOD_MAP.put(3.31, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(3.31, 5.0);
 
-        RPM_MAP.put(7.07, 2900.0);
-        HOOD_MAP.put(7.07, Rotation2d.fromDegrees(50));
-        TOF_MAP.put(7.07, 1.37);
+        RPM_MAP.put(3.88, 1741.0);
+        HOOD_MAP.put(3.88, Rotation2d.fromDegrees(65));
+        TOF_MAP.put(3.88, 5.0);
+
+        RPM_MAP.put(4.29, 1806.0);
+        HOOD_MAP.put(4.29, Rotation2d.fromDegrees(63.15));
+        TOF_MAP.put(4.29, 5.16);
+
+        RPM_MAP.put(5.22, 1955.0);
+        HOOD_MAP.put(5.22, Rotation2d.fromDegrees(57));
+        TOF_MAP.put(5.22, 5.25);
+        // ----- END SHOOT MAP -----
+
+        // ----- FERRY MAP -----
+        FERRY_RPM_MAP.put(3.79, 1660.0);
+        FERRY_HOOD_MAP.put(3.79, Rotation2d.fromDegrees(70));
+
+        FERRY_RPM_MAP.put(6.6, 2100.0);
+        FERRY_HOOD_MAP.put(6.6, Rotation2d.fromDegrees(61));
+
+        FERRY_RPM_MAP.put(12.6, 4500.0);
+        FERRY_HOOD_MAP.put(12.6, Rotation2d.fromDegrees(38));
+        // ----- END FERRY MAP -----
     }
 
     public enum ManualPosition {
@@ -110,16 +149,16 @@ public class LUTSolver implements ShooterSolver {
     public static final Map<ManualPosition, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
 
     static {
-        MANUAL_RPM_MAP.put(ManualPosition.Position1, 0.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position1, Rotation2d.fromDegrees(0));
+        MANUAL_RPM_MAP.put(ManualPosition.Position1, 1400.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position1, Rotation2d.fromDegrees(75));
 
-        MANUAL_RPM_MAP.put(ManualPosition.Position2, 0.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position2, Rotation2d.fromDegrees(0));
+        MANUAL_RPM_MAP.put(ManualPosition.Position2, 1651.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position2, Rotation2d.fromDegrees(70));
 
-        MANUAL_RPM_MAP.put(ManualPosition.Position3, 0.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position3, Rotation2d.fromDegrees(0));
+        MANUAL_RPM_MAP.put(ManualPosition.Position3, 1955.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position3, Rotation2d.fromDegrees(57));
 
-        MANUAL_RPM_MAP.put(ManualPosition.Position4, 0.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position4, Rotation2d.fromDegrees(0));
+        MANUAL_RPM_MAP.put(ManualPosition.Position4, 1596.0);
+        MANUAL_HOOD_MAP.put(ManualPosition.Position4, Rotation2d.fromDegrees(69));
     }
 }

@@ -190,8 +190,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Computes the Pose3d target for ferry mode (look at the README for sketchy
-     * explanation of the logic).
+     * Computes the Pose3d target for ferry mode in front of the alliance wall
      */
     private Pose3d computeFerryTarget() {
         DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
@@ -225,17 +224,20 @@ public class Superstructure extends SubsystemBase {
     public void fastPeriodic() {
         if (currentMode == ShootMode.FERRY) {
             Pose3d ferryTarget = computeFerryTarget();
-            shooter.setFacing(ferryTarget);
+            shooter.setFacing(ferryTarget, true);
             targetPose = ferryTarget;
+            if(tuning) {
+                shooter.shootManual();
+            }
         } else {
             targetPose = FieldConstants.getAllianceHubPosition();
-            shooter.setFacing(targetPose);
+            shooter.setFacing(targetPose, false);
             if (tuning) {
                 shooter.shootManual();
             }
         }
 
-        if (!edu.wpi.first.wpilibj.DriverStation.isEnabled()) {
+        if (!DriverStation.isEnabled()) {
             isShooting = false;
             kicker.stopMotor();
             spindexer.stopMotor();
@@ -246,11 +248,9 @@ public class Superstructure extends SubsystemBase {
         if (isShooting && shooter.isReady() && !isKickerOverrided) { // for ferrying check if trajectory intersects hub
             kicker.startMotor();
             spindexer.startKicking();
-            // intakeWrist.setJiggle(true);
         } else {
             kicker.stopMotor();
             spindexer.startMotor(); // this starts at like 0.3 volts don't worry
-            // intakeWrist.setJiggle(false);
         }
     }
 

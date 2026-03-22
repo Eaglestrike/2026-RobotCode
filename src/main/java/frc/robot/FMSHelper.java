@@ -33,7 +33,7 @@ public class FMSHelper {
 
         double matchTime = DriverStation.getMatchTime();
         String gameData = DriverStation.getGameSpecificMessage();
-        if (gameData == null || gameData.isEmpty()) {
+        if (gameData == null || gameData.isEmpty() || matchTime < 0l) {
             return false;
         }
 

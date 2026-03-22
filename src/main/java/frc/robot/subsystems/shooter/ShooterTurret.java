@@ -61,6 +61,7 @@ public class ShooterTurret extends SubsystemBase {
         cfg.Feedback.FeedbackRemoteSensorID = TurretConstants.CANCODER_ID;
 
         encoderCfg.MagnetSensor.MagnetOffset = TurretConstants.MAGNET_OFFSET;
+        encoderCfg.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0; 
 
         cfg.Slot0.kP = TurretConstants.kP;
         cfg.Slot0.kI = TurretConstants.kI;

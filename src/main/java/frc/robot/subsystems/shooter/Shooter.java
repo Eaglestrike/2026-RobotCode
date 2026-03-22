@@ -139,7 +139,7 @@ public class Shooter extends SubsystemBase {
     }
 
     // called periodically by superstructure
-    public void setFacing(Pose3d targetPose) {
+    public void setFacing(Pose3d targetPose, boolean isFerrying) {
         this.targetPose = targetPose;
         if (targetPose == null) {
             flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
@@ -180,7 +180,7 @@ public class Shooter extends SubsystemBase {
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
         ShotData result = solver.calculateShot(shooterPose, fieldSpeeds,
-                targetPose.getTranslation());
+                targetPose.getTranslation(), isFerrying);
 
         lastSolverResult = result;
         if (!result.validShot()) {
