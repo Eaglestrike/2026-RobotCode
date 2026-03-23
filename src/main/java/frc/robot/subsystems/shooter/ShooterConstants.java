@@ -62,15 +62,15 @@ public final class ShooterConstants {
         public static final double SENSOR_TO_MECHANISM = 0.6;
         public static final double GEAR_RATIO = ROTOR_TO_SENSOR * SENSOR_TO_MECHANISM;
 
-        public static final double MAX_VOLTS = 3;
+        public static final double MAX_VOLTS = 6;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
         // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
 
-        public static final double kP = 100;
+        public static final double kP = 110;
         public static final double kI = 0;
-        public static final double kD = 3.0;
-        public static final double kS = 0.15;
+        public static final double kD = 7.0;
+        public static final double kS = 0.2;
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
