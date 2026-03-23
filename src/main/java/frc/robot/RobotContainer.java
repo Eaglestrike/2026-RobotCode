@@ -368,7 +368,8 @@ public class RobotContainer {
                     superstructure.setKickerOverride(false);
                 }));
         Trigger inTrenchZoneTrigger = RebuiltZones.TRENCH_ZONES
-                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
+                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5))
+                .or(RebuiltZones.TRENCH_ZONES.contains(() -> drivetrain.getState().Pose));
         inTrenchZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.sequence(
                         Commands.runOnce(() -> {
