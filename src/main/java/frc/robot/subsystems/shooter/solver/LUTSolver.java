@@ -99,31 +99,31 @@ public class LUTSolver implements ShooterSolver {
         // ----- SHOOT MAP -----
         RPM_MAP.put(1.75, 1400.0);
         HOOD_MAP.put(1.75, Rotation2d.fromDegrees(75));
-        TOF_MAP.put(1.75, 4.2);
+        TOF_MAP.put(1.75, 4.2 * 0.125);
 
         RPM_MAP.put(2.37, 1500.0);
         HOOD_MAP.put(2.37, Rotation2d.fromDegrees(74));
-        TOF_MAP.put(2.37, 3.9);
+        TOF_MAP.put(2.37, 3.9 * 0.125);
 
         RPM_MAP.put(2.97, 1596.0);
         HOOD_MAP.put(2.97, Rotation2d.fromDegrees(69));
-        TOF_MAP.put(2.97, 4.53);
+        TOF_MAP.put(2.97, 4.53 * 0.125);
 
         RPM_MAP.put(3.31, 1650.0);
         HOOD_MAP.put(3.31, Rotation2d.fromDegrees(70));
-        TOF_MAP.put(3.31, 5.0);
+        TOF_MAP.put(3.31, 5.0 * 0.125);
 
         RPM_MAP.put(3.88, 1741.0);
         HOOD_MAP.put(3.88, Rotation2d.fromDegrees(65));
-        TOF_MAP.put(3.88, 5.0);
+        TOF_MAP.put(3.88, 5.0 * 0.125);
 
         RPM_MAP.put(4.29, 1806.0);
         HOOD_MAP.put(4.29, Rotation2d.fromDegrees(63.15));
-        TOF_MAP.put(4.29, 5.16);
+        TOF_MAP.put(4.29, 5.16 * 0.125);
 
         RPM_MAP.put(5.22, 1955.0);
         HOOD_MAP.put(5.22, Rotation2d.fromDegrees(57));
-        TOF_MAP.put(5.22, 5.25);
+        TOF_MAP.put(5.22, 5.25 * 0.125);
         // ----- END SHOOT MAP -----
 
         // ----- FERRY MAP -----
