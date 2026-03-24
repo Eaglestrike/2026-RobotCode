@@ -49,20 +49,20 @@ public final class ShooterConstants {
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
         public static final double OFFSET_HEIGHT = 0.59673; // meters
 
-        public static final double MAGNET_OFFSET = -0.2949;
+        public static final double MAGNET_OFFSET = -0.3972;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
         // distance from turret actual zero to turret when at expected pos -0.5
-        public static final Angle ENCODER_OFFSET = Rotations.of(0.3671 + 0.5);
+        public static final Angle ENCODER_OFFSET = Rotations.of(0.3655 + 0.5);
         // if we request zero: turret should go to 0 + 0.3281 + 0.5 (or 0 + ENCODER_OFFSET)
         // if we request -0.5: turret should go to -0.5 + 0.3281 + 0.5 (or -0.5 + ENCODER_OFFSET)
         public static final double ROTOR_TO_SENSOR = 15.333333333333333333333333;
         public static final double SENSOR_TO_MECHANISM = 0.6;
         public static final double GEAR_RATIO = ROTOR_TO_SENSOR * SENSOR_TO_MECHANISM;
 
-        public static final double MAX_VOLTS = 6;
+        public static final double MAX_VOLTS = 2;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
         // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
@@ -74,7 +74,7 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Rotations.of(1+0.3671);
+        public static final Angle FORWARD_LIMIT = Rotations.of(1+ 0.3655);
         public static final Angle BACKWARD_LIMIT = Rotations.of(0);
     }
 
