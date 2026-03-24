@@ -53,20 +53,20 @@ public class LUTSolver implements ShooterSolver {
                 true);
         }
         return new ShotData(
-                // HOOD_MAP.get(distance),
-                getHoodAngle(distance),
+                 HOOD_MAP.get(distance),
+//                getHoodAngle(distance),
                 turretAngle,
                 RPM_MAP.get(distance),
                 predictedTarget,
                 true);
     }
 
-    private Rotation2d getHoodAngle(double distance) {
-        final double A = -0.553677;
-        final double B = -1.46417;
-        final double C = 79.62148;
-        return Rotation2d.fromDegrees(A * distance * distance + B * distance + C);
-    }
+//    private Rotation2d getHoodAngle(double distance) {
+//        final double A = -0.553677;
+//        final double B = -1.46417;
+//        final double C = 79.62148;
+//        return Rotation2d.fromDegrees(A * distance * distance + B * distance + C);
+//    }
 
     /**
      * Map from shooting distance to hood angle
@@ -110,20 +110,20 @@ public class LUTSolver implements ShooterSolver {
         TOF_MAP.put(2.97, 4.53 * 0.125);
 
         RPM_MAP.put(3.31, 1650.0);
-        HOOD_MAP.put(3.31, Rotation2d.fromDegrees(70));
+        HOOD_MAP.put(3.31, Rotation2d.fromDegrees(67));
         TOF_MAP.put(3.31, 5.0 * 0.125);
 
         RPM_MAP.put(3.88, 1741.0);
-        HOOD_MAP.put(3.88, Rotation2d.fromDegrees(65));
+        HOOD_MAP.put(3.88, Rotation2d.fromDegrees(63));
         TOF_MAP.put(3.88, 5.0 * 0.125);
 
         RPM_MAP.put(4.29, 1806.0);
-        HOOD_MAP.put(4.29, Rotation2d.fromDegrees(63.15));
+        HOOD_MAP.put(4.29, Rotation2d.fromDegrees(61));
         TOF_MAP.put(4.29, 5.16 * 0.125);
 
-        RPM_MAP.put(5.22, 1955.0);
-        HOOD_MAP.put(5.22, Rotation2d.fromDegrees(57));
-        TOF_MAP.put(5.22, 5.25 * 0.125);
+        RPM_MAP.put(5.214, 2000.0);
+        HOOD_MAP.put(5.214, Rotation2d.fromDegrees(53));
+        TOF_MAP.put(5.214, 5.25 * 0.125);
         // ----- END SHOOT MAP -----
 
         // ----- FERRY MAP -----
