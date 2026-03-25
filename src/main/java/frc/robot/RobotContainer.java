@@ -374,15 +374,12 @@ public class RobotContainer {
                 .onTrue(Commands.sequence(
                         Commands.runOnce(() -> {
                             DogLog.log("Zones/InTrenchZone", true);
-                            // driveMode = DriveMode.TRENCH_LOCK;
                         }),
                         superstructure.duck()))
                 .onFalse(Commands.sequence(
                         Commands.runOnce(() -> {
                             DogLog.log("Zones/InTrenchZone", false);
-                            driveMode = DriveMode.NORMAL;
-                        }),
-                        superstructure.unDuck()));
+                        })));
 
         Trigger inCenterZoneTrigger = RebuiltZones.CENTER_ZONE
                 .contains(() -> drivetrain.getState().Pose)
