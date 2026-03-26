@@ -52,7 +52,7 @@ public class ShooterHood extends SubsystemBase {
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = HoodConstants.MAX_ANGLE / 360.0;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.MIN_ANGLE / 360.0;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = HoodConstants.MIN_ROT;
 
         this.motor.getConfigurator().apply(cfg);
         motor.getPosition().setUpdateFrequency(50);
