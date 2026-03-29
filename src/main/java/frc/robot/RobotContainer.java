@@ -401,10 +401,9 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InRedZone", true);
                     superstructure.setMode(
-                    DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) ==
-                    DriverStation.Alliance.Red
-                    ? ShootMode.SHOOT
-                    : ShootMode.FERRY);
+                            DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red
+                                    ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
                 }));
 
         Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
@@ -414,9 +413,8 @@ public class RobotContainer {
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InBlueZone", true);
                     superstructure.setMode(DriverStation.getAlliance()
-                    .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ?
-                    ShootMode.SHOOT
-                    : ShootMode.FERRY);
+                            .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
                 }));
 
         Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
@@ -434,21 +432,21 @@ public class RobotContainer {
                         return;
                     driveMode = DriveMode.NORMAL;
                 }));
-        
-        Trigger hubActiveTrigger = FMSHelper.activeHub();
-        hubActiveTrigger.and(() -> !overrideTriggers)
-                .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
-                    DogLog.forceNt.log("FMS/HubActive", true);
-                    if (superstructure.getMode() == ShootMode.SHOOT) {
-                        superstructure.setShooting(true);
-                    }
-                }), java.util.Set.of()))
-                .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
-                    DogLog.forceNt.log("FMS/HubActive", false);
-                    if (superstructure.getMode() == ShootMode.SHOOT) {
-                        superstructure.setShooting(false);
-                    }
-                }), java.util.Set.of()));
+
+        // Trigger hubActiveTrigger = FMSHelper.activeHub();
+        // hubActiveTrigger.and(() -> !overrideTriggers)
+        // .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
+        // DogLog.forceNt.log("FMS/HubActive", true);
+        // if (superstructure.getMode() == ShootMode.SHOOT) {
+        // superstructure.setShooting(true);
+        // }
+        // }), java.util.Set.of()))
+        // .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
+        // DogLog.forceNt.log("FMS/HubActive", false);
+        // if (superstructure.getMode() == ShootMode.SHOOT) {
+        // superstructure.setShooting(false);
+        // }
+        // }), java.util.Set.of()));
     }
 
     private String previousAutoName = "";
@@ -463,7 +461,8 @@ public class RobotContainer {
 
         String selectedAutoName = SmartDashboard.getString("Auto Chooser/active", "");
         boolean isMirrored = autoMirrorChooser.getSelected();
-        if (!selectedAutoName.isEmpty() && (!selectedAutoName.equals(previousAutoName) || (isMirrored != prevMirrored))) {
+        if (!selectedAutoName.isEmpty()
+                && (!selectedAutoName.equals(previousAutoName) || (isMirrored != prevMirrored))) {
             previousAutoName = selectedAutoName;
             prevMirrored = isMirrored;
             try {
@@ -480,7 +479,8 @@ public class RobotContainer {
 
                 cachedAutoCommand = new PathPlannerAuto(selectedAutoName, isMirrored);
             } catch (Exception e) {
-                System.out.println("Failed to load path/auto for visualization or command construction: " + selectedAutoName);
+                System.out.println(
+                        "Failed to load path/auto for visualization or command construction: " + selectedAutoName);
                 cachedAutoCommand = null;
             }
         }
@@ -534,9 +534,8 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         if (cachedAutoCommand != null) {
             return Commands.parallel(
-                superstructure.initialize(),
-                cachedAutoCommand.asProxy()
-            );
+                    superstructure.initialize(),
+                    cachedAutoCommand.asProxy());
         }
         return new PrintCommand("Failed to load autonomous command");
     }

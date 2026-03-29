@@ -3,6 +3,8 @@ package frc.robot.subsystems.intake;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
+
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
@@ -12,6 +14,7 @@ import java.util.function.DoubleSupplier;
 public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
+    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(6.0);
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -24,9 +27,10 @@ public class IntakeRollers extends SubsystemBase {
     }
 
     public Command start() {
-        return runOnce(() -> {
-            motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.VOLTS));
-        });
+        return run(() -> {
+            double limitedVoltage = slewRateLimiter.calculate(IntakeConstants.Rollers.VOLTS);
+            motor.setControl(voltageRequest.withOutput(limitedVoltage));
+        }).until(() -> slewRateLimiter.lastValue() == IntakeConstants.Rollers.VOLTS).beforeStarting(() -> slewRateLimiter.reset(0));
     }
 
     public Command eject() {
