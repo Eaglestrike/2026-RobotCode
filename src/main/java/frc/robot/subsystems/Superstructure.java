@@ -79,7 +79,8 @@ public class Superstructure extends SubsystemBase {
 
     public Command initialize() {
         return Commands.sequence(
-                led.setColor(Color.kGreen)
+                led.setColor(Color.kGreen),
+                duck()
         /* climb.moveToStow() */);
     }
 
