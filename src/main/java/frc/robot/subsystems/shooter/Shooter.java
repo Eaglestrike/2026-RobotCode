@@ -191,7 +191,7 @@ public class Shooter extends SubsystemBase {
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
-        double autoTrim = LUTSolver.ANGLE_OFFSET_MAP.get(targetTurretAngleDeg);
+        double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
         targetTurretAngleDeg += autoTrim;
         DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);

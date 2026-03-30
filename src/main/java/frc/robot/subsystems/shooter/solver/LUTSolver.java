@@ -69,6 +69,15 @@ public class LUTSolver implements ShooterSolver {
         return Rotation2d.fromDegrees(A * distance * distance + B * distance + C);
     }
 
+    public static double getAngleOffset(double angle) {
+        final double A = 8.349118;
+        final double k = 0.017453293;
+        final double phi = -2.252373606;
+        final double C = 0.356479;
+        return A * Math.cos(k * angle + phi) + C;
+        // Fit was (8.349118) * Math.cos(0.017453293 * x + -2.252373606) + (0.356479)
+    }
+    
     /**
      * Map from shooting distance to hood angle
      */
