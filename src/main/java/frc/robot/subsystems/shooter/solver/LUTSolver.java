@@ -29,7 +29,8 @@ public class LUTSolver implements ShooterSolver {
     }
 
     @Override
-    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget, boolean isFerrying) {
+    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget,
+            boolean isFerrying) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
         double tof = TOF_MAP.get(distance);
@@ -83,6 +84,8 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingDoubleTreeMap RPM_MAP = new InterpolatingDoubleTreeMap();
     public static final InterpolatingDoubleTreeMap FERRY_RPM_MAP = new InterpolatingDoubleTreeMap();
 
+    public static final InterpolatingDoubleTreeMap ANGLE_OFFSET_MAP = new InterpolatingDoubleTreeMap();
+
     /**
      * Map from shooting distance to time of flight (seconds); used
      * to account for the velocity imparted by shooting on the move
@@ -90,6 +93,15 @@ public class LUTSolver implements ShooterSolver {
     public static final InterpolatingDoubleTreeMap TOF_MAP = new InterpolatingDoubleTreeMap();
 
     static {
+        ANGLE_OFFSET_MAP.put(-200.0, 7.0);
+        ANGLE_OFFSET_MAP.put(-180.0, 5.0);
+        ANGLE_OFFSET_MAP.put(-90.0, -5.0);
+        ANGLE_OFFSET_MAP.put(0.0, -7.5);
+        ANGLE_OFFSET_MAP.put(89.0, 10.0);
+        ANGLE_OFFSET_MAP.put(135.0, 7.5);
+        ANGLE_OFFSET_MAP.put(180.0, 5.0);
+        ANGLE_OFFSET_MAP.put(270.0, -5.0);
+
         RPM_MAP.clear();
         HOOD_MAP.clear();
         TOF_MAP.clear();

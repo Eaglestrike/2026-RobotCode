@@ -23,21 +23,17 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.path.PathPoint;
-import com.pathplanner.lib.util.FileVersionException;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.NTSendableBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -102,8 +98,12 @@ public class RobotContainer {
 
     private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
     private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
 
     private DriveMode driveMode = DriveMode.NORMAL;
+    private SlewRateLimiter xLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
+    private SlewRateLimiter yLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
+    private SlewRateLimiter rotRateLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ROT_ACC);
 
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
@@ -193,27 +193,39 @@ public class RobotContainer {
     private void configureBindings() {
         drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() -> {
-                    if (driveMode == DriveMode.SLOW || driveMode == DriveMode.TRENCH_SLOW
-                            || driveMode == DriveMode.NORMAL) {
+                    if (driveMode != DriveMode.TRENCH_LOCK) {
                         var driveMult = 1.0;
                         if (driveMode == DriveMode.SLOW) {
                             driveMult = DriveConstants.SLOW_MODE_MULT;
-                        }
-                        if (driveMode == DriveMode.TRENCH_SLOW) {
+                        } else if (driveMode == DriveMode.TRENCH_SLOW) {
                             driveMult = DriveConstants.TRENCH_SLOW_MODE_MULT;
                         }
+
+                        double xSpeed = -leftJoystick.getY() * MaxSpeed * driveMult;
+                        double ySpeed = -leftJoystick.getX() * MaxSpeed * driveMult;
+                        double rotSpeed = -rightJoystick.getX() * MaxAngularRate * driveMult;
+
+                        // if (superstructure.isShooting) {
+                        //     xSpeed = xLimiter.calculate(xSpeed);
+                        //     ySpeed = yLimiter.calculate(ySpeed);
+                        //     rotSpeed = rotRateLimiter.calculate(rotSpeed);
+                        // } else {
+                        //     xLimiter.reset(xSpeed);
+                        //     yLimiter.reset(ySpeed);
+                        //     rotRateLimiter.reset(rotSpeed);
+                        // }
+
                         return drive
                                 .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
                                         * driveMult)
                                 .withRotationalDeadband(MaxAngularRate
                                         * DriveConstants.DRIVE_DEADBAND_MULT
                                         * driveMult)
-                                .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                                .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                                .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
-                                        * driveMult);
+                                .withVelocityX(xSpeed)
+                                .withVelocityY(ySpeed)
+                                .withRotationalRate(rotSpeed);
                     }
-                    if (driveMode == DriveMode.TRENCH_LOCK) {
+                    else {
                         Pose2d pose = drivetrain.getState().Pose;
                         double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
                         return trenchDrive
@@ -221,10 +233,6 @@ public class RobotContainer {
                                 .withVelocityY(veloY)
                                 .withTargetDirection(drivetrain.getTrenchLockAngle());
                     }
-                    return drive
-                            .withVelocityX(-leftJoystick.getY() * MaxSpeed)
-                            .withVelocityY(-leftJoystick.getX() * MaxSpeed)
-                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate);
                 }));
 
         rightJoystick.button(2)
@@ -257,6 +265,8 @@ public class RobotContainer {
 
         operatorController.leftTrigger()
                 .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+        operatorController.rightTrigger()
+                .onTrue(superstructure.resetShootOffset());
 
         operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
@@ -272,7 +282,7 @@ public class RobotContainer {
         // stow all
         leftJoystick.button(2).onTrue(superstructure.stow());
         // jiggle intake
-        rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
+        rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
 
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 

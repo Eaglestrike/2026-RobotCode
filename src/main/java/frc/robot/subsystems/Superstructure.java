@@ -69,13 +69,10 @@ public class Superstructure extends SubsystemBase {
         this.spindexer = spindexer;
         this.led = led;
 
-        DogLog.tunable("Superstructure/TurretTrimDegrees", turretTrimDegrees,
-                value -> turretTrimDegrees = value);
-        DogLog.tunable("Superstructure/HoodTrimDegrees", hoodTrimDegrees,
-                value -> hoodTrimDegrees = value);
-
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
         DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
+        DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
+        DogLog.forceNt.log("Superstructure/HoodTrim", hoodTrimDegrees);
         this.drivetrain = drivetrain;
         DogLog.forceNt.log("Superstructure/Mode", currentMode.toString());
     }
@@ -118,7 +115,7 @@ public class Superstructure extends SubsystemBase {
         return Commands.parallel(
                 stowIntake(),
                 shooter.stowShooter(),
-                Commands.runOnce(() -> isShooting = false)
+                Commands.runOnce(() -> setShooting(false))
         /* climb.moveToStow() */);
     }
 
@@ -161,17 +158,25 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command changeHoodTrim(DoubleSupplier delta) {
-        return runOnce(() -> hoodTrimDegrees += delta.getAsDouble());
+        return runOnce(() -> {
+            hoodTrimDegrees += delta.getAsDouble();
+            DogLog.forceNt.log("Superstructure/HoodTrim", hoodTrimDegrees);
+        });
     }
 
     public Command changeTurretTrim(DoubleSupplier delta) {
-        return runOnce(() -> turretTrimDegrees += delta.getAsDouble());
+        return runOnce(() -> {
+            turretTrimDegrees += delta.getAsDouble();
+            DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
+        });
     }
 
     public Command resetShootOffset() {
         return runOnce(() -> {
             turretTrimDegrees = 0;
             hoodTrimDegrees = 0;
+            DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
+            DogLog.forceNt.log("Superstructure/HoodTrim", hoodTrimDegrees);
         });
     }
 
@@ -238,7 +243,7 @@ public class Superstructure extends SubsystemBase {
         }
 
         if (!DriverStation.isEnabled()) {
-            isShooting = false;
+            setShooting(false);
             kicker.stopMotor();
             spindexer.stopMotor();
             intakeWrist.setJiggle(false);
