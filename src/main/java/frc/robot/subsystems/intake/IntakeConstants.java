@@ -3,6 +3,7 @@ package frc.robot.subsystems.intake;
 public final class IntakeConstants {
     public static final class Rollers {
         public static final int MOTOR_ID = 34;
+        public static final int FOLLOWER_MOTOR_ID = null; //replace with actual ID when we have it
 
         public static final double VOLTS = 5.0;
         public static final double JIGGLE_VOLTS = 2.0;
