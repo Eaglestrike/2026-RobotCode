@@ -206,13 +206,13 @@ public class RobotContainer {
                         double rotSpeed = -rightJoystick.getX() * MaxAngularRate * driveMult;
 
                         // if (superstructure.isShooting) {
-                        //     xSpeed = xLimiter.calculate(xSpeed);
-                        //     ySpeed = yLimiter.calculate(ySpeed);
-                        //     rotSpeed = rotRateLimiter.calculate(rotSpeed);
+                        // xSpeed = xLimiter.calculate(xSpeed);
+                        // ySpeed = yLimiter.calculate(ySpeed);
+                        // rotSpeed = rotRateLimiter.calculate(rotSpeed);
                         // } else {
-                        //     xLimiter.reset(xSpeed);
-                        //     yLimiter.reset(ySpeed);
-                        //     rotRateLimiter.reset(rotSpeed);
+                        // xLimiter.reset(xSpeed);
+                        // yLimiter.reset(ySpeed);
+                        // rotRateLimiter.reset(rotSpeed);
                         // }
 
                         return drive
@@ -224,8 +224,7 @@ public class RobotContainer {
                                 .withVelocityX(xSpeed)
                                 .withVelocityY(ySpeed)
                                 .withRotationalRate(rotSpeed);
-                    }
-                    else {
+                    } else {
                         Pose2d pose = drivetrain.getState().Pose;
                         double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
                         return trenchDrive
@@ -443,20 +442,21 @@ public class RobotContainer {
                     driveMode = DriveMode.NORMAL;
                 }));
 
-        // Trigger hubActiveTrigger = FMSHelper.activeHub();
-        // hubActiveTrigger.and(() -> !overrideTriggers)
-        // .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
-        // DogLog.forceNt.log("FMS/HubActive", true);
-        // if (superstructure.getMode() == ShootMode.SHOOT) {
-        // superstructure.setShooting(true);
-        // }
-        // }), java.util.Set.of()))
-        // .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
-        // DogLog.forceNt.log("FMS/HubActive", false);
-        // if (superstructure.getMode() == ShootMode.SHOOT) {
-        // superstructure.setShooting(false);
-        // }
-        // }), java.util.Set.of()));
+        Trigger hubActiveTrigger = FMSHelper.activeHub();
+        hubActiveTrigger.and(() -> !overrideTriggers).and(inTrenchZoneTrigger.negate())
+                .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", true);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(true);
+                    }
+                }), java.util.Set.of()))
+
+                .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", false);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(false);
+                    }
+                }), java.util.Set.of()));
     }
 
     private String previousAutoName = "";
