@@ -10,7 +10,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 import java.util.function.DoubleSupplier;
 
-//TODO(by someone else): add comments to this file
 
 public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
@@ -27,42 +26,37 @@ public class IntakeRollers extends SubsystemBase {
         cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
         FollowerMotor.optimizeBusUtilization();
-        FollowerMotor.setControl(new Follower(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, MotorAlignmentValue.Aligned));
+        FollowerMotor.setControl(new Follower(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, MotorAlignmentValue.Opposed));
 
     }
 
     public Command start() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.VOLTS));
-            FollowerMotor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.VOLTS));
         });
     }
 
     public Command eject() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.EJECT_VOLTS));
-            FollowerMotor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.EJECT_VOLTS));
         });
     }
 
     public Command jiggle() {
         return run(() -> {
             motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
-            FollowerMotor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
         });
     }
 
     public Command stop() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(0));
-            FollowerMotor.setControl(voltageRequest.withOutput(0));
         });
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
-            FollowerMotor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
         });
     }
 }
