@@ -76,6 +76,9 @@ public class ShooterFlywheels extends SubsystemBase {
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.Feedback.SensorToMechanismRatio = FlywheelConstants.GEAR_RATIO;
 
+        config.CurrentLimits.StatorCurrentLimit = FlywheelConstants.CURRENT_LIMIT;
+        config.CurrentLimits.StatorCurrentLimitEnable = true;
+
         slot0Configs.kS = FlywheelConstants.kS;
         slot0Configs.kV = FlywheelConstants.kV;
         slot0Configs.kA = FlywheelConstants.kA;
