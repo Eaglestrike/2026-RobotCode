@@ -15,21 +15,21 @@ import java.util.function.DoubleSupplier;
 
 public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
-    private final TalonFX FollowerMotor;
+    private final TalonFX followerMotor;
     private final VoltageOut voltageRequest = new VoltageOut(0);
     private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(6.0);
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-        FollowerMotor = new TalonFX(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        followerMotor = new TalonFX(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = motor.getConfigurator();
         var currentCfg = new CurrentLimitsConfigs();
         currentCfg.StatorCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
         currentCfg.StatorCurrentLimitEnable = true;
         cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
-        FollowerMotor.optimizeBusUtilization();
-        FollowerMotor.setControl(new Follower(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, MotorAlignmentValue.Opposed));
+        followerMotor.optimizeBusUtilization();
+        followerMotor.setControl(new Follower(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, MotorAlignmentValue.Opposed));
 
     }
 
