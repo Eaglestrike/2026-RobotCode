@@ -2,6 +2,7 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
@@ -14,6 +15,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
@@ -93,8 +95,8 @@ public class ShooterHood extends SubsystemBase {
     public void setGoal(Angle shootingAngle) {
         if (!zeroed)
             return;
-        targetAngle = shootingAngle;
-        motor.setControl(request.withPosition(shootingAngle));
+        targetAngle = Rotations.of(MathUtil.clamp(shootingAngle.in(Rotations), HoodConstants.MIN_ROT, HoodConstants.MAX_ANGLE));
+        motor.setControl(request.withPosition(targetAngle));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {

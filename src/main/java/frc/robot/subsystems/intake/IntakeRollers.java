@@ -20,8 +20,8 @@ public class IntakeRollers extends SubsystemBase {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = motor.getConfigurator();
         var currentCfg = new CurrentLimitsConfigs();
-        currentCfg.SupplyCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
-        currentCfg.SupplyCurrentLimitEnable = true;
+        currentCfg.StatorCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
+        currentCfg.StatorCurrentLimitEnable = true;
         cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
     }
@@ -30,7 +30,8 @@ public class IntakeRollers extends SubsystemBase {
         return run(() -> {
             double limitedVoltage = slewRateLimiter.calculate(IntakeConstants.Rollers.VOLTS);
             motor.setControl(voltageRequest.withOutput(limitedVoltage));
-        }).until(() -> slewRateLimiter.lastValue() == IntakeConstants.Rollers.VOLTS).beforeStarting(() -> slewRateLimiter.reset(0));
+        }).until(() -> slewRateLimiter.lastValue() == IntakeConstants.Rollers.VOLTS)
+                .beforeStarting(() -> slewRateLimiter.reset(0));
     }
 
     public Command eject() {

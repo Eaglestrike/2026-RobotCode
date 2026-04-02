@@ -49,13 +49,13 @@ public final class ShooterConstants {
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
         public static final double OFFSET_HEIGHT = 0.59673; // meters
 
-        public static final double MAGNET_OFFSET = -0.13501;
+        public static final double MAGNET_OFFSET = -0.214355;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
         // distance from turret actual zero to turret when at expected pos -0.5
-        public static final Angle ENCODER_OFFSET = Rotations.of(0.379891 + 0.5);
+        public static final Angle ENCODER_OFFSET = Rotations.of(0.390381 + 0.5);
         // if we request zero: turret should go to 0 + 0.3281 + 0.5 (or 0 + ENCODER_OFFSET)
         // if we request -0.5: turret should go to -0.5 + 0.3281 + 0.5 (or -0.5 + ENCODER_OFFSET)
         public static final double ROTOR_TO_SENSOR = 15.333333333333333333333333;
@@ -74,7 +74,7 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Rotations.of(1+ 0.379891);
+        public static final Angle FORWARD_LIMIT = Rotations.of(1+ 0.390381);
         public static final Angle BACKWARD_LIMIT = Rotations.of(0);
     }
 
@@ -85,7 +85,7 @@ public final class ShooterConstants {
         /** Shooting angle at zero position (hard stop, hood most horizontal) */
         public static final double MAX_ANGLE = 90.0 - 14.894799; // 75.11°
         /** Shooting angle at max travel (hood most tilted) */
-        public static final double MIN_ROT = 0.114;
+        public static final double MIN_ROT = 0.129639;
 
         /** Shooting angle at zero position (same as MAX_ANGLE) */
         public static final double OFFSET = MAX_ANGLE; // 75.11°
