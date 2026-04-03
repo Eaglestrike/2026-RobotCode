@@ -29,7 +29,6 @@ public class IntakeRollers extends SubsystemBase {
         cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
         followerMotor.optimizeBusUtilization();
-        followerMotor.setControl(new Follower(IntakeConstants.Rollers.FOLLOWER_MOTOR_ID, MotorAlignmentValue.Opposed));
 
     }
 
@@ -37,6 +36,7 @@ public class IntakeRollers extends SubsystemBase {
         return run(() -> {
             double limitedVoltage = slewRateLimiter.calculate(IntakeConstants.Rollers.VOLTS);
             motor.setControl(voltageRequest.withOutput(limitedVoltage));
+            followerMotor.setControl(voltageRequest.withOutput(limitedVoltage));
         }).until(() -> slewRateLimiter.lastValue() == IntakeConstants.Rollers.VOLTS)
                 .beforeStarting(() -> slewRateLimiter.reset(0));
     }
@@ -44,24 +44,28 @@ public class IntakeRollers extends SubsystemBase {
     public Command eject() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.EJECT_VOLTS));
+            followerMotor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.EJECT_VOLTS));
         });
     }
 
     public Command jiggle() {
         return run(() -> {
             motor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
+            followerMotor.setControl(voltageRequest.withOutput(IntakeConstants.Rollers.JIGGLE_VOLTS));
         });
     }
 
     public Command stop() {
         return runOnce(() -> {
             motor.setControl(voltageRequest.withOutput(0));
+            followerMotor.setControl(voltageRequest.withOutput(0));
         });
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
+            followerMotor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
         });
     }
 }
