@@ -37,7 +37,7 @@ public class IntakeRollers extends SubsystemBase {
             double limitedVoltage = slewRateLimiter.calculate(IntakeConstants.Rollers.VOLTS);
             motor.setControl(voltageRequest.withOutput(limitedVoltage));
             followerMotor.setControl(voltageRequest.withOutput(limitedVoltage));
-        }).until(() -> slewRateLimiter.lastValue() == IntakeConstants.Rollers.VOLTS)
+        }).until(() -> Math.abs(slewRateLimiter.lastValue() - IntakeConstants.Rollers.VOLTS) < 0.1)
                 .beforeStarting(() -> slewRateLimiter.reset(0));
     }
 
