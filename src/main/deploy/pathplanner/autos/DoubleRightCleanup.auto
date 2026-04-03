@@ -5,15 +5,15 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
           "type": "parallel",
           "data": {
             "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
-                }
-              },
               {
                 "type": "path",
                 "data": {
@@ -36,9 +36,21 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "StowIntake"
+          }
+        },
+        {
           "type": "wait",
           "data": {
-            "waitTime": 4.0
+            "waitTime": 3.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Intake"
           }
         },
         {
@@ -48,9 +60,16 @@
           }
         },
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "RightCleanup2"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "RightCleanup2"
+                }
+              }
+            ]
           }
         },
         {
@@ -63,6 +82,24 @@
           "type": "named",
           "data": {
             "name": "StartShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StowIntake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 4.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Intake"
           }
         }
       ]

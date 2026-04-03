@@ -28,7 +28,7 @@ public final class IntakeConstants {
         public static final double JIGGLE_FREQ_SEC = 1.5;
 
         public static final double UP_VOLTS = 2.0;
-        public static final double DOWN_VOLTS = -1.5;
+        public static final double DOWN_VOLTS = -2.0;
         public static final double JIGGLE_DOWN_VOLTS = 0;
         public static final double JIGGLE_UP_VOLTS = 1.5;
 

@@ -88,7 +88,7 @@ public class Superstructure extends SubsystemBase {
      * @return runOnce command that schedules the intake to drop
      */
     public Command intake() {
-        return Commands.sequence(
+        return Commands.parallel(
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
                 intakeRollers.start());
 
@@ -99,7 +99,7 @@ public class Superstructure extends SubsystemBase {
      */
     public Command stowIntake() {
         return Commands.sequence(
-                intakeRollers.stop(),
+                // intakeRollers.stop(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
                 Commands.runOnce(() -> intakeWrist.setJiggle(false)),
                 intakeWrist.retain());
@@ -135,7 +135,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Command duck() {
-        return Commands.sequence(
+        return Commands.parallel(
                 shooter.duck(),
                 Commands.runOnce(() -> {
                     isShooting = false;
@@ -232,7 +232,7 @@ public class Superstructure extends SubsystemBase {
             Pose3d ferryTarget = computeFerryTarget();
             shooter.setFacing(ferryTarget, true);
             targetPose = ferryTarget;
-            if(tuning) {
+            if (tuning) {
                 shooter.shootManual();
             }
         } else {

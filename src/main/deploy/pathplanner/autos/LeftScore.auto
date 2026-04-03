@@ -17,27 +17,34 @@
           }
         },
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "StartToFuel"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Intake"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 0.25
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "StartToFuel"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              }
+            ]
           }
         },
         {
           "type": "path",
           "data": {
             "pathName": "IntakeFuel"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StartShooting"
           }
         },
         {
@@ -50,18 +57,6 @@
           "type": "path",
           "data": {
             "pathName": "FuelToClimb"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 2.0
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbL1Left"
           }
         }
       ]

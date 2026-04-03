@@ -41,6 +41,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.lib.zone.RebuiltZones;
@@ -364,6 +365,20 @@ public class RobotContainer {
     }
 
     private void configureZoneBindings() {
+        RobotModeTriggers.autonomous().onTrue(Commands.runOnce(() -> {
+            overrideTriggers = true;
+            DogLog.forceNt.log("Override Triggers", overrideTriggers);
+        })).onFalse(Commands.runOnce(() -> {
+            overrideTriggers = false;
+            DogLog.forceNt.log("Override Triggers", overrideTriggers);
+        }).ignoringDisable(true));
+
+        RobotModeTriggers.teleop().onTrue(
+                Commands.runOnce(() -> {
+                    overrideTriggers = false;
+                    DogLog.forceNt.log("Override Triggers", overrideTriggers);
+                }));
+
         Trigger inTowerZoneTrigger = RebuiltZones.TOWER_ZONES
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
