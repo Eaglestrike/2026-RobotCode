@@ -23,7 +23,7 @@ public final class ShooterConstants {
         public static final double VELOCITY_TOLERANCE = 5.0;
 
         /** Current limit in Amps */
-        public static final int CURRENT_LIMIT = 40;
+        public static final int CURRENT_LIMIT = 60;
 
         public static final double kP = 12;
         public static final double kI = 0.0;
@@ -56,10 +56,12 @@ public final class ShooterConstants {
 
         // distance from turret actual zero to turret when at expected pos -0.5
         public static final Angle ENCODER_OFFSET = Rotations.of(0.2193 + 0.5);
-        // if we request zero: turret should go to 0 + 0.3281 + 0.5 (or 0 + ENCODER_OFFSET)
-        // if we request -0.5: turret should go to -0.5 + 0.3281 + 0.5 (or -0.5 + ENCODER_OFFSET)
-        public static final double ROTOR_TO_SENSOR = 15.333333333333333333333333;
-        public static final double SENSOR_TO_MECHANISM = 0.6;
+        // if we request zero: turret should go to 0 + 0.3281 + 0.5 (or 0 +
+        // ENCODER_OFFSET)
+        // if we request -0.5: turret should go to -0.5 + 0.3281 + 0.5 (or -0.5 +
+        // ENCODER_OFFSET)
+        public static final double ROTOR_TO_SENSOR = 9.2 * 43.0 / 87.0 * 125.0 / 36.0;
+        public static final double SENSOR_TO_MECHANISM = 9.2 / ROTOR_TO_SENSOR;
         public static final double GEAR_RATIO = ROTOR_TO_SENSOR * SENSOR_TO_MECHANISM;
 
         public static final double MAX_VOLTS = 2;
@@ -74,7 +76,7 @@ public final class ShooterConstants {
         public static final double kV = 0.124 * GEAR_RATIO;
         public static final double kA = 0;
 
-        public static final Angle FORWARD_LIMIT = Rotations.of(1+ 0.2193);
+        public static final Angle FORWARD_LIMIT = Rotations.of(1 + 0.2193);
         public static final Angle BACKWARD_LIMIT = Rotations.of(0);
     }
 

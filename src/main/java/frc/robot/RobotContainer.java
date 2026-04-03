@@ -280,8 +280,8 @@ public class RobotContainer {
         leftJoystick.button(3).onTrue(superstructure.ejectIntake());
         // stow all
         leftJoystick.button(2).onTrue(superstructure.stow());
-        // jiggle intake
         rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
+        rightJoystick.button(4).onTrue(superstructure.stowIntake());
 
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 
