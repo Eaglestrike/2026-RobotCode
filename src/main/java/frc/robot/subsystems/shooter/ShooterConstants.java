@@ -14,6 +14,7 @@ public final class ShooterConstants {
         // public static final double MAX_VELOCITY = 0.0;
         /** In rotations per minute (for when not shooting) */
         public static final double IDLE_VELOCITY = 60.0;
+        public static final double IDLE_VOLTAGE = 0.5;
         /** In rotations per minute (for when ducking and moving toward neutral zone) */
         public static final double DUCK_RPM = 1800.0;
 
@@ -31,9 +32,6 @@ public final class ShooterConstants {
         public static final double kS = 15.4;
         public static final double kV = 0.2;
         public static final double kA = 0;
-
-        public static final double MIN_OUTPUT = -1.0;
-        public static final double MAX_OUTPUT = 1.0;
 
         /** In RPM per second squared */
         public static final double MAX_ACCEL = 2.0;

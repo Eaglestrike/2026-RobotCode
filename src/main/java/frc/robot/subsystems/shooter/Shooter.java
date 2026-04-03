@@ -204,7 +204,7 @@ public class Shooter extends SubsystemBase {
         if (currentState == ShooterState.MANUAL) {
             if (manualPosition != null) {
                 double manualTurretAngleDeg = targetTurretAngleDeg; // keep aiming at target
-                double manualHoodAngleDeg = result.hoodAngle().getDegrees() + frc.robot.subsystems.Superstructure.hoodTrimDegrees;
+                double manualHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
             }
             return;
         }
@@ -218,7 +218,7 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + frc.robot.subsystems.Superstructure.hoodTrimDegrees;
+            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
             hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
                 flywheels.requestVelocity(result.rpm());
