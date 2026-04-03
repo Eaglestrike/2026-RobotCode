@@ -18,6 +18,8 @@ public class Spindexer extends SubsystemBase {
     public Spindexer() {
         motor = new TalonFX(SerializationConstants.SPINDEXER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
+        cfg.CurrentLimits.StatorCurrentLimit = SerializationConstants.SPINDEXER_CURRENT_LIMIT;
+        cfg.CurrentLimits.StatorCurrentLimitEnable = true;
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         motor.getConfigurator().apply(cfg);
         motor.optimizeBusUtilization();
@@ -30,7 +32,8 @@ public class Spindexer extends SubsystemBase {
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(
-                    voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
+                    voltageOutReq
+                            .withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
         });
     }
 

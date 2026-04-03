@@ -64,7 +64,7 @@ public final class ShooterConstants {
         public static final double SENSOR_TO_MECHANISM = 9.2 / ROTOR_TO_SENSOR;
         public static final double GEAR_RATIO = ROTOR_TO_SENSOR * SENSOR_TO_MECHANISM;
 
-        public static final double MAX_VOLTS = 2;
+        public static final double MAX_VOLTS = 4;
 
         public static final Angle ANGLE_TOLERANCE = Degree.of(5);
         // public static final Angle FERRY_ANGLE_TOLERANCE = Degree.of(10);
