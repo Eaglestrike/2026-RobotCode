@@ -101,9 +101,9 @@ public class Shooter extends SubsystemBase {
                 runOnce(() -> {
                     lastState = currentState;
                     currentState = ShooterState.DUCKING;
+                    flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
                 }),
-                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)),
-                runOnce(() -> flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY)));
+                hood.requestPosition(Degrees.of(ShooterConstants.HoodConstants.STOW_ANGLE)));
     }
 
     public Command unDuck() {

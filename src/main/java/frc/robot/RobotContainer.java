@@ -9,7 +9,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.DoubleSupplier;
 
@@ -34,11 +33,13 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -110,7 +111,7 @@ public class RobotContainer {
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
     private final CommandJoystick rightJoystick = new CommandJoystick(1);
     private final CommandXboxController operatorController = new CommandXboxController(2);
-    private final CommandXboxController buttonBoard = new CommandXboxController(3);
+    // private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
     // auto
     private final SendableChooser<Command> autoChooser;
@@ -249,12 +250,12 @@ public class RobotContainer {
             logger.telemeterize(state);
             logger.setSuperstructureTargetPose(superstructure.getTargetPose2d());
         });
+        
+        // operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
+        //         .onTrue(intakeWrist.zero().ignoringDisable(true));
 
-        operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
-                .onTrue(intakeWrist.zero().ignoringDisable(true));
-
-        operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
-                .onTrue(shooter.getHood().zero().ignoringDisable(true));
+        // operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
+        //         .onTrue(shooter.getHood().zero().ignoringDisable(true));
 
         // -------- FOR TESTING ONLY --------
         operatorController.button(7).and(operatorController.x())
@@ -287,58 +288,68 @@ public class RobotContainer {
         leftJoystick.button(4).whileTrue(climb.moveToUp());
 
         // -------- Manual Commands --------
-        buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
-                .onFalse(intakeRollers.setManualVoltage(() -> 0));
-
-        buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
-                .onFalse(intakeWrist.setManualVoltage(() -> 0));
-
-        buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY))
-                .onFalse(climb.setManualVoltage(() -> 0));
-
-        buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
-                .onFalse(turret.setManualVoltage(() -> 0));
-
-        buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
-                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
-
-        buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
-                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
-
-        buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(
-                        Commands.parallel(
-                                spindexer.setManualVoltage(operatorController::getLeftY),
-                                kicker.setManualVoltage(operatorController::getLeftY)))
-                .onFalse(
-                        Commands.parallel(
-                                spindexer.setManualVoltage(() -> 0),
-                                kicker.setManualVoltage(() -> 0)));
-        // ---------------------------------
-
-        // ------ Stow Manual Commands ------
-        buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
-                .onTrue(superstructure.stowIntake());
-
-        buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
-                .onTrue(shooter.stowShooter());
-
-        buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
-                .onTrue(shooter.stowShooter());
-
-        // ---------------------------------
-
-        buttonBoard.button(SHOOT_BUTTON)
-                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
-
-        buttonBoard.button(TOGGLE_MODE_BUTTON)
-                .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
+        /*
+         * buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::
+         * getRightY, AXIS_DEADBAND))
+         * .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+         * .onFalse(intakeRollers.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(intakeWrist.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(climb.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(climb.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(turret.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::
+         * getRightY, AXIS_DEADBAND))
+         * .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
+         * .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
+         * .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController:
+         * :getLeftY, AXIS_DEADBAND))
+         * .whileTrue(
+         * Commands.parallel(
+         * spindexer.setManualVoltage(operatorController::getLeftY),
+         * kicker.setManualVoltage(operatorController::getLeftY)))
+         * .onFalse(
+         * Commands.parallel(
+         * spindexer.setManualVoltage(() -> 0),
+         * kicker.setManualVoltage(() -> 0)));
+         * // ---------------------------------
+         * 
+         * // ------ Stow Manual Commands ------
+         * buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(superstructure.stowIntake());
+         * 
+         * buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(shooter.stowShooter());
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(shooter.stowShooter());
+         * 
+         * // ---------------------------------
+         * 
+         * buttonBoard.button(SHOOT_BUTTON)
+         * .onTrue(Commands.runOnce(() ->
+         * superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+         * 
+         * buttonBoard.button(TOGGLE_MODE_BUTTON)
+         * .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
+         */
 
         operatorController.rightBumper()
                 .onTrue(Commands.runOnce(() -> {
@@ -361,7 +372,7 @@ public class RobotContainer {
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
 
-        buttonBoard.button(POS_2_BUTTON).onTrue(superstructure.resetShootOffset());
+        // buttonBoard.button(POS_2_BUTTON).onTrue(superstructure.resetShootOffset());
     }
 
     private void configureZoneBindings() {
@@ -457,7 +468,7 @@ public class RobotContainer {
                     driveMode = DriveMode.NORMAL;
                 }));
 
-        Trigger hubActiveTrigger = FMSHelper.activeHub();
+        Trigger hubActiveTrigger = FMSHelper.activeHub(superstructure::getExpectedTOF);
         hubActiveTrigger.and(() -> !overrideTriggers).and(inTrenchZoneTrigger.negate())
                 .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
                     DogLog.forceNt.log("FMS/HubActive", true);
@@ -472,6 +483,13 @@ public class RobotContainer {
                         superstructure.setShooting(false);
                     }
                 }), java.util.Set.of()));
+        
+        Trigger almostHubActiveTrigger = FMSHelper.almostActiveHub(superstructure::getExpectedTOF);
+        almostHubActiveTrigger.onTrue(
+            Commands.runOnce(() -> operatorController.setRumble(RumbleType.kBothRumble, 0.5))
+                .andThen(new WaitCommand(3))
+                .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0))
+        );
     }
 
     private String previousAutoName = "";

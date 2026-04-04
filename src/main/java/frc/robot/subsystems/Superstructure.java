@@ -20,6 +20,7 @@ import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.solver.LUTSolver;
 
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
@@ -57,8 +58,17 @@ public class Superstructure extends SubsystemBase {
         return Optional.of(new Pose2d(targetPose.getX(), targetPose.getY(), targetPose.getRotation().toRotation2d()));
     }
 
-    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers,
-            IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
+    public double getExpectedTOF() {
+        if (targetPose == null) {
+            return 0.0;
+        }
+        double distance = LUTSolver.getDistanceToTarget(
+                new Pose3d(drivetrain.getState().Pose).getTranslation(),
+                targetPose.getTranslation()).in(edu.wpi.first.units.Units.Meters);
+        return LUTSolver.TOF_MAP.get(distance);
+    }
+
+    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
