@@ -7,9 +7,12 @@ package frc.robot;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.function.BooleanSupplier;
+import java.util.*;
 import java.util.function.DoubleSupplier;
+
+import org.json.simple.parser.ParseException;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
@@ -17,41 +20,50 @@ import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.generated.TunerConstants;
 import frc.robot.lib.zone.RebuiltZones;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
 import frc.robot.subsystems.climb.Climb;
-import frc.robot.subsystems.climb.ClimbConstants;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.drive.DriveMode;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.drive.EagleSwerveTelemetry;
 import frc.robot.subsystems.intake.IntakeRollers;
 import frc.robot.subsystems.intake.IntakeWrist;
-import frc.robot.subsystems.serialization.Feeder;
-import frc.robot.subsystems.serialization.Hopper;
+import frc.robot.subsystems.led.LED;
+import frc.robot.subsystems.serialization.Kicker;
+import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-    private static final boolean ENABLE_CLIMB_COMMAND = false;
     /**
      * Meters from the tower to align to (for center of the robot)
      */
@@ -60,6 +72,12 @@ public class RobotContainer {
      * Meters per second when moving towards the pole
      */
     private static final double CLIMB_SPEED = 1;
+    /**
+     * Trim the target pose
+     */
+    private static final double TRIM_ANGLE_TURRET = 2.5; // degrees per press for turret
+    private static final double TRIM_ANGLE_HOOD = 1; // degrees per press for hood
+    private static final boolean CLIMB_AUTONOMOUS = false;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -73,19 +91,33 @@ public class RobotContainer {
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withSteerRequestType(SteerRequestType.MotionMagicExpo);
 
+    private final PIDController alignYController = new PIDController(8, 0, 0.05);
+    private final SwerveRequest.FieldCentricFacingAngle trenchDrive = new SwerveRequest.FieldCentricFacingAngle()
+            .withHeadingPID(5, 0, 0)
+            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+            .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+
     private final EagleSwerveTelemetry logger = new EagleSwerveTelemetry(MaxSpeed);
     private final EagleSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
+    private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
 
-    private boolean slowModeOn = false;
+    private DriveMode driveMode = DriveMode.NORMAL;
+    private SlewRateLimiter xLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
+    private SlewRateLimiter yLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
+    private SlewRateLimiter rotRateLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ROT_ACC);
 
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
     private final CommandJoystick rightJoystick = new CommandJoystick(1);
     private final CommandXboxController operatorController = new CommandXboxController(2);
-    private final CommandXboxController buttonBoard = new CommandXboxController(3);
+    // private final CommandXboxController buttonBoard = new CommandXboxController(3);
 
     // auto
     private final SendableChooser<Command> autoChooser;
+    private final SendableChooser<Boolean> autoMirrorChooser;
+
+    private boolean overrideTriggers = false;
 
     // Button Board constants
     private final int CLIMB_BUTTON = 4;
@@ -94,22 +126,32 @@ public class RobotContainer {
     private final int TURRET_BUTTON = 1;
     private final int SERIALIZER_BUTTON = 3;
 
+    private final int POS_1_BUTTON = 6;
+    private final int POS_2_BUTTON = 7;
+    private final int POS_3_BUTTON = 8;
+    private final int POS_4_BUTTON = 9;
+
+    private final int TOGGLE_MODE_BUTTON = 10;
+    private final int SHOOT_BUTTON = 11;
+
     // subsystems
     private final Shooter shooter = new Shooter(drivetrain);
     private final ShooterTurret turret = shooter.getTurret();
     private final ShooterFlywheels shooterFlywheels = shooter.getFlywheels();
     private final IntakeRollers intakeRollers = new IntakeRollers();
     private final IntakeWrist intakeWrist = new IntakeWrist();
-    private final Feeder feeder = new Feeder();
-    private final Hopper hopper = new Hopper();
+    private final Kicker kicker = new Kicker();
+    private final Spindexer spindexer = new Spindexer();
     private final Climb climb = new Climb();
+    private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            feeder, hopper, drivetrain);
+            kicker, spindexer, drivetrain, led);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
         configureBindings();
         configureZoneBindings();
+        DogLog.forceNt.log("Override Triggers", overrideTriggers);
 
         NamedCommands.registerCommand("ClimbL1Left",
                 Commands.defer(() -> climbL1(), java.util.Set.of()));
@@ -135,31 +177,68 @@ public class RobotContainer {
                 Commands.defer(() -> superstructure.duck(), java.util.Set.of()));
         NamedCommands.registerCommand("Unduck",
                 Commands.defer(() -> superstructure.unDuck(), java.util.Set.of()));
+        NamedCommands.registerCommand("StartJiggling",
+                Commands.defer(() -> Commands.runOnce(() -> intakeWrist.setJiggle(true)), java.util.Set.of()));
+        NamedCommands.registerCommand("StopJiggling",
+                Commands.defer(() -> Commands.runOnce(() -> intakeWrist.setJiggle(false)), java.util.Set.of()));
 
         autoChooser = AutoBuilder.buildAutoChooser("Tests");
-        SmartDashboard.putData("Auto Chooser", autoChooser);
+        autoMirrorChooser = new SendableChooser<>();
+        autoMirrorChooser.addOption("Mirror", true);
+        autoMirrorChooser.addOption("Not Mirrored", false);
+        autoMirrorChooser.setDefaultOption("Not Mirrored", false);
 
+        SmartDashboard.putData("Auto Chooser", autoChooser);
+        SmartDashboard.putData("Auto Side Chooser", autoMirrorChooser);
     }
 
     private void configureBindings() {
         drivetrain.setDefaultCommand(
                 drivetrain.applyRequest(() -> {
-                    var driveMult = slowModeOn ? DriveConstants.SLOW_MODE_MULT : 1;
-                    return drive
-                            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
-                                    * driveMult)
-                            .withRotationalDeadband(MaxAngularRate
-                                    * DriveConstants.DRIVE_DEADBAND_MULT
-                                    * driveMult)
-                            .withVelocityX(-leftJoystick.getY() * MaxSpeed * driveMult)
-                            .withVelocityY(-leftJoystick.getX() * MaxSpeed * driveMult)
-                            .withRotationalRate(-rightJoystick.getX() * MaxAngularRate
-                                    * driveMult);
+                    if (driveMode != DriveMode.TRENCH_LOCK) {
+                        var driveMult = 1.0;
+                        if (driveMode == DriveMode.SLOW) {
+                            driveMult = DriveConstants.SLOW_MODE_MULT;
+                        } else if (driveMode == DriveMode.TRENCH_SLOW) {
+                            driveMult = DriveConstants.TRENCH_SLOW_MODE_MULT;
+                        }
+
+                        double xSpeed = -leftJoystick.getY() * MaxSpeed * driveMult;
+                        double ySpeed = -leftJoystick.getX() * MaxSpeed * driveMult;
+                        double rotSpeed = -rightJoystick.getX() * MaxAngularRate * driveMult;
+
+                        // if (superstructure.isShooting) {
+                        // xSpeed = xLimiter.calculate(xSpeed);
+                        // ySpeed = yLimiter.calculate(ySpeed);
+                        // rotSpeed = rotRateLimiter.calculate(rotSpeed);
+                        // } else {
+                        // xLimiter.reset(xSpeed);
+                        // yLimiter.reset(ySpeed);
+                        // rotRateLimiter.reset(rotSpeed);
+                        // }
+
+                        return drive
+                                .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
+                                        * driveMult)
+                                .withRotationalDeadband(MaxAngularRate
+                                        * DriveConstants.DRIVE_DEADBAND_MULT
+                                        * driveMult)
+                                .withVelocityX(xSpeed)
+                                .withVelocityY(ySpeed)
+                                .withRotationalRate(rotSpeed);
+                    } else {
+                        Pose2d pose = drivetrain.getState().Pose;
+                        double veloY = alignYController.calculate(pose.getY(), drivetrain.getTrenchY());
+                        return trenchDrive
+                                .withVelocityX(-leftJoystick.getY() * MaxSpeed)
+                                .withVelocityY(veloY)
+                                .withTargetDirection(drivetrain.getTrenchLockAngle());
+                    }
                 }));
 
         rightJoystick.button(2)
-                .onTrue(Commands.runOnce(() -> slowModeOn = true))
-                .onFalse(Commands.runOnce(() -> slowModeOn = false));
+                .onTrue(Commands.runOnce(() -> driveMode = DriveMode.SLOW))
+                .onFalse(Commands.runOnce(() -> driveMode = DriveMode.NORMAL));
 
         operatorController.button(8).onTrue(drivetrain.runOnce(() -> {
             System.out.println("Zeroing drive");
@@ -167,19 +246,16 @@ public class RobotContainer {
             drivetrain.resetPose(new Pose2d(0, 0, new Rotation2d(0, 0)));
         }).ignoringDisable(true));
 
-        drivetrain.registerTelemetry(logger::telemeterize);
+        drivetrain.registerTelemetry(state -> {
+            logger.telemeterize(state);
+            logger.setSuperstructureTargetPose(superstructure.getTargetPose2d());
+        });
+        
+        // operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
+        //         .onTrue(intakeWrist.zero().ignoringDisable(true));
 
-        operatorController.button(7).and(buttonBoard.button(CLIMB_BUTTON))
-                .onTrue(climb.zero().ignoringDisable(true));
-
-        operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
-                .onTrue(intakeWrist.zero().ignoringDisable(true));
-
-        operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
-                .onTrue(shooter.getHood().zero().ignoringDisable(true));
-
-        operatorController.button(7).and(buttonBoard.button(TURRET_BUTTON))
-                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+        // operatorController.button(7).and(buttonBoard.button(HOOD_BUTTON))
+        //         .onTrue(shooter.getHood().zero().ignoringDisable(true));
 
         // -------- FOR TESTING ONLY --------
         operatorController.button(7).and(operatorController.x())
@@ -188,21 +264,16 @@ public class RobotContainer {
         operatorController.button(7).and(operatorController.a())
                 .onTrue(shooter.getHood().zero().ignoringDisable(true));
 
-        operatorController.button(7).and(operatorController.b())
-                .onTrue(shooter.getTurret().zero().ignoringDisable(true));
+        operatorController.leftTrigger()
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+        operatorController.rightTrigger()
+                .onTrue(superstructure.resetShootOffset());
 
         operatorController.button(3).whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
-        operatorController.a()
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                        operatorController::getRightY))
-                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
-
-        rightJoystick.button(4)
-                .whileTrue(climbL1());
         // ---------------------------------
 
         rightJoystick.trigger().onTrue(superstructure.intake());
@@ -211,54 +282,118 @@ public class RobotContainer {
         leftJoystick.button(3).onTrue(superstructure.ejectIntake());
         // stow all
         leftJoystick.button(2).onTrue(superstructure.stow());
-        // jiggle intake
-        rightJoystick.button(3).onTrue(superstructure.jiggleIntake());
+        rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
+        rightJoystick.button(4).onTrue(superstructure.stowIntake());
 
-        // Manual Commands
-        buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
-                .onFalse(intakeRollers.setManualVoltage(() -> 0));
+        leftJoystick.button(4).whileTrue(climb.moveToUp());
 
-        buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
-                .onFalse(intakeWrist.setManualVoltage(() -> 0));
-
-        buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY,
-                        operatorController::getRightY))
-                .onFalse(climb.setManualVoltage(() -> 0, () -> 0));
-
-        buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
-                .onFalse(turret.setManualVoltage(() -> 0));
-
-        buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
-                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
-
-        buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
-                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
-
-        buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(hopper.setManualVoltage(operatorController::getLeftY))
-                .onFalse(hopper.setManualVoltage(() -> 0));
-
-        operatorController.leftBumper()
-                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting)));
+        // -------- Manual Commands --------
+        /*
+         * buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::
+         * getRightY, AXIS_DEADBAND))
+         * .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
+         * .onFalse(intakeRollers.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(intakeWrist.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(climb.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(climb.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
+         * .onFalse(turret.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::
+         * getRightY, AXIS_DEADBAND))
+         * .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
+         * .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::
+         * getLeftY, AXIS_DEADBAND))
+         * .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
+         * .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+         * 
+         * buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController:
+         * :getLeftY, AXIS_DEADBAND))
+         * .whileTrue(
+         * Commands.parallel(
+         * spindexer.setManualVoltage(operatorController::getLeftY),
+         * kicker.setManualVoltage(operatorController::getLeftY)))
+         * .onFalse(
+         * Commands.parallel(
+         * spindexer.setManualVoltage(() -> 0),
+         * kicker.setManualVoltage(() -> 0)));
+         * // ---------------------------------
+         * 
+         * // ------ Stow Manual Commands ------
+         * buttonBoard.button(INTAKE_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(superstructure.stowIntake());
+         * 
+         * buttonBoard.button(HOOD_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(shooter.stowShooter());
+         * 
+         * buttonBoard.button(TURRET_BUTTON).and(operatorController.rightTrigger())
+         * .onTrue(shooter.stowShooter());
+         * 
+         * // ---------------------------------
+         * 
+         * buttonBoard.button(SHOOT_BUTTON)
+         * .onTrue(Commands.runOnce(() ->
+         * superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+         * 
+         * buttonBoard.button(TOGGLE_MODE_BUTTON)
+         * .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
+         */
 
         operatorController.rightBumper()
+                .onTrue(Commands.runOnce(() -> {
+                    overrideTriggers = !overrideTriggers;
+                    DogLog.forceNt.log("Override Triggers", overrideTriggers);
+                })).debounce(0.1);
+
+        operatorController.leftBumper()
                 .toggleOnTrue(superstructure.duck())
                 .toggleOnFalse(superstructure.unDuck());
+
+        operatorController.povUp()
+                .onTrue(superstructure.changeHoodTrim(() -> TRIM_ANGLE_HOOD)).debounce(0.1);
+        operatorController.povDown()
+                .onTrue(superstructure.changeHoodTrim(() -> -TRIM_ANGLE_HOOD)).debounce(0.1);
+        operatorController.povRight()
+                .onTrue(superstructure.changeTurretTrim(() -> TRIM_ANGLE_TURRET)).debounce(0.1);
+        operatorController.povLeft()
+                .onTrue(superstructure.changeTurretTrim(() -> -TRIM_ANGLE_TURRET)).debounce(0.1);
         // Should the kicker and flywheels be on the same button, like hood getRightY or
         // serializer getRightY? Since they need to spin simultaneously to launch
+
+        // buttonBoard.button(POS_2_BUTTON).onTrue(superstructure.resetShootOffset());
     }
 
     private void configureZoneBindings() {
+        RobotModeTriggers.autonomous().onTrue(Commands.runOnce(() -> {
+            overrideTriggers = true;
+            DogLog.forceNt.log("Override Triggers", overrideTriggers);
+        })).onFalse(Commands.runOnce(() -> {
+            overrideTriggers = false;
+            DogLog.forceNt.log("Override Triggers", overrideTriggers);
+        }).ignoringDisable(true));
+
+        RobotModeTriggers.teleop().onTrue(
+                Commands.runOnce(() -> {
+                    overrideTriggers = false;
+                    DogLog.forceNt.log("Override Triggers", overrideTriggers);
+                }));
+
         Trigger inTowerZoneTrigger = RebuiltZones.TOWER_ZONES
                 .contains(() -> drivetrain.getState().Pose)
                 .debounce(0.1);
-        inTowerZoneTrigger
+        inTowerZoneTrigger.and(() -> !overrideTriggers)
                 .onTrue(Commands.runOnce(() -> {
                     DogLog.log("Zones/InTowerZone", true);
                     superstructure.setKickerOverride(true);
@@ -267,57 +402,172 @@ public class RobotContainer {
                     DogLog.log("Zones/InTowerZone", false);
                     superstructure.setKickerOverride(false);
                 }));
+        Trigger inTrenchZoneTrigger = RebuiltZones.TRENCH_ZONES
+                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5))
+                .or(RebuiltZones.TRENCH_ZONES.contains(() -> drivetrain.getState().Pose));
+        inTrenchZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.sequence(
+                        Commands.runOnce(() -> {
+                            DogLog.log("Zones/InTrenchZone", true);
+                        }),
+                        superstructure.duck()))
+                .onFalse(Commands.sequence(
+                        Commands.runOnce(() -> {
+                            DogLog.log("Zones/InTrenchZone", false);
+                        })));
+
+        Trigger inCenterZoneTrigger = RebuiltZones.CENTER_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inCenterZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InCenterZone", true);
+                    superstructure.setMode(ShootMode.FERRY);
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InCenterZone", false);
+                    superstructure.setMode(ShootMode.SHOOT);
+                }));
+
+        Trigger inRedZoneTrigger = RebuiltZones.RED_ALLIANCE_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inRedZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InRedZone", true);
+                    superstructure.setMode(
+                            DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Red
+                                    ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
+                }));
+
+        Trigger inBlueZoneTrigger = RebuiltZones.BLUE_ALLIANCE_ZONE
+                .contains(() -> drivetrain.getState().Pose)
+                .debounce(0.1);
+        inBlueZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InBlueZone", true);
+                    superstructure.setMode(DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
+                                    : ShootMode.FERRY);
+                }));
+
+        Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
+                .willContain(() -> drivetrain.getState().Pose, () -> drivetrain.getState().Speeds, Seconds.of(0.5));
+        inSlowTrenchZoneTrigger.and(() -> !overrideTriggers)
+                .onTrue(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InSlowTrenchZone", true);
+                    if (driveMode == DriveMode.SLOW)
+                        return;
+                    driveMode = DriveMode.TRENCH_SLOW;
+                }))
+                .onFalse(Commands.runOnce(() -> {
+                    DogLog.log("Zones/InSlowTrenchZone", false);
+                    if (driveMode == DriveMode.SLOW)
+                        return;
+                    driveMode = DriveMode.NORMAL;
+                }));
+
+        Trigger hubActiveTrigger = FMSHelper.activeHub(superstructure::getExpectedTOF);
+        hubActiveTrigger.and(() -> !overrideTriggers).and(inTrenchZoneTrigger.negate())
+                .onTrue(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", true);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(true);
+                    }
+                }), java.util.Set.of()))
+
+                .onFalse(Commands.defer(() -> Commands.runOnce(() -> {
+                    DogLog.forceNt.log("FMS/HubActive", false);
+                    if (superstructure.getMode() == ShootMode.SHOOT) {
+                        superstructure.setShooting(false);
+                    }
+                }), java.util.Set.of()));
+        
+        Trigger almostHubActiveTrigger = FMSHelper.almostActiveHub(superstructure::getExpectedTOF);
+        almostHubActiveTrigger.onTrue(
+            Commands.runOnce(() -> operatorController.setRumble(RumbleType.kBothRumble, 0.5))
+                .andThen(new WaitCommand(3))
+                .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0))
+        );
     }
 
-    public Command getOffTower() {
-        if (superstructure.getClimbState() == null
-                || superstructure.getClimbState() == ClimbConstants.ClimbState.STOWED) {
-            return Commands.print("Not currently climbing, cannot get off tower");
+    private String previousAutoName = "";
+    private boolean prevMirrored = false;
+    private Command cachedAutoCommand = null;
+
+    public void disabledPeriodic() {
+        if (DriverStation.isTeleopEnabled()) {
+            logger.setAutonomousTrajectory(new ArrayList<>());
+            return;
         }
 
-        int direction = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center ? 1 : -1;
-        return Commands.sequence(
-                superstructure.climb(ClimbConstants.ClimbState.STOWED),
-                Commands.runOnce(() -> drivetrain.setControl(
-                        drive.withVelocityY(MaxSpeed * direction
-                                * DriveConstants.GET_OFF_TOWER_SPEED_MULT))),
-                Commands.waitSeconds(0.5),
-                Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityY(0.0))));
+        String selectedAutoName = SmartDashboard.getString("Auto Chooser/active", "");
+        boolean isMirrored = autoMirrorChooser.getSelected();
+        if (!selectedAutoName.isEmpty()
+                && (!selectedAutoName.equals(previousAutoName) || (isMirrored != prevMirrored))) {
+            previousAutoName = selectedAutoName;
+            prevMirrored = isMirrored;
+            try {
+                List<PathPlannerPath> paths = PathPlannerAuto.getPathGroupFromAutoFile(selectedAutoName);
+                ArrayList<Pose2d> pathPoses = new ArrayList<>();
+                for (PathPlannerPath path : paths) {
+                    if (isMirrored) {
+                        path = path.mirrorPath();
+                    }
+                    pathPoses.addAll(path.getAllPathPoints().stream()
+                            .map(pt -> new Pose2d(pt.position, new Rotation2d(0))).toList());
+                }
+                logger.setAutonomousTrajectory(pathPoses);
+
+                cachedAutoCommand = new PathPlannerAuto(selectedAutoName, isMirrored);
+            } catch (Exception e) {
+                System.out.println(
+                        "Failed to load path/auto for visualization or command construction: " + selectedAutoName);
+                cachedAutoCommand = null;
+            }
+        }
     }
 
     public Command climbL1() {
-        if (!ENABLE_CLIMB_COMMAND) {
-            return Commands.print("Climb command disabled");
-        }
-
         return Commands.defer(() -> {
+            if (!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
+                return new PrintCommand("Skipping climb since we're in autonomous and CLIMB_AUTONOMOUS is false");
+            }
+
             DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
 
             boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
             boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
 
             Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
-            // DogLog.log("Climb/TowerPolePose", towerPolePose);
-            double multiplier = isLeft ^ (alliance == DriverStation.Alliance.Red) ? 1 : -1;
+            DogLog.log("Climb/TowerPolePose", towerPolePose);
+            double multiplier = isLeft != (alliance == DriverStation.Alliance.Red) ? 1 : -1;
             DogLog.log("Climb/DirectionMultiplier", multiplier);
             Pose3d alignPose = new Pose3d(
-                    towerPolePose.getTranslation().plus(new Translation3d(0, multiplier * CLIMB_TOWER_DISTANCE, 0)),
+                    towerPolePose.getTranslation()
+                            .plus(new Translation3d(-Units.inchesToMeters(6), multiplier * CLIMB_TOWER_DISTANCE, 0)),
                     towerPolePose.getRotation());
             DogLog.log("Climb/AlignPose", alignPose);
+            Timer t = new Timer();
 
-            return Commands.sequence( // TODO: Redo superstructure.climb
-                    // superstructure.climb(ClimbConstants.ClimbState.L1),
-                    new PrintCommand("Aligning to " + isLeft + " tower"),
+            return Commands.sequence(
+                    superstructure.stow(),
+                    new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
                     drivetrain.alignPID(() -> alignPose.toPose2d()),
                     new PrintCommand("Moving in..."),
-                    Commands.runOnce(
-                            () -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier))),
-                    Commands.waitSeconds(1.0),
+                    Commands.runOnce(() -> {
+                        t.reset();
+                        t.start();
+                    }),
+                    Commands.run(
+                            () -> drivetrain
+                                    .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
+                            .until(() -> t.get() > 1),
+                    climb.moveToUp(),
                     new PrintCommand("Finished climbing"),
-                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0)))
-                    // superstructure.climb(ClimbConstants.ClimbState.STOWED)
-            );
-        }, java.util.Set.of());
+                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0))));
+        }, Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
@@ -325,16 +575,19 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-        return Commands.sequence(
-                superstructure.initialize(),
-                autoChooser.getSelected().asProxy());
+        if (cachedAutoCommand != null) {
+            return Commands.parallel(
+                    superstructure.initialize(),
+                    cachedAutoCommand.asProxy());
+        }
+        return new PrintCommand("Failed to load autonomous command");
     }
 
     public Command getTeleopCommand() {
         return superstructure.initialize();
     }
 
-    public EagleSwerveDrivetrain getDrivetrain() {
-        return drivetrain;
+    public Superstructure getSuperstructure() {
+        return superstructure;
     }
 }

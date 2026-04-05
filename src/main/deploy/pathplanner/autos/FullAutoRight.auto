@@ -17,15 +17,28 @@
           }
         },
         {
-          "type": "named",
+          "type": "deadline",
           "data": {
-            "name": "Intake"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "StartToHP"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              }
+            ]
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "StartToHP"
+            "name": "StartShooting"
           }
         },
         {
@@ -56,12 +69,6 @@
           "type": "wait",
           "data": {
             "waitTime": 3.0
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "Stow"
           }
         },
         {

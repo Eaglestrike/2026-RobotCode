@@ -76,6 +76,9 @@ public class ShooterFlywheels extends SubsystemBase {
         config.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         config.Feedback.SensorToMechanismRatio = FlywheelConstants.GEAR_RATIO;
 
+        config.CurrentLimits.StatorCurrentLimit = FlywheelConstants.CURRENT_LIMIT;
+        config.CurrentLimits.StatorCurrentLimitEnable = true;
+
         slot0Configs.kS = FlywheelConstants.kS;
         slot0Configs.kV = FlywheelConstants.kV;
         slot0Configs.kA = FlywheelConstants.kA;
@@ -102,12 +105,13 @@ public class ShooterFlywheels extends SubsystemBase {
     public void requestVelocity(double vel) {
         vel /= 60;
         this.targetVel = RotationsPerSecond.of(vel);
-        if (motor.getVelocity().getValue().isNear(
+        if(Math.abs(vel - FlywheelConstants.IDLE_VELOCITY/60) < 0.1) {
+            motor.setVoltage(FlywheelConstants.IDLE_VOLTAGE);
+        } else if (motor.getVelocity().getValue().isNear(
                 targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
             // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
             motor.setControl(velocityRequest.withVelocity(this.targetVel));
         }
-
         else if (vel < motor.getVelocity().getValueAsDouble()) {
             // Coast until just before the target if trying to reduce speed
             motor.setVoltage(0);

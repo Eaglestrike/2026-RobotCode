@@ -19,6 +19,7 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -34,6 +35,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.robot.FieldConstants;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -417,5 +419,23 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                 .finallyDo(() -> {
                     this.setControl(new SwerveRequest.Idle());
                 });
+    }
+
+    public Rotation2d getTrenchLockAngle() {
+        double currentAng = MathUtil.angleModulus(getState().Pose.getRotation().getRadians()) * 180 / Math.PI;
+        if (currentAng < -90 || currentAng > 90) {
+            return Rotation2d.k180deg;
+        }
+        return Rotation2d.kZero;
+    }
+
+    public double getTrenchY() {
+        Pose2d robotPose = getState().Pose;
+        double offset = (FieldConstants.LeftTrench.openingTopLeft.getY()
+                - FieldConstants.LeftTrench.openingTopRight.getY()) / 2;
+        if (robotPose.getY() > FieldConstants.LinesHorizontal.center) {
+            return FieldConstants.fieldWidth - offset;
+        }
+        return offset;
     }
 }

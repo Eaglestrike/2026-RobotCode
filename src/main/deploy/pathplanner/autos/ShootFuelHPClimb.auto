@@ -5,6 +5,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "LeftPickUp1"
@@ -29,6 +35,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
           "type": "path",
           "data": {
             "pathName": "FuelToHP"
@@ -44,12 +56,6 @@
           "type": "path",
           "data": {
             "pathName": "HPToClimb"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "StopShooting"
           }
         },
         {

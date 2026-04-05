@@ -7,36 +7,33 @@ import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import dev.doglog.DogLog;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
-public class Hopper extends SubsystemBase {
-    private TalonFX motor;
-    private VoltageOut voltageOutReq = new VoltageOut(0).withEnableFOC(true);
-    private final DoubleSubscriber voltage = DogLog.tunable("Hopper/Voltage",
-            SerializationConstants.HOPPER_NORMAL_VOLTS,
-            "V");
+public class Spindexer extends SubsystemBase {
+    private final TalonFX motor;
+    private final VoltageOut voltageOutReq = new VoltageOut(0).withEnableFOC(true);
 
-    public Hopper() {
-        motor = new TalonFX(SerializationConstants.HOPPER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+    public Spindexer() {
+        motor = new TalonFX(SerializationConstants.SPINDEXER_MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         var cfg = new TalonFXConfiguration();
+        cfg.CurrentLimits.StatorCurrentLimit = SerializationConstants.SPINDEXER_CURRENT_LIMIT;
+        cfg.CurrentLimits.StatorCurrentLimitEnable = true;
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         motor.getConfigurator().apply(cfg);
         motor.optimizeBusUtilization();
-        motor.stopMotor();
     }
 
     public void startMotor() {
-        motor.setControl(voltageOutReq.withOutput(voltage.get()));
+        motor.setControl(voltageOutReq.withOutput(SerializationConstants.SPINDEXER_NORMAL_VOLTS));
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(
-                    voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.HOPPER_MAX_VOLTS));
+                    voltageOutReq
+                            .withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
         });
     }
 
@@ -45,6 +42,6 @@ public class Hopper extends SubsystemBase {
     }
 
     public void startKicking() {
-        motor.setControl(voltageOutReq.withOutput(SerializationConstants.HOPPER_MAX_VOLTS));
+        motor.setControl(voltageOutReq.withOutput(SerializationConstants.SPINDEXER_MAX_VOLTS));
     }
 }

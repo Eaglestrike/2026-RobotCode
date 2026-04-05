@@ -2,26 +2,30 @@ package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -33,24 +37,31 @@ import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 
 public class ShooterTurret extends SubsystemBase {
     private TalonFX motor;
+    private CANcoder encoder;
     private PositionVoltage position = new PositionVoltage(0);
     private EagleSwerveDrivetrain drive;
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
-    private Angle targetAngle = Degrees.of(0);
+    private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
 
-    private boolean zeroed = false;
     private boolean isRecentering = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
         this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        this.encoder = new CANcoder(TurretConstants.CANCODER_ID, RobotContainer.MECHANISM_CANBUS);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = TurretConstants.FORWARD_LIMIT.in(Rotations);
         cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.BACKWARD_LIMIT.in(Rotations);
 
-        cfg.Feedback.SensorToMechanismRatio = TurretConstants.GEAR_RATIO;
+        cfg.Feedback.SensorToMechanismRatio = TurretConstants.SENSOR_TO_MECHANISM;
+        cfg.Feedback.RotorToSensorRatio = TurretConstants.ROTOR_TO_SENSOR;
+        cfg.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+        cfg.Feedback.FeedbackRemoteSensorID = TurretConstants.CANCODER_ID;
+
+        encoderCfg.MagnetSensor.MagnetOffset = TurretConstants.MAGNET_OFFSET;
+        encoderCfg.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0; 
 
         cfg.Slot0.kP = TurretConstants.kP;
         cfg.Slot0.kI = TurretConstants.kI;
@@ -65,6 +76,7 @@ public class ShooterTurret extends SubsystemBase {
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         this.motor.getConfigurator().apply(cfg);
+        this.encoder.getConfigurator().apply(encoderCfg);
         motor.getPosition().setUpdateFrequency(50);
         motor.getVelocity().setUpdateFrequency(10);
         motor.optimizeBusUtilization();
@@ -74,49 +86,43 @@ public class ShooterTurret extends SubsystemBase {
         DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
             CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
         });
-
-        if (RobotBase.isSimulation()) {
-            motor.setPosition(TurretConstants.ENCODER_OFFSET);
-            zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
-        }
     }
 
     /**
-     * Normalize an angle into the turret's safe range [BACKWARD_LIMIT,
-     * FORWARD_LIMIT]
-     * by shifting in increments of 360°. If no equivalent angle fits, clamps to the
-     * nearest limit.
+     * Calculate the nearest total setpoint
+     * 
+     * @param fromTotal Current angle ∈ [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * @param toOffset  Target angle ∈ [0, 360)
      */
-    private Angle normalizeToSafeRange(Angle angle) {
-        double deg = angle.in(Degrees);
-        double lo = TurretConstants.BACKWARD_LIMIT.in(Degrees);
-        double hi = TurretConstants.FORWARD_LIMIT.in(Degrees);
+    private Pair<Angle, Boolean> nearestWind(Angle fromTotal, Angle toOffset) {
+        Angle fromOffset = Degrees.of(fromTotal.in(Degrees) % 360);
 
-        // Shift into range by adding/subtracting full rotations
-        while (deg > hi) {
-            deg -= 360.0;
-            isRecentering = true;
-        }
-        while (deg < lo) {
-            deg += 360.0;
-            isRecentering = true;
-        }
+        Angle delta = toOffset.minus(fromOffset);
+        Angle res = fromTotal.plus(delta);
+        boolean wraps = false;
 
-        // If still out of range (shouldn't happen with a 360° window, but just in case)
-        if (deg > hi) {
-            deg = hi;
-        } else if (deg < lo) {
-            deg = lo;
+        while (res.gt(TurretConstants.FORWARD_LIMIT)) {
+            res = res.minus(Degrees.of(360));
+            wraps = true;
+        }
+        while (res.lt(TurretConstants.BACKWARD_LIMIT)) {
+            res = res.plus(Degrees.of(360));
+            wraps = true;
         }
 
-        return Degrees.of(deg);
+        if (res.gt(TurretConstants.FORWARD_LIMIT)) {
+            res = TurretConstants.FORWARD_LIMIT;
+        } else if (res.lt(TurretConstants.BACKWARD_LIMIT)) {
+            res = TurretConstants.BACKWARD_LIMIT;
+        }
+
+        return new Pair<Angle, Boolean>(res, wraps);
     }
 
     /**
      * Sets control for the turret to move to requested position
      * Angle is measured from intake = 0 rotations, with clockwise positive
-     * 
+     *
      * @param pos Angle between -1 and 1 rotations
      * @return runOnce command (does not wait for movement to terminate; use
      *         atTarget() for that)
@@ -128,18 +134,23 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setAngle(Angle pos) {
-        Angle safePos = normalizeToSafeRange(pos);
-        if (!zeroed) {
-            return;
+        pos = pos.plus(TurretConstants.ENCODER_OFFSET);
+        var wind = nearestWind(motor.getPosition().getValue(), pos);
+        Angle setpoint = wind.getFirst();
+        boolean wraps = wind.getSecond();
+
+        if (wraps) {
+            isRecentering = true;
         }
-        if (isRecentering && safePos.isNear(targetAngle, TurretConstants.ANGLE_TOLERANCE)) {
+
+        // technically this should be in periodic() but setAngle()'s 5ms call interval
+        // is faster >:(
+        if (isRecentering && motor.getPosition().getValue().isNear(setpoint, TurretConstants.ANGLE_TOLERANCE)) {
             isRecentering = false;
         }
-        // double omega =
-        // RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
-        double omega = 0;
-        this.targetAngle = safePos;
-        this.motor.setControl(this.position.withPosition(safePos).withVelocity(-omega));
+
+        double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
+        this.motor.setControl(this.position.withPosition(setpoint).withVelocity(omega));
     }
 
     public Command stop() {
@@ -164,22 +175,13 @@ public class ShooterTurret extends SubsystemBase {
                 });
     }
 
-    public Command zero() {
-        return runOnce(() -> {
-            motor.setPosition(TurretConstants.ENCODER_OFFSET);
-            zeroed = true;
-            DogLog.log("ShooterTurret/ShooterTurretZeroed", zeroed);
-        });
-    }
-
     public boolean atTarget() {
         return !isRecentering;
     }
 
     @Override
     public void periodic() {
-        // DogLog.log("ShooterTurret/Position",
-        // motor.getPosition().getValue().in(Degrees), "Degrees");
+        DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET));
         // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
         // "Degrees");
         // DogLog.log("ShooterTurret/AtTarget", atTarget());
@@ -216,7 +218,7 @@ public class ShooterTurret extends SubsystemBase {
                 ShooterConstants.TurretConstants.OFFSET.getX(),
                 ShooterConstants.TurretConstants.OFFSET.getY(),
                 ShooterConstants.TurretConstants.OFFSET_HEIGHT,
-                new Rotation3d(0, 0, -this.motor.getPosition().getValue().in(Radians)));
+                new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
     }
 
 }

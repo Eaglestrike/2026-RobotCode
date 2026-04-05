@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Milliseconds;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -24,40 +26,10 @@ public class Robot extends TimedRobot {
 
     private final RobotContainer m_robotContainer;
 
-    private static final int MAX_LOG_FILES = 10;
-    private static final long MAX_LOG_DIR_BYTES = 500L * 1024 * 1024; // 500 MB
-
     public Robot() {
-        DogLog.setOptions(new DogLogOptions()
-                .withCaptureNt(false)
-                .withLogExtras(false));
-        cleanupOldLogs();
+        DogLog.setOptions(new DogLogOptions().withCaptureDs(true).withLogExtras(true));
         m_robotContainer = new RobotContainer();
-    }
-
-    private void cleanupOldLogs() {
-        File logDir = new File(RobotBase.isReal() ? "/home/lvuser/logs" : "logs");
-        if (!logDir.exists() || !logDir.isDirectory())
-            return;
-
-        File[] logs = logDir.listFiles((dir, name) -> name.endsWith(".wpilog"));
-        if (logs == null || logs.length <= 1)
-            return;
-
-        Arrays.sort(logs, Comparator.comparingLong(File::lastModified));
-
-        long totalSize = 0;
-        for (File f : logs)
-            totalSize += f.length();
-
-        int i = 0;
-        while (i < logs.length - 1 && (logs.length - i > MAX_LOG_FILES || totalSize > MAX_LOG_DIR_BYTES)) {
-            totalSize -= logs[i].length();
-            System.out.println("[LogCleanup] Deleting " + logs[i].getName()
-                    + " (" + (logs[i].length() / 1024) + " KB)");
-            logs[i].delete();
-            i++;
-        }
+        addPeriodic(m_robotContainer.getSuperstructure()::fastPeriodic, Milliseconds.of(5));
     }
 
     @Override
@@ -75,6 +47,9 @@ public class Robot extends TimedRobot {
 
     @Override
     public void disabledPeriodic() {
+        if (m_robotContainer != null) {
+            m_robotContainer.disabledPeriodic();
+        }
     }
 
     @Override

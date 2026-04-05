@@ -1,5 +1,7 @@
 package frc.robot.subsystems.drive;
 
+import java.util.*;
+
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 
@@ -7,13 +9,12 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
-import edu.wpi.first.networktables.StringPublisher;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -39,6 +40,8 @@ public class EagleSwerveTelemetry {
         for (int i = 0; i < 4; ++i) {
             SmartDashboard.putData("Module " + i, m_moduleMechanisms[i]);
         }
+
+        SmartDashboard.putData("Field", field);
     }
 
     /* What to publish over networktables for telemetry */
@@ -60,9 +63,7 @@ public class EagleSwerveTelemetry {
             .publish();
 
     /* Robot pose for field positioning */
-    private final NetworkTable table = inst.getTable("Pose");
-    private final DoubleArrayPublisher fieldPub = table.getDoubleArrayTopic("robotPose").publish();
-    private final StringPublisher fieldTypePub = table.getStringTopic(".type").publish();
+    private final Field2d field = new Field2d();
 
     /* Mechanisms to represent the swerve module states */
     private final Mechanism2d[] m_moduleMechanisms = new Mechanism2d[] {
@@ -89,8 +90,6 @@ public class EagleSwerveTelemetry {
             m_moduleMechanisms[3].getRoot("RootDirection", 0.5, 0.5)
                     .append(new MechanismLigament2d("Direction", 0.1, 0, 0, new Color8Bit(Color.kWhite))),
     };
-
-    private final double[] m_poseArray = new double[3];
 
     /**
      * Accept the swerve drive state and telemeterize it to SmartDashboard and
@@ -120,12 +119,7 @@ public class EagleSwerveTelemetry {
         SignalLogger.writeDouble("DriveState/OdometryPeriod", state.OdometryPeriod, "seconds");
 
         /* Telemeterize the pose to a Field2d */
-        fieldTypePub.set("Field2d");
-
-        m_poseArray[0] = state.Pose.getX();
-        m_poseArray[1] = state.Pose.getY();
-        m_poseArray[2] = state.Pose.getRotation().getDegrees();
-        fieldPub.set(m_poseArray);
+        field.setRobotPose(state.Pose);
 
         /* Telemeterize each module state to a Mechanism2d */
         for (int i = 0; i < 4; ++i) {
@@ -133,5 +127,29 @@ public class EagleSwerveTelemetry {
             m_moduleDirections[i].setAngle(state.ModuleStates[i].angle);
             m_moduleSpeeds[i].setLength(state.ModuleStates[i].speedMetersPerSecond / (2 * MaxSpeed));
         }
+    }
+
+    /**
+     * Updates the target pose from the superstructure for visualization.
+     * @param targetPose An optional containing the target pose, or empty if no target
+     */
+    public void setSuperstructureTargetPose(Optional<Pose2d> targetPose) {
+        if (targetPose.isPresent()) {
+            field.getObject("SuperstructureTarget").setPose(targetPose.get());
+        } else {
+            field.getObject("SuperstructureTarget")
+                    .setPose(new Pose2d(-1000.0, -1000.0, new edu.wpi.first.math.geometry.Rotation2d()));
+        }
+    }
+
+    /**
+     * Updates the autonomous trajectory on the Field2d for visualization.
+     * @param pathPoses The poses of the trajectory to display on the field.
+     */
+    public void setAutonomousTrajectory(List<Pose2d> pathPoses) {
+        if(pathPoses == null) {
+            pathPoses = new ArrayList<>();
+        }
+        field.getObject("AutonomousPath").setPoses(pathPoses);
     }
 }
