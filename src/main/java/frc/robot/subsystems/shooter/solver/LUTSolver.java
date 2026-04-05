@@ -30,7 +30,7 @@ public class LUTSolver implements ShooterSolver {
 
     @Override
     public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget,
-            boolean isFerrying) {
+                                  boolean isFerrying) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
         double tof = TOF_MAP.get(distance);
@@ -54,8 +54,7 @@ public class LUTSolver implements ShooterSolver {
                     true);
         }
         return new ShotData(
-                // HOOD_MAP.get(distance),
-                getHoodAngle(distance),
+                HOOD_MAP.get(distance),
                 turretAngle,
                 RPM_MAP.get(distance),
                 predictedTarget,
@@ -77,7 +76,7 @@ public class LUTSolver implements ShooterSolver {
         return A * Math.cos(k * angle + phi) + C;
         // Fit was (8.349118) * Math.cos(0.017453293 * x + -2.252373606) + (0.356479)
     }
-    
+
     /**
      * Map from shooting distance to hood angle
      */
@@ -118,33 +117,42 @@ public class LUTSolver implements ShooterSolver {
         FERRY_HOOD_MAP.clear();
 
         // ----- SHOOT MAP -----
-        RPM_MAP.put(1.75, 1400.0);
-        HOOD_MAP.put(1.75, Rotation2d.fromDegrees(75));
-        TOF_MAP.put(1.75, 4.2 * 0.125);
 
-        RPM_MAP.put(2.37, 1500.0);
-        HOOD_MAP.put(2.37, Rotation2d.fromDegrees(74));
-        TOF_MAP.put(2.37, 3.9 * 0.125);
+        RPM_MAP.put(1.404, 1350.0);
+        HOOD_MAP.put(1.404, Rotation2d.fromDegrees(75));
+        TOF_MAP.put(1.404, 0.803);
 
-        RPM_MAP.put(2.97, 1596.0);
-        HOOD_MAP.put(2.97, Rotation2d.fromDegrees(69));
-        TOF_MAP.put(2.97, 4.53 * 0.125);
+        RPM_MAP.put(2.097, 1450.0);
+        HOOD_MAP.put(2.097, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(2.097, 0.869);
 
-        RPM_MAP.put(3.31, 1650.0);
-        HOOD_MAP.put(3.31, Rotation2d.fromDegrees(70));
-        TOF_MAP.put(3.31, 5.0 * 0.125);
+        RPM_MAP.put(2.576, 1550.0);
+        HOOD_MAP.put(2.576, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(2.576, 0.953);
 
-        RPM_MAP.put(3.88, 1741.0);
-        HOOD_MAP.put(3.88, Rotation2d.fromDegrees(65));
-        TOF_MAP.put(3.88, 5.0 * 0.125);
+        RPM_MAP.put(2.976, 1600.0);
+        HOOD_MAP.put(2.976, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(2.976, 0.939);
 
-        RPM_MAP.put(4.29, 1806.0);
-        HOOD_MAP.put(4.29, Rotation2d.fromDegrees(63.15));
-        TOF_MAP.put(4.29, 5.16 * 0.125);
+        RPM_MAP.put(3.514, 1750.0);
+        HOOD_MAP.put(3.514, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(3.514, 1.133);
 
-        RPM_MAP.put(5.22, 1955.0);
-        HOOD_MAP.put(5.22, Rotation2d.fromDegrees(57));
-        TOF_MAP.put(5.22, 5.25 * 0.125);
+        RPM_MAP.put(3.906, 1850.0);
+        HOOD_MAP.put(3.906, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(3.906, 1.203);
+
+        RPM_MAP.put(4.43, 1950.0);
+        HOOD_MAP.put(4.43, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(4.43, 1.269);
+
+        RPM_MAP.put(5.036, 2100.0);
+        HOOD_MAP.put(5.036, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(5.036, 1.350);
+
+        RPM_MAP.put(5.625, 2400.0);
+        HOOD_MAP.put(5.625, Rotation2d.fromDegrees(70));
+        TOF_MAP.put(5.625, 1.492);
         // ----- END SHOOT MAP -----
 
         // ----- FERRY MAP -----
