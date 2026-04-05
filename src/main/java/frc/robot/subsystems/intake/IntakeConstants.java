@@ -9,6 +9,7 @@ public final class IntakeConstants {
         public static final double JIGGLE_VOLTS = 2.0;
         public static final double EJECT_VOLTS = -5.0;
         public static final int CURRENT_LIMIT = 30;
+        public static final int STALL_THRESHOLD = 25; // in stator current amps
     }
 
     public static final class Wrist {
