@@ -134,6 +134,14 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setAngle(Angle pos) {
+        if (isRecentering) {
+            if (motor.getPosition().getValue().isNear(Rotations.of(this.position.Position), TurretConstants.ANGLE_TOLERANCE)) {
+                isRecentering = false;
+            } else {
+                return;
+            }
+        }
+
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
         var wind = nearestWind(motor.getPosition().getValue(), pos);
         Angle setpoint = wind.getFirst();
@@ -141,12 +149,6 @@ public class ShooterTurret extends SubsystemBase {
 
         if (wraps) {
             isRecentering = true;
-        }
-
-        // technically this should be in periodic() but setAngle()'s 5ms call interval
-        // is faster >:(
-        if (isRecentering && motor.getPosition().getValue().isNear(setpoint, TurretConstants.ANGLE_TOLERANCE)) {
-            isRecentering = false;
         }
 
         double omega = RadiansPerSecond.of(drive.getState().Speeds.omegaRadiansPerSecond).in(RotationsPerSecond);
