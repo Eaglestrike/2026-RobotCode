@@ -31,7 +31,7 @@ public class IntakeRollers extends SubsystemBase {
         followerMotor.optimizeBusUtilization();
 
         Trigger velocityLimitTrigger = new Trigger(
-                () -> motor.getVelocity().getValueAsDouble() > IntakeConstants.Rollers.VELOCITY_THRESHOLD && slewRateLimiter.lastValue() >= IntakeConstants.Rollers.VOLTS - 0.1);
+                () -> motor.getVelocity().getValueAsDouble() < IntakeConstants.Rollers.VELOCITY_THRESHOLD && slewRateLimiter.lastValue() >= IntakeConstants.Rollers.VOLTS - 0.1);
 
         velocityLimitTrigger.onTrue(stop());
     }
