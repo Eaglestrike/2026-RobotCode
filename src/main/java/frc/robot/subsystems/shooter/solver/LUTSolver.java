@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Meters;
 import java.util.HashMap;
 import java.util.Map;
 
+import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -16,7 +17,11 @@ import edu.wpi.first.units.measure.Distance;
 
 public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
-    private static final int DRAG_COEFF = 1;
+    private static double DRAG_COEFF = 2;
+
+    static {
+        DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> { DRAG_COEFF = v; });
+    }
 
     public static Distance getDistanceToTarget(Translation3d launcherPose, Translation3d target) {
         return Meters.of(launcherPose.getDistance(target));
