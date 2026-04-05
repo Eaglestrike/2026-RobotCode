@@ -110,7 +110,6 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 // intakeRollers.stop(),
-                intakeRollers.eject(),
                 intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
                 Commands.runOnce(() -> intakeWrist.setJiggle(false)),
                 intakeWrist.retain());
