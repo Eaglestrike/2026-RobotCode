@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.RobotContainer;
 import java.util.function.DoubleSupplier;
 
-
 public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
     private final TalonFX followerMotor;
@@ -31,8 +30,10 @@ public class IntakeRollers extends SubsystemBase {
         motor.optimizeBusUtilization();
         followerMotor.optimizeBusUtilization();
 
-        Trigger currentLimitTrigger = new Trigger(() -> motor.getStatorCurrent().getValueAsDouble() > IntakeConstants.Rollers.STALL_THRESHOLD);
-        currentLimitTrigger.onTrue(stop());
+        Trigger velocityLimitTrigger = new Trigger(
+                () -> motor.getVelocity().getValueAsDouble() > IntakeConstants.Rollers.VELOCITY_THRESHOLD && slewRateLimiter.lastValue() >= IntakeConstants.Rollers.VOLTS - 0.1);
+
+        velocityLimitTrigger.onTrue(stop());
     }
 
     public Command start() {
@@ -68,7 +69,8 @@ public class IntakeRollers extends SubsystemBase {
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
-            followerMotor.setControl(voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
+            followerMotor.setControl(
+                    voltageRequest.withOutput(joystickPosition.getAsDouble() * IntakeConstants.Rollers.VOLTS));
         });
     }
 }
