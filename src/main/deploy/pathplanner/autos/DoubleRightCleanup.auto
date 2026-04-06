@@ -5,19 +5,19 @@
     "data": {
       "commands": [
         {
-          "type": "deadline",
+          "type": "named",
+          "data": {
+            "name": "Intake"
+          }
+        },
+        {
+          "type": "parallel",
           "data": {
             "commands": [
               {
                 "type": "path",
                 "data": {
                   "pathName": "RightCleanup1"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "Intake"
                 }
               }
             ]
@@ -36,9 +36,21 @@
           }
         },
         {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "StowIntake"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
           }
         },
         {
@@ -81,7 +93,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 1.0
+            "waitTime": 2.0
           }
         },
         {
@@ -93,7 +105,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 3.0
+            "waitTime": 2.0
           }
         },
         {
