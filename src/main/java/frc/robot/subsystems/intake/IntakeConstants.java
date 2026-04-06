@@ -5,10 +5,10 @@ public final class IntakeConstants {
         public static final int MOTOR_ID = 34;
         public static final int FOLLOWER_MOTOR_ID = 30;
 
-        public static final double VOLTS = 5.0;
+        public static final double VOLTS = 6.0;
         public static final double JIGGLE_VOLTS = 2.0;
         public static final double EJECT_VOLTS = -5.0;
-        public static final int CURRENT_LIMIT = 30;
+        public static final int CURRENT_LIMIT = 40;
         public static final int STALL_THRESHOLD = 100; // in stator current amps
         public static final int VELOCITY_THRESHOLD = 10; // in motor rotations per second
     }
