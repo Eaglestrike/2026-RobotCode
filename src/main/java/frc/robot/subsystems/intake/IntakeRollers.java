@@ -28,12 +28,20 @@ public class IntakeRollers extends SubsystemBase {
         currentCfg.StatorCurrentLimitEnable = true;
         cfg.apply(currentCfg);
         motor.optimizeBusUtilization();
+
+        var cfg2 = followerMotor.getConfigurator();
+        var currentCfg2 = new CurrentLimitsConfigs();
+        currentCfg2.StatorCurrentLimit = IntakeConstants.Rollers.CURRENT_LIMIT;
+        currentCfg2.StatorCurrentLimitEnable = true;
+        cfg2.apply(currentCfg2);
         followerMotor.optimizeBusUtilization();
 
-        Trigger velocityLimitTrigger = new Trigger(
-                () -> motor.getVelocity().getValueAsDouble() < IntakeConstants.Rollers.VELOCITY_THRESHOLD && slewRateLimiter.lastValue() >= IntakeConstants.Rollers.VOLTS - 0.1);
+        // Trigger velocityLimitTrigger = new Trigger(
+        // () -> motor.getVelocity().getValueAsDouble() <
+        // IntakeConstants.Rollers.VELOCITY_THRESHOLD && slewRateLimiter.lastValue() >=
+        // IntakeConstants.Rollers.VOLTS - 0.1);
 
-        velocityLimitTrigger.onTrue(stop());
+        // velocityLimitTrigger.onTrue(stop());
     }
 
     public Command start() {

@@ -17,10 +17,12 @@ import edu.wpi.first.units.measure.Distance;
 
 public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
-    private static double DRAG_COEFF = 2;
+    private static double DRAG_COEFF = 0;
 
     static {
-        DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> { DRAG_COEFF = v; });
+        DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
+            DRAG_COEFF = v;
+        });
     }
 
     public static Distance getDistanceToTarget(Translation3d launcherPose, Translation3d target) {
@@ -35,12 +37,15 @@ public class LUTSolver implements ShooterSolver {
     }
 
     public static double dragCompensatedTOF(double tof) {
+        if (DRAG_COEFF == 0) {
+            return tof;
+        }
         return (1.0 - Math.exp(-DRAG_COEFF * tof)) / DRAG_COEFF;
     }
 
     @Override
     public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget,
-                                  boolean isFerrying) {
+            boolean isFerrying) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
         double tof;
