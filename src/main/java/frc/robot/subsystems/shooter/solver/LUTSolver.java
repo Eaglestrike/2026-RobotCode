@@ -83,13 +83,15 @@ public class LUTSolver implements ShooterSolver {
         return Rotation2d.fromDegrees(A * distance * distance + B * distance + C);
     }
 
-    public static double getAngleOffset(double angle) {
-        final double A = 8.349118;
-        final double k = 0.017453293;
-        final double phi = -2.252373606;
-        final double C = 0.356479;
-        return A * Math.cos(k * angle + phi) + C;
-        // Fit was (8.349118) * Math.cos(0.017453293 * x + -2.252373606) + (0.356479)
+    /**
+     * 
+     * @param angdeg DEGREES DEGREES DEGREES DEGREES
+     * @return DEGREES DEGREES DEGREES DEGREES
+     */
+    public static double getAngleOffset(double angdeg) {
+        // Pulled out of https://www.desmos.com/calculator/66c2wksfkm, rather than our
+        // asses
+        return 8.94427 * Math.cos(Math.toRadians(angdeg + 153.43495));
     }
 
     /**
