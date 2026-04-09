@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -19,6 +20,9 @@ public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
     private static double DRAG_COEFF = 0;
 
+    // ask alan/max -_-
+    private static double MAGIC_AMPLITUDE = 1;
+
     static {
         DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
             DRAG_COEFF = v;
@@ -29,9 +33,12 @@ public class LUTSolver implements ShooterSolver {
         return Meters.of(launcherPose.getDistance(target));
     }
 
-    public static Translation3d getFutureTarget(Translation3d target, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, double tof) {
-        double futureX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof - kickerSpeeds.vxMetersPerSecond * tof * tof;
-        double futureY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof - kickerSpeeds.vyMetersPerSecond * tof * tof;
+    public static Translation3d getFutureTarget(Translation3d target, ChassisSpeeds fieldSpeeds,
+            ChassisSpeeds kickerSpeeds, double tof) {
+        double futureX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof
+                - kickerSpeeds.vxMetersPerSecond * tof * tof;
+        double futureY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof
+                - kickerSpeeds.vyMetersPerSecond * tof * tof;
 
         return new Translation3d(futureX, futureY, target.getZ());
     }
@@ -44,8 +51,9 @@ public class LUTSolver implements ShooterSolver {
     }
 
     @Override
-    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, Translation3d actualTarget,
-            boolean isFerrying) {
+    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds,
+            Translation3d actualTarget,
+            boolean isFerrying, Pose2d drivebasePose) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
         double tof;
@@ -71,7 +79,10 @@ public class LUTSolver implements ShooterSolver {
         return new ShotData(
                 HOOD_MAP.get(distance),
                 turretAngle,
-                RPM_MAP.get(distance),
+                RPM_MAP.get(distance)
+                        + MAGIC_AMPLITUDE
+                                * Math.cos(
+                                        launcherPose.getRotation().getZ() - drivebasePose.getRotation().getRadians()),
                 predictedTarget,
                 true);
     }
@@ -88,11 +99,12 @@ public class LUTSolver implements ShooterSolver {
      * @param angdeg DEGREES DEGREES DEGREES DEGREES
      * @return DEGREES DEGREES DEGREES DEGREES
      */
-//    public static double getAngleOffset(double angdeg) {
-//        // Pulled out of https://www.desmos.com/calculator/66c2wksfkm, rather than our
-//        // asses
-//        return 8.94427 * Math.cos(Math.toRadians(angdeg + 153.43495));
-//    }
+    // public static double getAngleOffset(double angdeg) {
+    // // Pulled out of https://www.desmos.com/calculator/66c2wksfkm, rather than
+    // our
+    // // asses
+    // return 8.94427 * Math.cos(Math.toRadians(angdeg + 153.43495));
+    // }
     public static double getAngleOffset(double angle) {
         final double A = 8.349118;
         final double k = 0.017453293;
@@ -102,8 +114,7 @@ public class LUTSolver implements ShooterSolver {
         // Fit was (8.349118) * Math.cos(0.017453293 * x + -2.252373606) + (0.356479)
     }
 
-//    public static double getRPMOffset(double angle) {}
-
+    // public static double getRPMOffset(double angle) {}
 
     /**
      * Map from shooting distance to hood angle

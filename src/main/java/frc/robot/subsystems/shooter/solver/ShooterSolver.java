@@ -1,12 +1,14 @@
 package frc.robot.subsystems.shooter.solver;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public interface ShooterSolver {
-    ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, Translation3d actualTarget, boolean isFerrying);
+    ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds,
+            Translation3d actualTarget, boolean isFerrying, Pose2d drivebasePose);
 
     public record ShotData(
             Rotation2d hoodAngle,

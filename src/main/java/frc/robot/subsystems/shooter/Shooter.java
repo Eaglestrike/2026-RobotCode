@@ -83,7 +83,7 @@ public class Shooter extends SubsystemBase {
         }
 
         DogLog.tunable("Shooter/KickerVelMagn", kickerVelMagn, angle -> {
-             kickerVelMagn = angle;
+            kickerVelMagn = angle;
         });
         DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
             kickerVelPhaseShift = angle;
@@ -118,15 +118,16 @@ public class Shooter extends SubsystemBase {
 
     /**
      * Returns true if the robot is currently moving toward its own alliance zone.
-     * Blue alliance: alliance zone is at lower X, so negative field vX means toward alliance.
-     * Red alliance: alliance zone is at higher X, so positive field vX means toward alliance.
+     * Blue alliance: alliance zone is at lower X, so negative field vX means toward
+     * alliance.
+     * Red alliance: alliance zone is at higher X, so positive field vX means toward
+     * alliance.
      */
     private boolean isMovingTowardAllianceZone() {
         Pose2d robotPose = drive.getState().Pose;
         ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
                 drive.getState().Speeds, robotPose.getRotation());
-        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red)
-                == DriverStation.Alliance.Blue;
+        boolean isBlue = DriverStation.getAlliance().orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue;
         // Blue: toward alliance = negative vX; Red: toward alliance = positive vX
         return isBlue ? fieldSpeeds.vxMetersPerSecond < -0.25
                 : fieldSpeeds.vxMetersPerSecond > 0.25;
@@ -180,25 +181,30 @@ public class Shooter extends SubsystemBase {
         ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
                 new ChassisSpeeds(shooterVx, shooterVy, robotSpeeds.omegaRadiansPerSecond),
                 robotPose.getRotation());
-        
+
         DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
         /* test: compensate for kicker */
         double turretAngleRad = turret.getAngleRad();
         DogLog.log("ShooterDebug/TurretAngleRad", turretAngleRad + Math.PI);
         DogLog.log("ShooterDebug/RobotRotRad", robotPose.getRotation().getRadians());
-        DogLog.log("ShooterDebug/TurretDRobot", robotPose.getRotation().getRadians() - (turretAngleRad + kickerVelPhaseShift));
+        DogLog.log("ShooterDebug/TurretDRobot",
+                robotPose.getRotation().getRadians() - (turretAngleRad + kickerVelPhaseShift));
         ChassisSpeeds kickerSpeeds = new ChassisSpeeds();
-        kickerSpeeds.vxMetersPerSecond = kickerVelMagn * Math.cos(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
-        kickerSpeeds.vyMetersPerSecond = kickerVelMagn * Math.sin(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
+        kickerSpeeds.vxMetersPerSecond = kickerVelMagn
+                * Math.cos(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
+        kickerSpeeds.vyMetersPerSecond = kickerVelMagn
+                * Math.sin(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
         DogLog.log("ShooterDebug/FieldSpeedsX", fieldSpeeds.vxMetersPerSecond);
         DogLog.log("ShooterDebug/FieldSpeedsY", fieldSpeeds.vyMetersPerSecond);
-        DogLog.log("ShooterDebug/FieldSpeedsMagn", Math.sqrt(fieldSpeeds.vxMetersPerSecond * fieldSpeeds.vxMetersPerSecond + fieldSpeeds.vyMetersPerSecond * fieldSpeeds.vyMetersPerSecond));
+        DogLog.log("ShooterDebug/FieldSpeedsMagn",
+                Math.sqrt(fieldSpeeds.vxMetersPerSecond * fieldSpeeds.vxMetersPerSecond
+                        + fieldSpeeds.vyMetersPerSecond * fieldSpeeds.vyMetersPerSecond));
 
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
         ShotData result = solver.calculateShot(shooterPose, fieldSpeeds, kickerSpeeds,
-                targetPose.getTranslation(), isFerrying);
+                targetPose.getTranslation(), isFerrying, drive.getState().Pose);
 
         lastSolverResult = result;
         if (!result.validShot()) {
@@ -209,10 +215,10 @@ public class Shooter extends SubsystemBase {
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
-//        double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
-//        DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
+        // double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
+        // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
-//        targetTurretAngleDeg += autoTrim;
+        // targetTurretAngleDeg += autoTrim;
         DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
@@ -318,7 +324,7 @@ public class Shooter extends SubsystemBase {
         } else {
             return;
         }
-        
+
         DogLog.forceNt.log("Shooter/CurrentState", currentState.toString());
 
         DogLog.log("Shooter/HasTarget", targetPose != null);
