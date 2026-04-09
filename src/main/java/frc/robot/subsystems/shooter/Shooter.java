@@ -185,21 +185,11 @@ public class Shooter extends SubsystemBase {
         DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
         /* test: compensate for kicker */
-        double turretAngleRad = turret.getAngleRad();
-        DogLog.log("ShooterDebug/TurretAngleRad", turretAngleRad + Math.PI);
-        DogLog.log("ShooterDebug/RobotRotRad", robotPose.getRotation().getRadians());
-        DogLog.log("ShooterDebug/TurretDRobot",
-                robotPose.getRotation().getRadians() - (turretAngleRad + kickerVelPhaseShift));
         ChassisSpeeds kickerSpeeds = new ChassisSpeeds();
         kickerSpeeds.vxMetersPerSecond = kickerVelMagn
                 * Math.cos(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
         kickerSpeeds.vyMetersPerSecond = kickerVelMagn
                 * Math.sin(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
-        DogLog.log("ShooterDebug/FieldSpeedsX", fieldSpeeds.vxMetersPerSecond);
-        DogLog.log("ShooterDebug/FieldSpeedsY", fieldSpeeds.vyMetersPerSecond);
-        DogLog.log("ShooterDebug/FieldSpeedsMagn",
-                Math.sqrt(fieldSpeeds.vxMetersPerSecond * fieldSpeeds.vxMetersPerSecond
-                        + fieldSpeeds.vyMetersPerSecond * fieldSpeeds.vyMetersPerSecond));
 
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
@@ -219,7 +209,7 @@ public class Shooter extends SubsystemBase {
         // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
         // targetTurretAngleDeg += autoTrim;
-        DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
+//        DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
@@ -336,24 +326,14 @@ public class Shooter extends SubsystemBase {
         DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
         DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
 
-        DogLog.log("Shooter/PredictedTargetTranslation3d",
-                new Translation3d[] { lastSolverResult.predictedTarget() });
+//        DogLog.log("Shooter/PredictedTargetTranslation3d",
+//                new Translation3d[] { lastSolverResult.predictedTarget() });
 
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());
         DogLog.log("Shooter/Solver/TargetTurretAngle_deg", lastSolverResult.turretAngle().getDegrees());
         DogLog.log("Shooter/Solver/TargetHoodAngle_deg", lastSolverResult.hoodAngle().getDegrees());
         DogLog.log("Shooter/Solver/TargetFlywheelVel_rpm", lastSolverResult.rpm());
-
-        // 3D visualization poses (field-absolute, with odom)
-        Pose2d robotPose = drive.getState().Pose;
-        Pose3d robotPose3d = new Pose3d(
-                robotPose.getX(), robotPose.getY(), 0,
-                new Rotation3d(0, 0, robotPose.getRotation().getRadians()));
-        Pose3d turretLocal = turret.getComponentPose3d();
-        Pose3d hoodLocal = hood.getComponentPose3d(turretLocal);
-        DogLog.log("Shooter/TurretPose3d", new Pose3d[] { robotPose3d.transformBy(toTransform(turretLocal)) });
-        DogLog.log("Shooter/HoodPose3d", new Pose3d[] { robotPose3d.transformBy(toTransform(hoodLocal)) });
 
         if (targetPose != null) {
             DogLog.log("Shooter/TargetPose3d",

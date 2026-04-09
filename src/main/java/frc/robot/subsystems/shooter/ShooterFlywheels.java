@@ -142,6 +142,5 @@ public class ShooterFlywheels extends SubsystemBase {
     public void periodic() {
         DogLog.log("ShooterFlywheels/Velocity_rps", motor.getVelocity().getValueAsDouble());
         DogLog.log("ShooterFlywheels/TargetVelocity_rps", targetVel.in(RotationsPerSecond));
-        DogLog.log("ShooterFlywheels/AtVelocity", atVelocity());
     }
 }

@@ -50,8 +50,8 @@ public class IntakeWrist extends SubsystemBase {
     public Command requestPosition(Angle position) {
         double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
         double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-        DogLog.log("Intake/WristVoltage", voltage);
-        DogLog.log("Intake/StallCurrent", stallCurrent);
+//        DogLog.log("Intake/WristVoltage", voltage);
+//        DogLog.log("Intake/StallCurrent", stallCurrent);
         return Commands.print("oop");
 //        return Commands.select(
 //                Map.ofEntries(

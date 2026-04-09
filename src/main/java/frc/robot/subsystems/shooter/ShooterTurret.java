@@ -139,7 +139,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public void setAngle(Angle pos) {
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
-        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
+//        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
         var wind = nearestWind(motor.getPosition().getValue(), pos);
         Angle setpoint = wind.getFirst();
         boolean wraps = wind.getSecond();
