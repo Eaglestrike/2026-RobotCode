@@ -26,6 +26,9 @@ public class LUTSolver implements ShooterSolver {
     static {
         DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
             DRAG_COEFF = v;
+        }),
+        DogLog.tunable("Shooter/Magic Amp", MAGIC_AMPLITUDE, v -> {
+            MAGIC_AMPLITUDE = v;
         });
     }
 
