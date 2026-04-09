@@ -119,6 +119,10 @@ public class ShooterTurret extends SubsystemBase {
         return new Pair<Angle, Boolean>(res, wraps);
     }
 
+    public double getAngleRad() {
+        return (motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET).in(Rotations)) * Math.PI * 2;
+    }
+
     /**
      * Sets control for the turret to move to requested position
      * Angle is measured from intake = 0 rotations, with clockwise positive
@@ -135,6 +139,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public void setAngle(Angle pos) {
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
+        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
         var wind = nearestWind(motor.getPosition().getValue(), pos);
         Angle setpoint = wind.getFirst();
         boolean wraps = wind.getSecond();

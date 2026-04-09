@@ -5,15 +5,15 @@
     "data": {
       "commands": [
         {
-          "type": "named",
-          "data": {
-            "name": "Intake"
-          }
-        },
-        {
           "type": "parallel",
           "data": {
             "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "Intake"
+                }
+              },
               {
                 "type": "path",
                 "data": {
@@ -38,19 +38,13 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
+            "waitTime": 0.5
           }
         },
         {
           "type": "named",
           "data": {
             "name": "StowIntake"
-          }
-        },
-        {
-          "type": "wait",
-          "data": {
-            "waitTime": 2.0
           }
         },
         {
@@ -93,7 +87,7 @@
         {
           "type": "wait",
           "data": {
-            "waitTime": 2.0
+            "waitTime": 0.5
           }
         },
         {

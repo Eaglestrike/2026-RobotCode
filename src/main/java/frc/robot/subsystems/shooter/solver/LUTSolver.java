@@ -29,9 +29,9 @@ public class LUTSolver implements ShooterSolver {
         return Meters.of(launcherPose.getDistance(target));
     }
 
-    public static Translation3d getFutureTarget(Translation3d target, ChassisSpeeds fieldSpeeds, double tof) {
-        double futureX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof;
-        double futureY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof;
+    public static Translation3d getFutureTarget(Translation3d target, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, double tof) {
+        double futureX = target.getX() - fieldSpeeds.vxMetersPerSecond * tof - kickerSpeeds.vxMetersPerSecond * tof * tof;
+        double futureY = target.getY() - fieldSpeeds.vyMetersPerSecond * tof - kickerSpeeds.vyMetersPerSecond * tof * tof;
 
         return new Translation3d(futureX, futureY, target.getZ());
     }
@@ -44,7 +44,7 @@ public class LUTSolver implements ShooterSolver {
     }
 
     @Override
-    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget,
+    public ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, Translation3d actualTarget,
             boolean isFerrying) {
         double distance = getDistanceToTarget(launcherPose.getTranslation(), actualTarget).in(Meters);
         Translation3d predictedTarget = actualTarget;
@@ -52,7 +52,7 @@ public class LUTSolver implements ShooterSolver {
 
         for (int i = 0; i < ITERS; i++) {
             tof = dragCompensatedTOF(TOF_MAP.get(distance));
-            predictedTarget = getFutureTarget(actualTarget, fieldSpeeds, tof);
+            predictedTarget = getFutureTarget(actualTarget, fieldSpeeds, kickerSpeeds, tof);
             distance = getDistanceToTarget(launcherPose.getTranslation(), predictedTarget).in(Meters);
         }
 
@@ -88,11 +88,22 @@ public class LUTSolver implements ShooterSolver {
      * @param angdeg DEGREES DEGREES DEGREES DEGREES
      * @return DEGREES DEGREES DEGREES DEGREES
      */
-    public static double getAngleOffset(double angdeg) {
-        // Pulled out of https://www.desmos.com/calculator/66c2wksfkm, rather than our
-        // asses
-        return 8.94427 * Math.cos(Math.toRadians(angdeg + 153.43495));
+//    public static double getAngleOffset(double angdeg) {
+//        // Pulled out of https://www.desmos.com/calculator/66c2wksfkm, rather than our
+//        // asses
+//        return 8.94427 * Math.cos(Math.toRadians(angdeg + 153.43495));
+//    }
+    public static double getAngleOffset(double angle) {
+        final double A = 8.349118;
+        final double k = 0.017453293;
+        final double phi = -2.252373606;
+        final double C = 0.356479;
+        return A * Math.cos(k * angle + phi) + C;
+        // Fit was (8.349118) * Math.cos(0.017453293 * x + -2.252373606) + (0.356479)
     }
+
+//    public static double getRPMOffset(double angle) {}
+
 
     /**
      * Map from shooting distance to hood angle

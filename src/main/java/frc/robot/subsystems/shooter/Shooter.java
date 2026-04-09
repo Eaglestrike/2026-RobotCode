@@ -1,11 +1,5 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Rotations;
-
 import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
@@ -16,6 +10,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -30,6 +25,8 @@ import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.LUTSolver.ManualPosition;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
+
+import static edu.wpi.first.units.Units.*;
 
 public class Shooter extends SubsystemBase {
     private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
@@ -58,6 +55,8 @@ public class Shooter extends SubsystemBase {
 
     private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
+    private double kickerVelMagn = 0.4;
+    private double kickerVelPhaseShift = 1.0;
 
     public Shooter(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -82,6 +81,13 @@ public class Shooter extends SubsystemBase {
                     .withName("Reset Fuel")
                     .ignoringDisable(true));
         }
+
+        DogLog.tunable("Shooter/KickerVelMagn", kickerVelMagn, angle -> {
+             kickerVelMagn = angle;
+        });
+        DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
+            kickerVelPhaseShift = angle;
+        });
     }
 
     public Command stowShooter() {
@@ -177,9 +183,21 @@ public class Shooter extends SubsystemBase {
         
         DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
+        /* test: compensate for kicker */
+        double turretAngleRad = turret.getAngleRad();
+        DogLog.log("ShooterDebug/TurretAngleRad", turretAngleRad + Math.PI);
+        DogLog.log("ShooterDebug/RobotRotRad", robotPose.getRotation().getRadians());
+        DogLog.log("ShooterDebug/TurretDRobot", robotPose.getRotation().getRadians() - (turretAngleRad + kickerVelPhaseShift));
+        ChassisSpeeds kickerSpeeds = new ChassisSpeeds();
+        kickerSpeeds.vxMetersPerSecond = kickerVelMagn * Math.cos(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
+        kickerSpeeds.vyMetersPerSecond = kickerVelMagn * Math.sin(robotPose.getRotation().getRadians() - kickerVelPhaseShift);
+        DogLog.log("ShooterDebug/FieldSpeedsX", fieldSpeeds.vxMetersPerSecond);
+        DogLog.log("ShooterDebug/FieldSpeedsY", fieldSpeeds.vyMetersPerSecond);
+        DogLog.log("ShooterDebug/FieldSpeedsMagn", Math.sqrt(fieldSpeeds.vxMetersPerSecond * fieldSpeeds.vxMetersPerSecond + fieldSpeeds.vyMetersPerSecond * fieldSpeeds.vyMetersPerSecond));
+
         // Solve for shooter settings
         Pose3d shooterPose = new Pose3d(shooterPos, new Rotation3d());
-        ShotData result = solver.calculateShot(shooterPose, fieldSpeeds,
+        ShotData result = solver.calculateShot(shooterPose, fieldSpeeds, kickerSpeeds,
                 targetPose.getTranslation(), isFerrying);
 
         lastSolverResult = result;
@@ -191,9 +209,10 @@ public class Shooter extends SubsystemBase {
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
-        double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
+//        double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
+//        DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
-        targetTurretAngleDeg += autoTrim;
+//        targetTurretAngleDeg += autoTrim;
         DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems

@@ -52,23 +52,24 @@ public class IntakeWrist extends SubsystemBase {
         double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
         DogLog.log("Intake/WristVoltage", voltage);
         DogLog.log("Intake/StallCurrent", stallCurrent);
-        return Commands.select(
-                Map.ofEntries(
-                        Map.entry(true,
-                                Commands.sequence(
-                                        runOnce(() -> {
-                                            motor.setControl(voltReq.withOutput(voltage));
-                                            state = State.MOVING_TO_GOAL;
-                                        }),
-                                        Commands.waitUntil(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
-                                        runOnce(() -> {
-                                            motor.setControl(voltReq.withOutput(0));
-                                            motor.setPosition(position); // Cos stalling messes up the encoder
-                                            state = State.IDLE;
-                                        })
-                                )),
-                        Map.entry(false, Commands.print("Wrist not zeroed"))),
-                () -> zeroed);
+        return Commands.print("oop");
+//        return Commands.select(
+//                Map.ofEntries(
+//                        Map.entry(true,
+//                                Commands.sequence(
+//                                        runOnce(() -> {
+//                                            motor.setControl(voltReq.withOutput(voltage));
+//                                            state = State.MOVING_TO_GOAL;
+//                                        }),
+//                                        Commands.waitUntil(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+//                                        runOnce(() -> {
+//                                            motor.setControl(voltReq.withOutput(0));
+//                                            motor.setPosition(position); // Cos stalling messes up the encoder
+//                                            state = State.IDLE;
+//                                        })
+//                                )),
+//                        Map.entry(false, Commands.print("Wrist not zeroed"))),
+//                () -> zeroed);
     }
 
     public Command zero() {

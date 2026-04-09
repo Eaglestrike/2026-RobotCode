@@ -6,7 +6,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 public interface ShooterSolver {
-    ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, Translation3d actualTarget, boolean isFerrying);
+    ShotData calculateShot(Pose3d launcherPose, ChassisSpeeds fieldSpeeds, ChassisSpeeds kickerSpeeds, Translation3d actualTarget, boolean isFerrying);
 
     public record ShotData(
             Rotation2d hoodAngle,
