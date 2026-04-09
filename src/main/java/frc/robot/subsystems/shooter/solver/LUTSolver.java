@@ -20,15 +20,10 @@ public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
     private static double DRAG_COEFF = 0;
 
-    // ask alan/max -_-
-    private static double MAGIC_AMPLITUDE = 1;
 
     static {
         DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
             DRAG_COEFF = v;
-        }),
-        DogLog.tunable("Shooter/Magic Amp", MAGIC_AMPLITUDE, v -> {
-            MAGIC_AMPLITUDE = v;
         });
     }
 
@@ -79,13 +74,15 @@ public class LUTSolver implements ShooterSolver {
                     predictedTarget,
                     true);
         }
+        double amplitude = -10.81588 * distance * distance - 3.32739 * distance - 2.28029;
+
         return new ShotData(
                 HOOD_MAP.get(distance),
                 turretAngle,
                 RPM_MAP.get(distance)
-                        + MAGIC_AMPLITUDE
-                                * Math.cos(
-                                        launcherPose.getRotation().getZ() - drivebasePose.getRotation().getRadians()),
+                        + amplitude
+                                * Math.sin(
+                                        turretAngle.getRadians() - drivebasePose.getRotation().getRadians()),
                 predictedTarget,
                 true);
     }
