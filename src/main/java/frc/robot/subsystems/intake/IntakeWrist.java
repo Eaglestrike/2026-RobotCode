@@ -19,7 +19,6 @@ import java.util.function.DoubleSupplier;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 
-
 public class IntakeWrist extends SubsystemBase {
     private enum State {
         IDLE, MOVING_TO_GOAL, MANUAL, JIGGLING
@@ -48,28 +47,31 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public Command requestPosition(Angle position) {
-        double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_VOLTS : IntakeConstants.Wrist.DOWN_VOLTS;
-        double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5) ? IntakeConstants.Wrist.UP_STALL_CURRENT : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
-//        DogLog.log("Intake/WristVoltage", voltage);
-//        DogLog.log("Intake/StallCurrent", stallCurrent);
-        return Commands.print("oop");
-//        return Commands.select(
-//                Map.ofEntries(
-//                        Map.entry(true,
-//                                Commands.sequence(
-//                                        runOnce(() -> {
-//                                            motor.setControl(voltReq.withOutput(voltage));
-//                                            state = State.MOVING_TO_GOAL;
-//                                        }),
-//                                        Commands.waitUntil(() -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
-//                                        runOnce(() -> {
-//                                            motor.setControl(voltReq.withOutput(0));
-//                                            motor.setPosition(position); // Cos stalling messes up the encoder
-//                                            state = State.IDLE;
-//                                        })
-//                                )),
-//                        Map.entry(false, Commands.print("Wrist not zeroed"))),
-//                () -> zeroed);
+        double voltage = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
+                ? IntakeConstants.Wrist.UP_VOLTS
+                : IntakeConstants.Wrist.DOWN_VOLTS;
+        double stallCurrent = position.isNear(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE), 0.5)
+                ? IntakeConstants.Wrist.UP_STALL_CURRENT
+                : IntakeConstants.Wrist.DOWN_STALL_CURRENT;
+        // DogLog.log("Intake/WristVoltage", voltage);
+        // DogLog.log("Intake/StallCurrent", stallCurrent);
+        return Commands.select(
+                Map.ofEntries(
+                        Map.entry(true,
+                                Commands.sequence(
+                                        runOnce(() -> {
+                                            motor.setControl(voltReq.withOutput(voltage));
+                                            state = State.MOVING_TO_GOAL;
+                                        }),
+                                        Commands.waitUntil(
+                                                () -> motor.getSupplyCurrent().getValueAsDouble() > stallCurrent),
+                                        runOnce(() -> {
+                                            motor.setControl(voltReq.withOutput(0));
+                                            motor.setPosition(position); // Cos stalling messes up the encoder
+                                            state = State.IDLE;
+                                        }))),
+                        Map.entry(false, Commands.print("Wrist not zeroed"))),
+                () -> zeroed);
     }
 
     public Command zero() {
@@ -115,16 +117,16 @@ public class IntakeWrist extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if(state == State.JIGGLING) {
+        if (state == State.JIGGLING) {
             return;
         }
-        
+
         if (state == State.JIGGLING && zeroed) {
             double phase = Timer.getFPGATimestamp() % IntakeConstants.Wrist.JIGGLE_FREQ_SEC;
             boolean up = phase < (IntakeConstants.Wrist.JIGGLE_FREQ_SEC / 2.0);
             double volts = up ? IntakeConstants.Wrist.JIGGLE_UP_VOLTS : IntakeConstants.Wrist.JIGGLE_DOWN_VOLTS;
             motor.setControl(voltReq.withOutput(volts));
-        } else if(state == State.IDLE) {
+        } else if (state == State.IDLE) {
             motor.setControl(voltReq.withOutput(IntakeConstants.Wrist.RETAINING_VOLTS));
         }
     }
