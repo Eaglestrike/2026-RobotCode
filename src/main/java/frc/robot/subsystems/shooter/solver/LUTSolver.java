@@ -20,7 +20,6 @@ public class LUTSolver implements ShooterSolver {
     private static final int ITERS = 20;
     private static double DRAG_COEFF = 0;
 
-
     static {
         DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
             DRAG_COEFF = v;
@@ -203,6 +202,9 @@ public class LUTSolver implements ShooterSolver {
 
         FERRY_RPM_MAP.put(12.6, 4500.0);
         FERRY_HOOD_MAP.put(12.6, Rotation2d.fromDegrees(38));
+
+        FERRY_RPM_MAP.put(19d, 6000.0);
+        FERRY_HOOD_MAP.put(19d, Rotation2d.fromDegrees(38));
         // ----- END FERRY MAP -----
     }
 
