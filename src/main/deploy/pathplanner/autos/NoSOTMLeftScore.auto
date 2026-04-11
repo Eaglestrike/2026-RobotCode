@@ -49,6 +49,12 @@
           }
         },
         {
+          "type": "path",
+          "data": {
+            "pathName": "FuelToClimb"
+          }
+        },
+        {
           "type": "named",
           "data": {
             "name": "StartShooting"
@@ -61,9 +67,9 @@
           }
         },
         {
-          "type": "path",
+          "type": "named",
           "data": {
-            "pathName": "FuelToClimb"
+            "name": "Intake"
           }
         }
       ]

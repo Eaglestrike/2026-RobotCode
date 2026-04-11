@@ -24,7 +24,7 @@ public final class ShooterConstants {
         public static final double VELOCITY_TOLERANCE = 5.0;
 
         /** Current limit in Amps */
-        public static final int CURRENT_LIMIT = 60;
+        public static final int CURRENT_LIMIT = 100;
 
         public static final double kP = 12;
         public static final double kI = 0.0;

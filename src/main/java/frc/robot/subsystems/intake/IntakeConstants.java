@@ -1,5 +1,7 @@
 package frc.robot.subsystems.intake;
 
+import edu.wpi.first.units.measure.Time;
+
 public final class IntakeConstants {
     public static final class Rollers {
         public static final int MOTOR_ID = 34;
@@ -38,5 +40,7 @@ public final class IntakeConstants {
         public static final double DOWN_STALL_CURRENT = 5;
 
         public static final double RETAINING_VOLTS = 0.2;
+
+        public static final double TIMEOUT_SECONDS = 1.0; // for wrist to terminate
     }
 }

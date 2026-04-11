@@ -25,11 +25,14 @@ import frc.robot.subsystems.shooter.solver.LUTSolver;
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.Utils;
+
 import static edu.wpi.first.units.Units.Degrees;
 
 public class Superstructure extends SubsystemBase {
     public static double turretTrimDegrees = 0;
     public static double hoodTrimDegrees = 0;
+    public static final double FERRY_WAIT_TIME = 0.5; // seconds
 
     public enum ShootMode {
         FERRY,
@@ -50,6 +53,7 @@ public class Superstructure extends SubsystemBase {
     private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
+    private double startFerryingTime;
 
     public Optional<Pose2d> getTargetPose2d() {
         if (targetPose == null) {
@@ -197,6 +201,9 @@ public class Superstructure extends SubsystemBase {
     public void setShooting(boolean shooting) {
         isShooting = shooting;
         shooter.setShooting(shooting);
+        if(getMode() == ShootMode.FERRY) {
+            startFerryingTime = shooting ? Utils.getCurrentTimeSeconds() : 0;
+        }
     }
 
     // stop kicking but keep shooter/turret running
@@ -263,7 +270,7 @@ public class Superstructure extends SubsystemBase {
 
         if (isShooting && !isKickerOverrided) {
             if((currentMode == ShootMode.SHOOT && shooter.isReady()) || 
-                (currentMode == ShootMode.FERRY && shooter.getTurret().atTarget() && shooter.getHood().atTarget())) {
+                (currentMode == ShootMode.FERRY && shooter.getTurret().atTarget() && shooter.getHood().atTarget() && Utils.getCurrentTimeSeconds() - startFerryingTime >= FERRY_WAIT_TIME)) {
                 kicker.startMotor();
                 spindexer.startKicking();
             } else {
