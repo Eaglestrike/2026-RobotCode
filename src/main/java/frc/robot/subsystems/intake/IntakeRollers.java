@@ -16,7 +16,7 @@ import java.util.function.DoubleSupplier;
 public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
     private final TalonFX followerMotor;
-    private final VoltageOut voltageRequest = new VoltageOut(0);
+    private final VoltageOut voltageRequest = new VoltageOut(0).withEnableFOC(true);
     private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(6.0);
 
     public IntakeRollers() {
