@@ -17,7 +17,7 @@ public class IntakeRollers extends SubsystemBase {
     private final TalonFX motor;
     private final TalonFX followerMotor;
     private final VoltageOut voltageRequest = new VoltageOut(0).withEnableFOC(true);
-    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(6.0);
+    private final SlewRateLimiter slewRateLimiter = new SlewRateLimiter(12.0);
 
     public IntakeRollers() {
         motor = new TalonFX(IntakeConstants.Rollers.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
