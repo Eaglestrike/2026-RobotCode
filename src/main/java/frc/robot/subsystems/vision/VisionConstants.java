@@ -22,4 +22,8 @@ public class VisionConstants {
     public static final Transform3d RIGHT_RIGHT_TRANSFORM = new Transform3d(
             new Translation3d(-0.27695, -0.33518, 0.27637),
             new Rotation3d(0, Units.degreesToRadians(-10), Units.degreesToRadians(-110)));
+    
+    public static final Transform3d LIMELIGHT_TRANSFORM = new Transform3d(
+            new Translation3d(0.637437, 0.0, 0.257059),
+            new Rotation3d(0, 0, 0));
 }

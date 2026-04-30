@@ -3,7 +3,11 @@ package frc.robot.subsystems.drive;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.Vector;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
@@ -27,6 +31,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -46,6 +51,46 @@ import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
  * https://v6.docs.ctr-electronics.com/en/stable/docs/tuner/tuner-swerve/index.html
  */
 public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subsystem {
+    public static final double FUEL_VALID_TIME = 5.0; // seconds
+
+    public class Fuel {
+        /** Field-relative position of the fuel */
+        private Translation2d position;
+        private double timestamp;
+
+        public Fuel(Translation2d position) {
+            this.position = position;
+            this.timestamp = Utils.getCurrentTimeSeconds();
+        }
+
+        /** Update the timestamp to now */
+        public void refreshTimestamp() {
+            this.timestamp = Utils.getCurrentTimeSeconds();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+            Fuel other = (Fuel) obj;
+            if (this.position == null || other.position == null) {
+                return this.position == other.position;
+            }
+            double dx = this.position.getX() - other.position.getX();
+            double dy = this.position.getY() - other.position.getY();
+            // Consider equal if within 5 cm (0.05 m)
+            return Math.hypot(dx, dy) <= 0.05;
+        }
+
+        public Pose2d getPose() {
+            return new Pose2d(position, Rotation2d.kZero);
+        }
+    }
+
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
@@ -57,6 +102,7 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
 
+    public ArrayList<Fuel> fuelPositions = new ArrayList<>();
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
     private static double alignKP = 3.114;
@@ -311,6 +357,16 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        int i = 0;
+        while(i < fuelPositions.size()) {
+            Fuel f = fuelPositions.get(i);
+            if (f.timestamp < Utils.getCurrentTimeSeconds() - FUEL_VALID_TIME) { // Remove fuel if it hasn't been seen
+                fuelPositions.remove(i);
+            } else {
+                i++;
+            }
+        }
     }
 
     private void startSimThread() {
@@ -370,6 +426,18 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                 visionMeasurementStdDevs);
     }
 
+    public void addFuelPosition(Translation2d fuelPosition) {
+        Fuel newFuel = new Fuel(fuelPosition);
+        // Find existing fuel within 5 cm and refresh timestamp instead of adding duplicate
+        for (Fuel f : fuelPositions) {
+            if (f.equals(newFuel)) {
+                f.refreshTimestamp();
+                return;
+            }
+        }
+        fuelPositions.add(newFuel);
+    }
+
     /**
      * Return the pose at a given timestamp, if the buffer is not empty.
      *
@@ -382,43 +450,47 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    public Command alignPID(Supplier<Pose2d> targetSupplier) {
-        return this.run(() -> {
-            Pose2d pose = this.getState().Pose;
-            Pose2d target = targetSupplier.get();
-            DogLog.log("AutoAlign/Target Pose", target);
+    /**
+     * Aligns the robot to the target pose using PID control, while also adding the target velocity to the output to maintain momentum
+     * @param target The target pose to align to (field-relative)
+     * @param targetVelocity The target velocity to maintain (vector of [vx, vy] in field-relative coordinates)
+     */
+    public void alignPID(Pose2d target, Vector<Double> targetVelocity) {
+        Pose2d pose = this.getState().Pose;
+        DogLog.log("AutoAlign/Target Pose", target);
 
-            double veloX = alignXController.calculate(pose.getX(), target.getX());
-            double veloY = alignYController.calculate(pose.getY(), target.getY());
-            Rotation2d headingReference = target.getRotation();
+        double veloX = alignXController.calculate(pose.getX(), target.getX()) + targetVelocity.get(0);
+        double veloY = alignYController.calculate(pose.getY(), target.getY()) + targetVelocity.get(1);
+        Rotation2d headingReference = target.getRotation();
 
-            this.setControl(velocityRequest
-                    .withVelocityX(veloX)
-                    .withVelocityY(veloY)
-                    .withTargetDirection(headingReference));
-        })
-                .until(() -> {
-                    Pose2d pose = this.getState().Pose;
-                    Pose2d target = targetSupplier.get();
-                    Transform2d error = pose.minus(target);
-                    Translation2d errorTrans = error.getTranslation();
-                    Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
-                            target.getRotation().getSin());
+        this.setControl(velocityRequest
+                .withVelocityX(veloX)
+                .withVelocityY(veloY)
+                .withTargetDirection(headingReference));
+    }
 
-                    double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a ·
-                                                                                                                  // b̂
-                    Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
-                    Translation2d perpendicular = errorTrans.minus(proj);
+    /**
+     * Checks if the robot is aligned to the target pose within a certain tolerance. 
+     * NOTE: This method does not check if the robot is at the target velocity, only if it is at the target pose.
+     * @param target The target pose to check alignment to (field-relative)
+     * @return True if the robot is aligned to the target pose within the specified tolerance, false otherwise
+     */
+    public boolean isAligned(Pose2d target) {
+        Pose2d pose = this.getState().Pose;
+        Transform2d error = pose.minus(target);
+        Translation2d errorTrans = error.getTranslation();
+        Translation2d unitHeading = new Translation2d(target.getRotation().getCos(),
+                target.getRotation().getSin());
 
-                    DogLog.log("Climb/PerpError", perpendicular.getNorm());
-                    DogLog.log("Climb/ProjError", proj.getNorm());
+        double dot = errorTrans.getX() * unitHeading.getX() + errorTrans.getY() * unitHeading.getY(); // a · b̂
+        Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
+        Translation2d perpendicular = errorTrans.minus(proj);
 
-                    return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
-                            Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
-                })
-                .finallyDo(() -> {
-                    this.setControl(new SwerveRequest.Idle());
-                });
+        DogLog.log("Climb/PerpError", perpendicular.getNorm());
+        DogLog.log("Climb/ProjError", proj.getNorm());
+
+        return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
+                Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
     }
 
     public Rotation2d getTrenchLockAngle() {

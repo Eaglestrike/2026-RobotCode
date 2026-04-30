@@ -9,6 +9,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -20,6 +21,7 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain.Fuel;
 
 public class EagleSwerveTelemetry {
     private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
@@ -140,6 +142,14 @@ public class EagleSwerveTelemetry {
             field.getObject("SuperstructureTarget")
                     .setPose(new Pose2d(-1000.0, -1000.0, new edu.wpi.first.math.geometry.Rotation2d()));
         }
+    }
+
+    public void setFuelPositions(List<Fuel> fuels) {
+        List<Pose2d> fuelPoses = new ArrayList<>();
+        for (Fuel f : fuels) {
+            fuelPoses.add(f.getPose());
+        }
+        field.getObject("FuelPositions").setPoses(fuelPoses);
     }
 
     /**

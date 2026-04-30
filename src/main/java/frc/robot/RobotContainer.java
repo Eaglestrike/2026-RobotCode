@@ -152,11 +152,6 @@ public class RobotContainer {
         configureBindings();
         configureZoneBindings();
         DogLog.forceNt.log("Override Triggers", overrideTriggers);
-
-        NamedCommands.registerCommand("ClimbL1Left",
-                Commands.defer(() -> climbL1(), java.util.Set.of()));
-        NamedCommands.registerCommand("ClimbL1Right",
-                Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("SetModeFerry",
                 Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)),
                         java.util.Set.of()));
@@ -249,6 +244,7 @@ public class RobotContainer {
         drivetrain.registerTelemetry(state -> {
             logger.telemeterize(state);
             logger.setSuperstructureTargetPose(superstructure.getTargetPose2d());
+            logger.setFuelPositions(drivetrain.fuelPositions);
         });
 
         operatorController.button(7).and(buttonBoard.button(INTAKE_BUTTON))
@@ -518,47 +514,6 @@ public class RobotContainer {
                 cachedAutoCommand = null;
             }
         }
-    }
-
-    public Command climbL1() {
-        return Commands.defer(() -> {
-            if (!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
-                return new PrintCommand("Skipping climb since we're in autonomous and CLIMB_AUTONOMOUS is false");
-            }
-
-            DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
-
-            boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
-            boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
-
-            Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
-            DogLog.log("Climb/TowerPolePose", towerPolePose);
-            double multiplier = isLeft != (alliance == DriverStation.Alliance.Red) ? 1 : -1;
-            DogLog.log("Climb/DirectionMultiplier", multiplier);
-            Pose3d alignPose = new Pose3d(
-                    towerPolePose.getTranslation()
-                            .plus(new Translation3d(-Units.inchesToMeters(6), multiplier * CLIMB_TOWER_DISTANCE, 0)),
-                    towerPolePose.getRotation());
-            DogLog.log("Climb/AlignPose", alignPose);
-            Timer t = new Timer();
-
-            return Commands.sequence(
-                    superstructure.stow(),
-                    new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
-                    drivetrain.alignPID(() -> alignPose.toPose2d()),
-                    new PrintCommand("Moving in..."),
-                    Commands.runOnce(() -> {
-                        t.reset();
-                        t.start();
-                    }),
-                    Commands.run(
-                                    () -> drivetrain
-                                            .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
-                            .until(() -> t.get() > 1),
-                    climb.moveToUp(),
-                    new PrintCommand("Finished climbing"),
-                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0))));
-        }, Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
