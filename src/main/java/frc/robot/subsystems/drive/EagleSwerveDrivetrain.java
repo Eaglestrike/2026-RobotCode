@@ -4,9 +4,8 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.Vector;
 import java.util.function.Supplier;
 
@@ -102,7 +101,15 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
 
-    public ArrayList<Fuel> fuelPositions = new ArrayList<>();
+    private final ArrayList<Fuel> fuelPositions = new ArrayList<>();
+    private final Object fuelLock = new Object();
+
+    public List<Fuel> getFuelPositions() {
+        synchronized (fuelLock) {
+            return new ArrayList<>(fuelPositions);
+        }
+    }
+
     private final SwerveRequest.ApplyRobotSpeeds m_pathApplyRobotSpeeds = new SwerveRequest.ApplyRobotSpeeds();
 
     private static double alignKP = 3.114;
@@ -358,13 +365,15 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
             });
         }
 
-        int i = 0;
-        while(i < fuelPositions.size()) {
-            Fuel f = fuelPositions.get(i);
-            if (f.timestamp < Utils.getCurrentTimeSeconds() - FUEL_VALID_TIME) { // Remove fuel if it hasn't been seen
-                fuelPositions.remove(i);
-            } else {
-                i++;
+        synchronized (fuelLock) {
+            int i = 0;
+            while(i < fuelPositions.size()) {
+                Fuel f = fuelPositions.get(i);
+                if (f.timestamp < Utils.getCurrentTimeSeconds() - FUEL_VALID_TIME) { // Remove fuel if it hasn't been seen
+                    fuelPositions.remove(i);
+                } else {
+                    i++;
+                }
             }
         }
     }
@@ -428,14 +437,16 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
 
     public void addFuelPosition(Translation2d fuelPosition) {
         Fuel newFuel = new Fuel(fuelPosition);
-        // Find existing fuel within 5 cm and refresh timestamp instead of adding duplicate
-        for (Fuel f : fuelPositions) {
-            if (f.equals(newFuel)) {
-                f.refreshTimestamp();
-                return;
+        synchronized (fuelLock) {
+            // Find existing fuel within 5 cm and refresh timestamp instead of adding duplicate
+            for (Fuel f : fuelPositions) {
+                if (f.equals(newFuel)) {
+                    f.refreshTimestamp();
+                    return;
+                }
             }
+            fuelPositions.add(newFuel);
         }
-        fuelPositions.add(newFuel);
     }
 
     /**

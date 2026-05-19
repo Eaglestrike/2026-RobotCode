@@ -65,4 +65,25 @@
     "wpilib.skipSelectSimulateExtension": true,
     "editor.detectIndentation": false,
     "editor.indentSize": "tabSize",
+    "chat.mcp.serverSampling": {
+        "2026-RobotCode/.vscode/mcp.json: aux-code": {
+            "allowedModels": [
+                "copilot/claude-haiku-4.5",
+                "copilot/gemini-2.5-pro",
+                "copilot/gemini-3-flash-preview",
+                "copilot/gemini-3.1-pro-preview",
+                "ollama/gemma4:latest",
+                "groq/openai/gpt-oss-120b",
+                "copilot/gpt-4.1",
+                "copilot/gpt-4o",
+                "copilot/gpt-5-mini",
+                "copilot/gpt-5.2",
+                "copilot/gpt-5.2-codex",
+                "copilot/gpt-5.4-mini",
+                "copilot/grok-code-fast-1",
+                "groq/llama-3.3-70b-versatile",
+                "copilot/oswe-vscode-prime"
+            ]
+        }
+    },
 }

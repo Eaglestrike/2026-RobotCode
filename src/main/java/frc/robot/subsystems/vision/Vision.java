@@ -76,6 +76,12 @@ public class Vision extends SubsystemBase {
             Translation2d cameraRelativeTranslation = new Translation2d(x, y);
             Translation2d robotRelativeTranslation = cameraRelativeTranslation.plus(limelightTransform.getTranslation().toTranslation2d());
 
+            final double EXTRA_DISTANCE_METERS = 0;
+            double dirNorm = robotRelativeTranslation.getNorm();
+            if (dirNorm > 1e-6) {
+                robotRelativeTranslation = robotRelativeTranslation.plus(robotRelativeTranslation.times(EXTRA_DISTANCE_METERS / dirNorm));
+            }
+
             // Rotate the translation by the robot's heading to make it field-relative
             Translation2d fieldRelativeTranslation = robotRelativeTranslation.rotateBy(robotPose.getRotation());
 
