@@ -50,7 +50,7 @@ public class DriveToFuel extends Command {
         }
 
         pathPositions.clear();
-        // Pick the furthest point in each cluster
+        // Pick the furthest point in each cluster and preserve the robot's current heading
         Pose2d robotPose = drivetrain.getState().Pose;
         for (List<Pose2d> cluster : clusters) {
             Pose2d furthest = null;
@@ -63,7 +63,7 @@ public class DriveToFuel extends Command {
                 }
             }
             if (furthest != null) {
-                pathPositions.add(furthest);
+                pathPositions.add(new Pose2d(furthest.getTranslation(), robotPose.getRotation()));
             }
         }
 
@@ -80,6 +80,10 @@ public class DriveToFuel extends Command {
 
     @Override
     public void execute() {
+        if (targetPose == null) {
+            return;
+        }
+
         tickCounter++;
         if (tickCounter % 25 == 0) { // Update occasionally (e.g., every 500ms at 50Hz)
             generatePath();
@@ -95,7 +99,7 @@ public class DriveToFuel extends Command {
             targetVelocity.add(0.0);
         } else {
             Pose2d nextPose = pathPositions.peek();
-            double angleToNextPose = targetPose.getTranslation().minus(nextPose.getTranslation()).getAngle()
+        double angleToNextPose = nextPose.getTranslation().minus(targetPose.getTranslation()).getAngle()
                     .getRadians();
             targetVelocity.add(TARGET_VEL * Math.cos(angleToNextPose));
             targetVelocity.add(TARGET_VEL * Math.sin(angleToNextPose));
@@ -109,7 +113,7 @@ public class DriveToFuel extends Command {
 
     @Override
     public boolean isFinished() {
-        return pathPositions.isEmpty() && targetPose != null && drivetrain.isAligned(targetPose);
+        return targetPose == null || (pathPositions.isEmpty() && drivetrain.isAligned(targetPose));
     }
 
     @Override
