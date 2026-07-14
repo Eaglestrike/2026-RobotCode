@@ -1,0 +1,54 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 0.6,
+        "y": 0.686238425925926
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 2.9052235966435194,
+        "y": 0.7230459346064821
+      },
+      "isLocked": false,
+      "linkedName": "HumanPlayerStation"
+    },
+    {
+      "anchor": {
+        "x": 2.5519764901620374,
+        "y": 3.95554564525463
+      },
+      "prevControl": {
+        "x": 2.3473705146437123,
+        "y": 3.62891928694668
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "MiddleAllianceZone"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 2.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": true
+}

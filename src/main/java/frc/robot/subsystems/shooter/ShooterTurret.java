@@ -1,0 +1,229 @@
+package frc.robot.subsystems.shooter;
+
+import static org.wpilib.units.Units.Degrees;
+import static org.wpilib.units.Units.Radians;
+import static org.wpilib.units.Units.RadiansPerSecond;
+import static org.wpilib.units.Units.Rotations;
+import static org.wpilib.units.Units.RotationsPerSecond;
+import static org.wpilib.units.Units.Volts;
+
+import java.util.function.DoubleSupplier;
+
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
+
+import dev.doglog.DogLog;
+import org.wpilib.math.util.Pair;
+import org.wpilib.math.geometry.Pose3d;
+import org.wpilib.math.geometry.Rotation3d;
+import org.wpilib.math.system.DCMotor;
+import org.wpilib.math.system.LinearSystemId;
+import org.wpilib.units.measure.Angle;
+import org.wpilib.system.RobotController;
+import org.wpilib.simulation.DCMotorSim;
+import org.wpilib.command2.Command;
+import org.wpilib.command2.CommandScheduler;
+import org.wpilib.command2.SubsystemBase;
+import frc.robot.RobotContainer;
+import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
+
+public class ShooterTurret extends SubsystemBase {
+    private TalonFX motor;
+    private CANcoder encoder;
+    private PositionVoltage position = new PositionVoltage(0);
+    private EagleSwerveDrivetrain drive;
+    private TalonFXConfiguration cfg = new TalonFXConfiguration();
+    private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
+
+    private boolean isRecentering = false;
+
+    public ShooterTurret(EagleSwerveDrivetrain drive) {
+        this.drive = drive;
+        this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
+        this.encoder = new CANcoder(TurretConstants.CANCODER_ID, RobotContainer.MECHANISM_CANBUS);
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitThreshold = TurretConstants.FORWARD_LIMIT.in(Rotations);
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitThreshold = TurretConstants.BACKWARD_LIMIT.in(Rotations);
+
+        cfg.Feedback.SensorToMechanismRatio = TurretConstants.SENSOR_TO_MECHANISM;
+        cfg.Feedback.RotorToSensorRatio = TurretConstants.ROTOR_TO_SENSOR;
+        cfg.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.RemoteCANcoder;
+        cfg.Feedback.FeedbackRemoteSensorID = TurretConstants.CANCODER_ID;
+
+        encoderCfg.MagnetSensor.MagnetOffset = TurretConstants.MAGNET_OFFSET;
+        encoderCfg.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0; 
+
+        cfg.Slot0.kP = TurretConstants.kP;
+        cfg.Slot0.kI = TurretConstants.kI;
+        cfg.Slot0.kD = TurretConstants.kD;
+        cfg.Slot0.kV = TurretConstants.kV;
+        cfg.Slot0.kS = TurretConstants.kS;
+        cfg.Slot0.kA = TurretConstants.kA;
+
+        cfg.Voltage.PeakForwardVoltage = TurretConstants.MAX_VOLTS;
+        cfg.Voltage.PeakReverseVoltage = -TurretConstants.MAX_VOLTS;
+        cfg.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+
+        this.motor.getConfigurator().apply(cfg);
+        this.encoder.getConfigurator().apply(encoderCfg);
+        motor.getPosition().setUpdateFrequency(50);
+        motor.getVelocity().setUpdateFrequency(10);
+        motor.optimizeBusUtilization();
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
+
+        DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
+            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
+        });
+    }
+
+    /**
+     * Calculate the nearest total setpoint
+     * 
+     * @param fromTotal Current angle ∈ [BACKWARD_LIMIT, FORWARD_LIMIT]
+     * @param toOffset  Target angle ∈ [0, 360)
+     */
+    private Pair<Angle, Boolean> nearestWind(Angle fromTotal, Angle toOffset) {
+        Angle fromOffset = Degrees.of(fromTotal.in(Degrees) % 360);
+
+        Angle delta = toOffset.minus(fromOffset);
+        Angle res = fromTotal.plus(delta);
+        boolean wraps = false;
+
+        while (res.gt(TurretConstants.FORWARD_LIMIT)) {
+            res = res.minus(Degrees.of(360));
+            wraps = true;
+        }
+        while (res.lt(TurretConstants.BACKWARD_LIMIT)) {
+            res = res.plus(Degrees.of(360));
+            wraps = true;
+        }
+
+        if (res.gt(TurretConstants.FORWARD_LIMIT)) {
+            res = TurretConstants.FORWARD_LIMIT;
+        } else if (res.lt(TurretConstants.BACKWARD_LIMIT)) {
+            res = TurretConstants.BACKWARD_LIMIT;
+        }
+
+        return new Pair<Angle, Boolean>(res, wraps);
+    }
+
+    public double getAngleRad() {
+        return (motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET).in(Rotations)) * Math.PI * 2;
+    }
+
+    /**
+     * Sets control for the turret to move to requested position
+     * Angle is measured from intake = 0 rotations, with clockwise positive
+     *
+     * @param pos Angle between -1 and 1 rotations
+     * @return runOnce command (does not wait for movement to terminate; use
+     *         atTarget() for that)
+     */
+    public Command requestPosition(Angle pos) {
+        return runOnce(() -> {
+            setAngle(pos);
+        });
+    }
+
+    public void setAngle(Angle pos) {
+        pos = pos.plus(TurretConstants.ENCODER_OFFSET);
+//        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
+        var wind = nearestWind(motor.getPosition().getValue(), pos);
+        Angle setpoint = wind.getFirst();
+        boolean wraps = wind.getSecond();
+
+        if (wraps) {
+            isRecentering = true;
+        }
+
+        // technically this should be in periodic() but setAngle()'s 5ms call interval
+        // is faster >:(
+        if (isRecentering && motor.getPosition().getValue().isNear(setpoint, TurretConstants.ANGLE_TOLERANCE)) {
+            isRecentering = false;
+        }
+
+        double omega = RadiansPerSecond.of(drive.getState().Velocity.omega).in(RotationsPerSecond);
+        this.motor.setControl(this.position.withPosition(setpoint).withVelocity(omega));
+    }
+
+    public Command stop() {
+        return runOnce(() -> {
+            motor.stopMotor();
+        });
+    }
+
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return startRun(
+                () -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+                    motor.getConfigurator().apply(cfg);
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+                    motor.getConfigurator().apply(cfg);
+                });
+    }
+
+    public boolean atTarget() {
+        return !isRecentering;
+    }
+
+    @Override
+    public void periodic() {
+        DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET));
+        // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
+        // "Degrees");
+        // DogLog.log("ShooterTurret/AtTarget", atTarget());
+    }
+
+    /* sim */
+    private static final double gearRatio = TurretConstants.GEAR_RATIO;
+    private final DCMotor gearbox = DCMotor.getKrakenX60(1);
+    private final DCMotorSim sim = new DCMotorSim(
+            LinearSystemId.createDCMotorSystem(
+                    gearbox,
+                    0.0818917055,
+                    gearRatio),
+            gearbox);
+
+    @Override
+    public void simulationPeriodic() {
+        var talonFXSim = motor.getSimState();
+        talonFXSim.setSupplyVoltage(RobotController.getBatteryVoltage());
+        var motorVoltage = talonFXSim.getMotorVoltageMeasure();
+        DogLog.log("ShooterTurret/MotorVoltage", motorVoltage.in(Volts), "Volts");
+
+        sim.setInputVoltage(motorVoltage.in(Volts));
+        sim.update(0.020);
+
+        talonFXSim.setRawRotorPosition(Radians.of(sim.getAngularPosition()).times(gearRatio));
+        talonFXSim.setRotorVelocity(RadiansPerSecond.of(sim.getAngularVelocity()).times(gearRatio));
+        DogLog.log("ShooterTurret/SimPosition",
+                Radians.of(sim.getAngularPosition()).times(gearRatio).in(Degrees), "Degrees");
+    }
+
+    public Pose3d getComponentPose3d() {
+        return new Pose3d(
+                ShooterConstants.TurretConstants.OFFSET.getX(),
+                ShooterConstants.TurretConstants.OFFSET.getY(),
+                ShooterConstants.TurretConstants.OFFSET_HEIGHT,
+                new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
+    }
+
+}

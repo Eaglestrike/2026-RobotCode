@@ -1,0 +1,87 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.324144762976696,
+        "y": 6.8558018295374294
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 8.457966259474997,
+        "y": 4.887729048835335
+      },
+      "isLocked": false,
+      "linkedName": "LeftFerryPosition"
+    },
+    {
+      "anchor": {
+        "x": 7.679451146087102,
+        "y": 4.068618116860205
+      },
+      "prevControl": {
+        "x": 7.635006336808546,
+        "y": 4.892166708741438
+      },
+      "nextControl": {
+        "x": 7.742795885031932,
+        "y": 2.8948596643457085
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.74908810763889,
+        "y": 1.4655603298611117
+      },
+      "prevControl": {
+        "x": 8.77075947969479,
+        "y": 3.0791492749802525
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "RightFerryPosition"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.9815175739957719,
+      "rotationDegrees": -118.88494366059737
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "StopShooting",
+      "waypointRelativePos": 0.7,
+      "endWaypointRelativePos": null,
+      "command": {
+        "type": "named",
+        "data": {
+          "name": "StopShooting"
+        }
+      }
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 4.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 2.0,
+    "rotation": 130.0
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -121.40053233259775
+  },
+  "useDefaultConstraints": false
+}
