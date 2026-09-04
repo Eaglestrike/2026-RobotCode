@@ -47,8 +47,8 @@ public class ShooterTurret extends SubsystemBase {
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
-        this.motor = new TalonFX(TurretConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
-        this.encoder = new CANcoder(TurretConstants.CANCODER_ID, RobotContainer.MECHANISM_CANBUS);
+        this.motor = new TalonFX(TurretConstants.MOTOR_ID);
+        this.encoder = new CANcoder(TurretConstants.CANCODER_ID);
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
@@ -61,7 +61,7 @@ public class ShooterTurret extends SubsystemBase {
         cfg.Feedback.FeedbackRemoteSensorID = TurretConstants.CANCODER_ID;
 
         encoderCfg.MagnetSensor.MagnetOffset = TurretConstants.MAGNET_OFFSET;
-        encoderCfg.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0; 
+        encoderCfg.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0;
 
         cfg.Slot0.kP = TurretConstants.kP;
         cfg.Slot0.kI = TurretConstants.kI;
@@ -139,7 +139,7 @@ public class ShooterTurret extends SubsystemBase {
 
     public void setAngle(Angle pos) {
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
-//        DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
+        // DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
         var wind = nearestWind(motor.getPosition().getValue(), pos);
         Angle setpoint = wind.getFirst();
         boolean wraps = wind.getSecond();
