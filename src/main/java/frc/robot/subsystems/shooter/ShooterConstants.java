@@ -47,13 +47,13 @@ public final class ShooterConstants {
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
         public static final double OFFSET_HEIGHT = 0.59673; // meters
 
-        public static final double MAGNET_OFFSET = -0.8955;
+        public static final double MAGNET_OFFSET = -0.877695;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
 
         // distance from turret actual zero to turret when at expected pos -0.5
-        public static final Angle ENCODER_OFFSET = Rotations.of(0.4455 + 0.5);
+        public static final Angle ENCODER_OFFSET = Rotations.of(0.47583 + 0.5);
         // if we request zero: turret should go to 0 + 0.3281 + 0.5 (or 0 +
         // ENCODER_OFFSET)
         // if we request -0.5: turret should go to -0.5 + 0.3281 + 0.5 (or -0.5 +
