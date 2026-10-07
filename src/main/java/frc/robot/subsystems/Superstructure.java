@@ -72,7 +72,8 @@ public class Superstructure extends SubsystemBase {
         return LUTSolver.TOF_MAP.get(distance);
     }
 
-    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist, Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
+    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist,
+            Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -103,7 +104,7 @@ public class Superstructure extends SubsystemBase {
      */
     public Command intake() {
         return Commands.parallel(
-                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)),
+                intakeWrist.requestPosition(IntakeConstants.Wrist.INTAKE_ANGLE),
                 intakeRollers.start());
 
     }
@@ -114,9 +115,7 @@ public class Superstructure extends SubsystemBase {
     public Command stowIntake() {
         return Commands.sequence(
                 // intakeRollers.stop(),
-                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.STOW_ANGLE)),
-                Commands.runOnce(() -> intakeWrist.setJiggle(false)),
-                intakeWrist.retain());
+                intakeWrist.requestPosition(IntakeConstants.Wrist.STOW_ANGLE));
     }
 
     public Command stopIntakeRollers() {
@@ -136,16 +135,9 @@ public class Superstructure extends SubsystemBase {
 
     public Command ejectIntake() {
         return Commands.sequence(
-                intakeWrist.eject(),
+                intakeWrist.requestPosition(IntakeConstants.Wrist.EJECT_ANGLE),
                 Commands.waitSeconds(0.5),
                 intakeRollers.eject());
-    }
-
-    public Command jiggleIntake() {
-        return Commands.parallel(
-                Commands.runOnce(() -> intakeWrist.setJiggle(true)),
-                intakeRollers.jiggle())
-                .finallyDo(() -> intakeWrist.setJiggle(false));
     }
 
     public Command duck() {
@@ -153,9 +145,8 @@ public class Superstructure extends SubsystemBase {
                 shooter.duck(),
                 Commands.runOnce(() -> {
                     isShooting = false;
-                    intakeWrist.setJiggle(false);
                 }),
-                intakeWrist.requestPosition(Degrees.of(IntakeConstants.Wrist.MAX_ANGLE)));
+                intakeWrist.requestPosition(IntakeConstants.Wrist.MAX_ANGLE));
     }
 
     public Command unDuck() {
@@ -201,7 +192,7 @@ public class Superstructure extends SubsystemBase {
     public void setShooting(boolean shooting) {
         isShooting = shooting;
         shooter.setShooting(shooting);
-        if(getMode() == ShootMode.FERRY) {
+        if (getMode() == ShootMode.FERRY) {
             startFerryingTime = shooting ? Utils.getCurrentTimeSeconds() : 0;
         }
     }
@@ -264,21 +255,20 @@ public class Superstructure extends SubsystemBase {
             setShooting(false);
             kicker.stopMotor();
             spindexer.stopMotor();
-            intakeWrist.setJiggle(false);
             return;
         }
 
         if (isShooting && !isKickerOverrided) {
-            if((currentMode == ShootMode.SHOOT && shooter.isReady()) || 
-                (currentMode == ShootMode.FERRY && shooter.getTurret().atTarget() && shooter.getHood().atTarget() && Utils.getCurrentTimeSeconds() - startFerryingTime >= FERRY_WAIT_TIME)) {
+            if ((currentMode == ShootMode.SHOOT && shooter.isReady()) ||
+                    (currentMode == ShootMode.FERRY && shooter.getTurret().atTarget() && shooter.getHood().atTarget()
+                            && Utils.getCurrentTimeSeconds() - startFerryingTime >= FERRY_WAIT_TIME)) {
                 kicker.startMotor();
                 spindexer.startKicking();
             } else {
                 kicker.stopMotor();
                 spindexer.startMotor(); // this starts at like 0.3 volts don't worry
             }
-        }
-        else {
+        } else {
             kicker.stopMotor();
             spindexer.startMotor(); // this starts at like 0.3 volts don't worry
         }
