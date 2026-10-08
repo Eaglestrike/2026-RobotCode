@@ -41,6 +41,8 @@ public class IntakeWrist extends SubsystemBase {
         cfg.Voltage.PeakReverseVoltage = -IntakeConstants.Wrist.MAX_VOLTS;
         cfg.Feedback.SensorToMechanismRatio = IntakeConstants.Wrist.GEAR_RATIO;
 
+        cfg.Slot0.kP = IntakeConstants.Wrist.kP;
+
         motor.getConfigurator().apply(cfg);
         motor.setControl(voltReq);
 
@@ -96,5 +98,11 @@ public class IntakeWrist extends SubsystemBase {
                 motor.setControl(voltReq.withOutput(0));
                 break;
         }
+
+        DogLog.forceNt.log("IntakeWrist/CurrentState", currState.toString());
+        DogLog.forceNt.log("IntakeWrist/TargetPosition", targPos.in(Rotations));
+        DogLog.forceNt.log("IntakeWrist/CurrentPosition", motor.getPosition().getValueAsDouble());
+        DogLog.forceNt.log("IntakeWrist/ManualVoltage", manualVolts);
+        DogLog.forceNt.log("IntakeWrist/Zeroed", zeroed);
     }
 }

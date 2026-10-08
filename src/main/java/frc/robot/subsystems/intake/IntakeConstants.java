@@ -34,10 +34,7 @@ public final class IntakeConstants {
         public static final Angle EJECT_ANGLE = MAX_ANGLE;
 
         public static final double MAX_VOLTS = 4.0;
-        /*
-         * pid constants:
-         * kP:
-         * kD:
-         */
+
+        public static final double kP = 30;
     }
 }
