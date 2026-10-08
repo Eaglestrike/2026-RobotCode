@@ -34,7 +34,6 @@ public class IntakeWrist extends SubsystemBase {
 
     public IntakeWrist() {
         TalonFXConfiguration cfg = new TalonFXConfiguration();
-        // todo: check this inversion
         cfg.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Coast;
 
@@ -97,11 +96,5 @@ public class IntakeWrist extends SubsystemBase {
                 motor.setControl(voltReq.withOutput(0));
                 break;
         }
-
-        DogLog.forceNt.log("IntakeWrist/CurrentState", currState.toString());
-        DogLog.forceNt.log("IntakeWrist/TargetPosition", targPos.in(Rotations));
-        DogLog.forceNt.log("IntakeWrist/CurrentPosition", motor.getPosition().getValueAsDouble());
-        DogLog.forceNt.log("IntakeWrist/ManualVoltage", manualVolts);
-        DogLog.forceNt.log("IntakeWrist/Zeroed", zeroed);
     }
 }
