@@ -13,12 +13,22 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
 
+import static edu.wpi.first.units.Units.Rotations;
+
 import java.util.function.DoubleSupplier;
 
 public class IntakeWrist extends SubsystemBase {
     private final TalonFX motor = new TalonFX(IntakeConstants.Wrist.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
     private final PositionVoltage positionReq = new PositionVoltage(0).withEnableFOC(true);
     private final VoltageOut voltReq = new VoltageOut(0).withEnableFOC(true);
+
+    enum WristState {
+        MOVING, AT_TARGET, MANUAL, ZEROING, IDLE
+    }
+
+    private WristState currState = WristState.IDLE;
+    private Angle targPos = IntakeConstants.Wrist.STOW_ANGLE;
+    private double manualVolts = 0;
 
     private boolean zeroed = false;
 
@@ -40,23 +50,58 @@ public class IntakeWrist extends SubsystemBase {
 
     public Command requestPosition(Angle position) {
         return runOnce(() -> {
-            motor.setControl(positionReq.withPosition(position));
+            targPos = position;
+            currState = WristState.MOVING;
         });
     }
 
     public Command zero() {
         return runOnce(() -> {
-            motor.setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
-            zeroed = true;
-
-            DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
+            currState = WristState.ZEROING;
         });
     }
 
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
-            double manualVolts = joystickPosition.getAsDouble() * IntakeConstants.Wrist.MAX_VOLTS;
-            motor.setVoltage(manualVolts);
+            manualVolts = joystickPosition.getAsDouble() * IntakeConstants.Wrist.MAX_VOLTS;
+            currState = WristState.MANUAL;
         });
+    }
+
+    public boolean atPosition() {
+        return Math.abs(motor.getPosition().getValueAsDouble() - targPos.in(Rotations)) < 0.01;
+    }
+
+    @Override
+    public void periodic() {
+        switch (currState) {
+            case MOVING:
+                motor.setControl(positionReq.withPosition(targPos));
+                if (atPosition()) {
+                    currState = WristState.AT_TARGET;
+                }
+                break;
+            case AT_TARGET:
+                motor.setControl(positionReq.withPosition(targPos));
+                break;
+            case MANUAL:
+                motor.setControl(voltReq.withOutput(manualVolts));
+                break;
+            case ZEROING:
+                motor.setPosition(IntakeConstants.Wrist.ENCODER_OFFSET);
+                zeroed = true;
+                DogLog.forceNt.log("IntakeWrist/IntakeWristZeroed", zeroed);
+                currState = WristState.IDLE;
+                break;
+            case IDLE:
+                motor.setControl(voltReq.withOutput(0));
+                break;
+        }
+
+        DogLog.forceNt.log("IntakeWrist/CurrentState", currState.toString());
+        DogLog.forceNt.log("IntakeWrist/TargetPosition", targPos.in(Rotations));
+        DogLog.forceNt.log("IntakeWrist/CurrentPosition", motor.getPosition().getValueAsDouble());
+        DogLog.forceNt.log("IntakeWrist/ManualVoltage", manualVolts);
+        DogLog.forceNt.log("IntakeWrist/Zeroed", zeroed);
     }
 }
