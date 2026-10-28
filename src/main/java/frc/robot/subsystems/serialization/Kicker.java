@@ -36,7 +36,7 @@ public class Kicker extends SubsystemBase {
         return run(() -> {
             motor.setControl(
                     voltageOutReq
-                            .withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
+                            .withOutput(joystickPosition.getAsDouble() * SerializationConstants.KICKER_MAX_VOLTS));
         });
     }
 

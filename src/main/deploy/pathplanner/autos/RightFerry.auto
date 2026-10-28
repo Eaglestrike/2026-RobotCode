@@ -34,24 +34,14 @@
             "pathName": "RightFerry"
           }
         },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "LeftFerryToClimb"
-          }
-        },
+        
         {
           "type": "wait",
           "data": {
             "waitTime": 2.0
           }
         },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbL1Left"
-          }
-        }
+        
       ]
     }
   },

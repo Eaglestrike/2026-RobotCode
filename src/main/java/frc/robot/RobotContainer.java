@@ -24,7 +24,6 @@ import com.pathplanner.lib.path.PathPlannerPath;
 
 import dev.doglog.DogLog;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -89,9 +88,6 @@ public class RobotContainer {
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
 
     private DriveMode driveMode = DriveMode.NORMAL;
-    private SlewRateLimiter xLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
-    private SlewRateLimiter yLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
-    private SlewRateLimiter rotRateLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ROT_ACC);
 
     // controllers
     private final CommandJoystick leftJoystick = new CommandJoystick(0);
@@ -181,16 +177,6 @@ public class RobotContainer {
                         double xSpeed = -leftJoystick.getY() * MaxSpeed * driveMult;
                         double ySpeed = -leftJoystick.getX() * MaxSpeed * driveMult;
                         double rotSpeed = -rightJoystick.getX() * MaxAngularRate * driveMult;
-
-                        // if (superstructure.isShooting) {
-                        // xSpeed = xLimiter.calculate(xSpeed);
-                        // ySpeed = yLimiter.calculate(ySpeed);
-                        // rotSpeed = rotRateLimiter.calculate(rotSpeed);
-                        // } else {
-                        // xLimiter.reset(xSpeed);
-                        // yLimiter.reset(ySpeed);
-                        // rotRateLimiter.reset(rotSpeed);
-                        // }
 
                         return drive
                                 .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT

@@ -47,12 +47,7 @@
             "pathName": "IntakeFuel"
           }
         },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "FuelToClimb"
-          }
-        },
+        
         {
           "type": "named",
           "data": {

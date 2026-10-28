@@ -71,12 +71,7 @@
             "waitTime": 3.0
           }
         },
-        {
-          "type": "named",
-          "data": {
-            "name": "ClimbL1Left"
-          }
-        }
+        
       ]
     }
   },
