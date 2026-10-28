@@ -29,10 +29,6 @@ public class ShooterFlywheels extends SubsystemBase {
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, x -> {
-            });
-
     {
         if (ENABLE_TUNING) {
             DogLog.tunable("ShooterFlywheels/kS", FlywheelConstants.kS, newKS -> {
