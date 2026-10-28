@@ -6,9 +6,12 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 
+import java.util.function.DoubleSupplier;
+
 import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -24,6 +27,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
+import frc.robot.subsystems.serialization.SerializationConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
 import frc.robot.subsystems.shooter.solver.LUTSolver.ManualPosition;
@@ -89,6 +93,16 @@ public class Shooter extends SubsystemBase {
         });
         DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
             kickerVelPhaseShift = angle;
+        });
+    }
+
+    public Command setManualFlywheelsInput(double joystickPosition) {
+        return run(() -> {
+            joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+            currentState = ShooterState.MANUAL;
+            motor.setControl(
+                    voltageOutReq
+                            .withOutput(joystickPosition * ShooterConstants.TurretConstants.MAX_VOLTS));
         });
     }
 

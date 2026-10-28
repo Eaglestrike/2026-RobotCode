@@ -120,9 +120,9 @@ public class ShooterFlywheels extends SubsystemBase {
         }
     }
 
-    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+    public Command setManualInput(double joystickPosition) {
         return this.run(() -> {
-            motor.setVoltage(joystickPosition.getAsDouble() * FlywheelConstants.MAX_VOLTS);
+            motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
         });
     }
 
