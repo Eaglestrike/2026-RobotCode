@@ -13,7 +13,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -28,10 +27,6 @@ public class ShooterFlywheels extends SubsystemBase {
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
-
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, x -> {
-            });
 
     {
         if (ENABLE_TUNING) {
