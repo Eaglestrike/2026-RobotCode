@@ -163,20 +163,18 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return startRun(
-                () -> {
-                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
-                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
-                    motor.getConfigurator().apply(cfg);
-                },
-                () -> {
-                    motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
-                }).finallyDo(() -> {
-                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-                    motor.getConfigurator().apply(cfg);
-                });
+    public void setManualInput(double joystickPosition) {
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+        motor.getConfigurator().apply(cfg);
+
+        motor.setVoltage(joystickPosition * TurretConstants.MAX_VOLTS);
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        motor.getConfigurator().apply(cfg);
+
     }
 
     public boolean atTarget() {

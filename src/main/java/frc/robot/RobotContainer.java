@@ -234,6 +234,17 @@ public class RobotContainer {
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
+        /*
+         * TODO: Change buttons to correct one
+         * Currently, they're just random numbers
+         */
+        operatorController.button(2)
+                .whileTrue(Commands.run(() -> {
+                    shooter.setManualFlywheelsInput(operatorController.getRightY());
+                }))
+                .onFalse(shooter.setManualFlywheelsInput(0));
+        operatorController.button(2).whileTrue(shooter.setManualHoodInput(operatorController::getRightY))
+                .onFalse(shooter.setManualFlywheelsInput(0));
 
         // ---------------------------------
 

@@ -96,14 +96,23 @@ public class Shooter extends SubsystemBase {
         });
     }
 
-    public Command setManualFlywheelsInput(double joystickPosition) {
-        return run(() -> {
-            joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
-            currentState = ShooterState.MANUAL;
-            motor.setControl(
-                    voltageOutReq
-                            .withOutput(joystickPosition * ShooterConstants.TurretConstants.MAX_VOLTS));
-        });
+    public void setManualFlywheelsInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = ShooterState.MANUAL;
+        flywheels.setManualInput(joystickPosition);
+
+    }
+
+    public void setManualHoodInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = ShooterState.MANUAL;
+        hood.setManualInput(joystickPosition);
+    }
+
+    public void setManualTurretInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = ShooterState.MANUAL;
+        turret.setManualInput(joystickPosition);
     }
 
     public Command stowShooter() {
