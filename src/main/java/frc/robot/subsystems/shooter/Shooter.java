@@ -28,6 +28,8 @@ import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
 import static edu.wpi.first.units.Units.*;
 
+import java.util.function.DoubleSupplier;
+
 public class Shooter extends SubsystemBase {
     private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
 
@@ -38,6 +40,8 @@ public class Shooter extends SubsystemBase {
         DUCKING,
         MANUAL,
     }
+
+    public static final DoubleSupplier rpmTrim = DogLog.tunable("RPM Trim", 0.0);
 
     private final ShooterTurret turret;
     private final ShooterHood hood;
@@ -209,7 +213,7 @@ public class Shooter extends SubsystemBase {
         // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
         // targetTurretAngleDeg += autoTrim;
-//        DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
+        // DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
@@ -236,7 +240,7 @@ public class Shooter extends SubsystemBase {
             double targetHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
             hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
-                flywheels.requestVelocity(result.rpm());
+                flywheels.requestVelocity(result.rpm() + rpmTrim.getAsDouble());
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
@@ -326,8 +330,8 @@ public class Shooter extends SubsystemBase {
         DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
         DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
 
-//        DogLog.log("Shooter/PredictedTargetTranslation3d",
-//                new Translation3d[] { lastSolverResult.predictedTarget() });
+        // DogLog.log("Shooter/PredictedTargetTranslation3d",
+        // new Translation3d[] { lastSolverResult.predictedTarget() });
 
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());

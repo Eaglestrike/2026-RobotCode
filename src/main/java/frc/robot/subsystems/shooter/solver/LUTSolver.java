@@ -17,7 +17,7 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 
 public class LUTSolver implements ShooterSolver {
-    private static final int ITERS = 20;
+    private static final int ITERS = 30;
     private static double DRAG_COEFF = 0;
 
     static {
