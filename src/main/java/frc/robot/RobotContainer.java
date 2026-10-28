@@ -9,10 +9,9 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.DoubleSupplier;
-
-import org.json.simple.parser.ParseException;
 
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
@@ -27,12 +26,8 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -48,7 +43,6 @@ import frc.robot.generated.TunerConstants;
 import frc.robot.lib.zone.RebuiltZones;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.Superstructure.ShootMode;
-import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.drive.DriveMode;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
@@ -64,20 +58,12 @@ import frc.robot.subsystems.shooter.ShooterTurret;
 import frc.robot.subsystems.vision.Vision;
 
 public class RobotContainer {
-    /**
-     * Meters from the tower to align to (for center of the robot)
-     */
-    private static final double CLIMB_TOWER_DISTANCE = 0.5;
-    /**
-     * Meters per second when moving towards the pole
-     */
-    private static final double CLIMB_SPEED = 1;
+
     /**
      * Trim the target pose
      */
     private static final double TRIM_ANGLE_TURRET = 2.5; // degrees per press for turret
     private static final double TRIM_ANGLE_HOOD = 1; // degrees per press for hood
-    private static final boolean CLIMB_AUTONOMOUS = false;
 
     public static final double AXIS_DEADBAND = 0.02;
     public static final CANBus MECHANISM_CANBUS = new CANBus("Mechanisms");
@@ -120,7 +106,6 @@ public class RobotContainer {
     private boolean overrideTriggers = false;
 
     // Button Board constants
-    private final int CLIMB_BUTTON = 4;
     private final int INTAKE_BUTTON = 5;
     private final int HOOD_BUTTON = 2;
     private final int TURRET_BUTTON = 1;
@@ -142,9 +127,8 @@ public class RobotContainer {
     private final IntakeWrist intakeWrist = new IntakeWrist();
     private final Kicker kicker = new Kicker();
     private final Spindexer spindexer = new Spindexer();
-    private final Climb climb = new Climb();
     private final LED led = new LED();
-    private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
+    private final Superstructure superstructure = new Superstructure(shooter, intakeRollers, intakeWrist,
             kicker, spindexer, drivetrain, led);
     private final Vision vision = new Vision(drivetrain);
 
@@ -153,10 +137,6 @@ public class RobotContainer {
         configureZoneBindings();
         DogLog.forceNt.log("Override Triggers", overrideTriggers);
 
-        NamedCommands.registerCommand("ClimbL1Left",
-                Commands.defer(() -> climbL1(), java.util.Set.of()));
-        NamedCommands.registerCommand("ClimbL1Right",
-                Commands.defer(() -> climbL1(), java.util.Set.of()));
         NamedCommands.registerCommand("SetModeFerry",
                 Commands.defer(() -> Commands.runOnce(() -> superstructure.setMode(ShootMode.FERRY)),
                         java.util.Set.of()));
@@ -280,8 +260,6 @@ public class RobotContainer {
         rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
         rightJoystick.button(4).onTrue(superstructure.stowIntake());
 
-        leftJoystick.button(4).whileTrue(climb.moveToUp());
-
         // -------- Manual Commands --------
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
                 .whileTrue(intakeRollers.setManualVoltage(operatorController::getRightY))
@@ -290,10 +268,6 @@ public class RobotContainer {
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
-
-        buttonBoard.button(CLIMB_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(climb.setManualVoltage(operatorController::getLeftY))
-                .onFalse(climb.setManualVoltage(() -> 0));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
@@ -331,8 +305,7 @@ public class RobotContainer {
         // ---------------------------------
 
         buttonBoard.button(SHOOT_BUTTON)
-                .onTrue(Commands.runOnce(() ->
-                        superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
 
         buttonBoard.button(TOGGLE_MODE_BUTTON)
                 .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
@@ -435,7 +408,7 @@ public class RobotContainer {
                     DogLog.log("Zones/InBlueZone", true);
                     superstructure.setMode(DriverStation.getAlliance()
                             .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
-                            : ShootMode.FERRY);
+                                    : ShootMode.FERRY);
                 }));
 
         Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
@@ -474,8 +447,7 @@ public class RobotContainer {
         almostHubActiveTrigger.onTrue(
                 Commands.runOnce(() -> operatorController.setRumble(RumbleType.kBothRumble, 0.5))
                         .andThen(new WaitCommand(3))
-                        .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0))
-        );
+                        .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0)));
     }
 
     private String previousAutoName = "";
@@ -513,47 +485,6 @@ public class RobotContainer {
                 cachedAutoCommand = null;
             }
         }
-    }
-
-    public Command climbL1() {
-        return Commands.defer(() -> {
-            if (!CLIMB_AUTONOMOUS && DriverStation.isAutonomous()) {
-                return new PrintCommand("Skipping climb since we're in autonomous and CLIMB_AUTONOMOUS is false");
-            }
-
-            DriverStation.Alliance alliance = DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue);
-
-            boolean absoluteLeft = drivetrain.getState().Pose.getY() > FieldConstants.LinesHorizontal.center;
-            boolean isLeft = alliance == DriverStation.Alliance.Blue ? absoluteLeft : !absoluteLeft;
-
-            Pose3d towerPolePose = FieldConstants.getAllianceTowerPosition(isLeft);
-            DogLog.log("Climb/TowerPolePose", towerPolePose);
-            double multiplier = isLeft != (alliance == DriverStation.Alliance.Red) ? 1 : -1;
-            DogLog.log("Climb/DirectionMultiplier", multiplier);
-            Pose3d alignPose = new Pose3d(
-                    towerPolePose.getTranslation()
-                            .plus(new Translation3d(-Units.inchesToMeters(6), multiplier * CLIMB_TOWER_DISTANCE, 0)),
-                    towerPolePose.getRotation());
-            DogLog.log("Climb/AlignPose", alignPose);
-            Timer t = new Timer();
-
-            return Commands.sequence(
-                    superstructure.stow(),
-                    new PrintCommand("Aligning to " + (isLeft ? "left" : "right") + " tower"),
-                    drivetrain.alignPID(() -> alignPose.toPose2d()),
-                    new PrintCommand("Moving in..."),
-                    Commands.runOnce(() -> {
-                        t.reset();
-                        t.start();
-                    }),
-                    Commands.run(
-                                    () -> drivetrain
-                                            .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
-                            .until(() -> t.get() > 1),
-                    climb.moveToUp(),
-                    new PrintCommand("Finished climbing"),
-                    Commands.runOnce(() -> drivetrain.setControl(drive.withVelocityX(0).withVelocityY(0))));
-        }, Set.of());
     }
 
     public Trigger deadbandTrigger(DoubleSupplier axis, double deadband) {
