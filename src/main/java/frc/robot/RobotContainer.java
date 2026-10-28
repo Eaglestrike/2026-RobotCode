@@ -91,6 +91,12 @@ public class RobotContainer {
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
             .withSteerRequestType(SteerRequestType.MotionMagicExpo);
 
+    private final SwerveRequest.RobotCentric robotRelativeDrive = new SwerveRequest.RobotCentric()
+            .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT)
+            .withRotationalDeadband(MaxAngularRate * DriveConstants.DRIVE_DEADBAND_MULT)
+            .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+            .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+
     private final PIDController alignYController = new PIDController(8, 0, 0.05);
     private final SwerveRequest.FieldCentricFacingAngle trenchDrive = new SwerveRequest.FieldCentricFacingAngle()
             .withHeadingPID(5, 0, 0)
@@ -103,6 +109,7 @@ public class RobotContainer {
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
 
     private DriveMode driveMode = DriveMode.NORMAL;
+    private boolean robotRelative = false;
     private SlewRateLimiter xLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
     private SlewRateLimiter yLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ACCELERATION);
     private SlewRateLimiter rotRateLimiter = new SlewRateLimiter(DriveConstants.SHOOT_MODE_ROT_ACC);
@@ -185,6 +192,7 @@ public class RobotContainer {
 
         SmartDashboard.putData("Auto Chooser", autoChooser);
         SmartDashboard.putData("Auto Side Chooser", autoMirrorChooser);
+        SmartDashboard.putString("Drive Reference", "Field Relative");
     }
 
     private void configureBindings() {
@@ -211,6 +219,18 @@ public class RobotContainer {
                         // yLimiter.reset(ySpeed);
                         // rotRateLimiter.reset(rotSpeed);
                         // }
+
+                        if (robotRelative) {
+                            return robotRelativeDrive
+                                    .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
+                                            * driveMult)
+                                    .withRotationalDeadband(MaxAngularRate
+                                            * DriveConstants.DRIVE_DEADBAND_MULT
+                                            * driveMult)
+                                    .withVelocityX(xSpeed)
+                                    .withVelocityY(ySpeed)
+                                    .withRotationalRate(rotSpeed);
+                        }
 
                         return drive
                                 .withDeadband(MaxSpeed * DriveConstants.DRIVE_DEADBAND_MULT
@@ -280,7 +300,11 @@ public class RobotContainer {
         rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
         rightJoystick.button(4).onTrue(superstructure.stowIntake());
 
-        leftJoystick.button(4).whileTrue(climb.moveToUp());
+        // toggle the driving mode
+        leftJoystick.button(4).onTrue(Commands.runOnce(() -> {
+            robotRelative = !robotRelative;
+            SmartDashboard.putString("Drive Reference", robotRelative ? "Robot Relative" : "Field Relative");
+        }));
 
         // -------- Manual Commands --------
         buttonBoard.button(INTAKE_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
