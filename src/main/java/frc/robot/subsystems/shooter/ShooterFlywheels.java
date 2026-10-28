@@ -28,7 +28,7 @@ public class ShooterFlywheels extends SubsystemBase {
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
-
+    private boolean isManual = false;
     private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
             FlywheelConstants.MAX_ACCEL, x -> {
             });
@@ -103,6 +103,9 @@ public class ShooterFlywheels extends SubsystemBase {
      * @param vel Target velocity in rotations per minute
      */
     public void requestVelocity(double vel) {
+        if (isManual) {
+            return;
+        }
         vel /= 60;
         this.targetVel = RotationsPerSecond.of(vel);
         if (Math.abs(vel - FlywheelConstants.IDLE_VELOCITY / 60) < 0.1) {
@@ -120,10 +123,16 @@ public class ShooterFlywheels extends SubsystemBase {
         }
     }
 
-    public Command setManualInput(double joystickPosition) {
-        return this.run(() -> {
-            motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
-        });
+    public Command setManualVoltage(DoubleSupplier joystickPosition) {
+        return startRun(
+                () -> {
+                    isManual = true;
+                },
+                () -> {
+                    motor.setVoltage(joystickPosition.getAsDouble() * FlywheelConstants.MAX_VOLTS);
+                }).finallyDo(() -> {
+                    isManual = false;
+                });
     }
 
     public boolean atVelocity() {

@@ -29,6 +29,8 @@ import frc.robot.subsystems.shooter.solver.LUTSolver;
 public class Superstructure extends SubsystemBase {
     public static double turretTrimDegrees = 0;
     public static double hoodTrimDegrees = 0;
+    public static double rpmTrimDegrees = 0;
+
     public static final double FERRY_WAIT_TIME = 0.5; // seconds
 
     public enum ShootMode {
@@ -170,12 +172,22 @@ public class Superstructure extends SubsystemBase {
         });
     }
 
+    public Command rpmTurretTrim(DoubleSupplier delta) {
+        return runOnce(() -> {
+            turretTrimDegrees += delta.getAsDouble();
+            DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
+        });
+    }
+
     public Command resetShootOffset() {
         return runOnce(() -> {
             turretTrimDegrees = 0;
             hoodTrimDegrees = 0;
+            rpmTrimDegrees = 0;
             DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
             DogLog.forceNt.log("Superstructure/HoodTrim", hoodTrimDegrees);
+            DogLog.forceNt.log("Superstructure/RpmTrim", rpmTrimDegrees);
+
         });
     }
 

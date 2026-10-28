@@ -35,6 +35,7 @@ public class ShooterHood extends SubsystemBase {
     private final PositionVoltage request = new PositionVoltage(0);
     private Angle targetAngle = Degrees.of(HoodConstants.DEFAULT_GOAL);
     private boolean zeroed = false;
+    private boolean isManual = false;
 
     public ShooterHood() {
         this.motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
@@ -93,7 +94,7 @@ public class ShooterHood extends SubsystemBase {
      * 75.11° = most horizontal (hard stop), 26° = most tilted
      */
     public void setGoal(Angle shootingAngle) {
-        if (!zeroed)
+        if (!zeroed || isManual)
             return;
         targetAngle = Rotations
                 .of(MathUtil.clamp(shootingAngle.in(Rotations), HoodConstants.MIN_ROT, HoodConstants.MAX_ANGLE));
@@ -106,6 +107,7 @@ public class ShooterHood extends SubsystemBase {
                     cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
                     cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
                     motor.getConfigurator().apply(cfg);
+                    isManual = true;
                 },
                 () -> {
                     motor.setVoltage(joystickPosition.getAsDouble() * HoodConstants.MAX_VOLTS);
@@ -113,6 +115,7 @@ public class ShooterHood extends SubsystemBase {
                     cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
                     cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
                     motor.getConfigurator().apply(cfg);
+                    isManual = false;
                 });
     }
 

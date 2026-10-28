@@ -43,6 +43,7 @@ public class ShooterTurret extends SubsystemBase {
     private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
 
     private boolean isRecentering = false;
+    private boolean isManual = false;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -137,6 +138,9 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setAngle(Angle pos) {
+        if (isManual) {
+            return;
+        }
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
         // DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
         var wind = nearestWind(motor.getPosition().getValue(), pos);
@@ -169,6 +173,7 @@ public class ShooterTurret extends SubsystemBase {
                     cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
                     cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
                     motor.getConfigurator().apply(cfg);
+                    isManual = true;
                 },
                 () -> {
                     motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
@@ -176,6 +181,7 @@ public class ShooterTurret extends SubsystemBase {
                     cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
                     cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
                     motor.getConfigurator().apply(cfg);
+                    isManual = false;
                 });
     }
 
