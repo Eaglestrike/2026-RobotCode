@@ -1,5 +1,10 @@
 package frc.robot.lib.zone;
 
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Seconds;
+
+import java.util.function.Supplier;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -7,11 +12,6 @@ import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.FieldConstants;
-
-import java.util.function.Supplier;
-
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Seconds;
 
 public class Zone {
     protected final double xMin, xMax, yMin, yMax;
@@ -44,10 +44,10 @@ public class Zone {
     protected boolean willContainPoint(Translation2d point, ChassisSpeeds fieldSpeeds, Time dt) {
         return (point.getY() >= yMin && point.getY() <= yMax)
                 && ((point.getX() >= xMin && point.getX() <= xMax)
-                || (point.getX() < xMin
-                && fieldSpeeds.vxMetersPerSecond * dt.in(Seconds) >= xMin - point.getX())
-                || (point.getX() > xMax
-                && fieldSpeeds.vxMetersPerSecond * dt.in(Seconds) <= xMax - point.getX()));
+                        || (point.getX() < xMin
+                                && fieldSpeeds.vxMetersPerSecond * dt.in(Seconds) >= xMin - point.getX())
+                        || (point.getX() > xMax
+                                && fieldSpeeds.vxMetersPerSecond * dt.in(Seconds) <= xMax - point.getX()));
     }
 
     // utility methods
@@ -67,9 +67,10 @@ public class Zone {
                 FieldConstants.fieldWidth - yMin);
     }
 
-    // list of corners, with the bottom left corner repeated at the end to form a closed loop
+    // list of corners, with the bottom left corner repeated at the end to form a
+    // closed loop
     public Translation2d[] getCorners() {
-        return new Translation2d[]{
+        return new Translation2d[] {
                 new Translation2d(xMin, yMin),
                 new Translation2d(xMax, yMin),
                 new Translation2d(xMax, yMax),

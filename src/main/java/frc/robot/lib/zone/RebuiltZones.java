@@ -39,7 +39,8 @@ public class RebuiltZones {
     public static final Zone SLOW_RED_LEFT_TRENCH_ZONE = SLOW_BLUE_RIGHT_TRENCH_ZONE.mirroredX().mirroredY();
 
     public static final ZoneCollection SLOW_TRENCH_ZONES = new ZoneCollection(
-            SLOW_BLUE_RIGHT_TRENCH_ZONE, SLOW_BLUE_LEFT_TRENCH_ZONE, SLOW_RED_RIGHT_TRENCH_ZONE, SLOW_RED_LEFT_TRENCH_ZONE);
+            SLOW_BLUE_RIGHT_TRENCH_ZONE, SLOW_BLUE_LEFT_TRENCH_ZONE, SLOW_RED_RIGHT_TRENCH_ZONE,
+            SLOW_RED_LEFT_TRENCH_ZONE);
 
     public static final Zone CENTER_ZONE = new Zone(
             FieldConstants.Hub.topCenterPoint.getX(),

@@ -1,5 +1,10 @@
 package frc.robot.subsystems;
 
+import java.util.Optional;
+import java.util.function.DoubleSupplier;
+
+import com.ctre.phoenix6.Utils;
+
 import dev.doglog.DogLog;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -11,7 +16,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldConstants;
 import frc.robot.FieldConstants.RightTrench;
-import frc.robot.subsystems.climb.Climb;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.intake.IntakeConstants;
 import frc.robot.subsystems.intake.IntakeRollers;
@@ -21,13 +25,6 @@ import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
-
-import java.util.Optional;
-import java.util.function.DoubleSupplier;
-
-import com.ctre.phoenix6.Utils;
-
-import static edu.wpi.first.units.Units.Degrees;
 
 public class Superstructure extends SubsystemBase {
     public static double turretTrimDegrees = 0;
@@ -44,7 +41,6 @@ public class Superstructure extends SubsystemBase {
     private boolean isKickerOverrided;
     private Pose3d targetPose;
 
-    private final Climb climb;
     private final Shooter shooter;
     private final IntakeRollers intakeRollers;
     private final IntakeWrist intakeWrist;
@@ -72,11 +68,10 @@ public class Superstructure extends SubsystemBase {
         return LUTSolver.TOF_MAP.get(distance);
     }
 
-    public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist,
+    public Superstructure(Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist,
             Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
-        this.climb = climb;
         this.shooter = shooter;
         this.intakeRollers = intakeRollers;
         this.intakeWrist = intakeWrist;
@@ -95,8 +90,7 @@ public class Superstructure extends SubsystemBase {
     public Command initialize() {
         return Commands.sequence(
                 duck(),
-                led.setColor(Color.kGreen)
-        /* climb.moveToStow() */);
+                led.setColor(Color.kGreen));
     }
 
     /**
@@ -123,14 +117,13 @@ public class Superstructure extends SubsystemBase {
     }
 
     /**
-     * Stows everything, including turret, hood, intake, and climber
+     * Stows everything, including turret, hood, intake
      */
     public Command stow() {
         return Commands.parallel(
                 stowIntake(),
                 shooter.stowShooter(),
-                Commands.runOnce(() -> setShooting(false))
-        /* climb.moveToStow() */);
+                Commands.runOnce(() -> setShooting(false)));
     }
 
     public Command ejectIntake() {

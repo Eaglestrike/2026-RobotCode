@@ -1,11 +1,11 @@
 package frc.robot.lib.zone;
 
+import java.util.function.Supplier;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-
-import java.util.function.Supplier;
 
 public class ZoneCollection {
     protected final Zone[] zones;
