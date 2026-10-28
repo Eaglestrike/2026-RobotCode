@@ -54,7 +54,7 @@ public class FMSHelper {
             case Blue -> redInactiveFirst;
         };
 
-        boolean futureActive = evaluateHub(matchTime - 2*tof, shift1Active);
+        boolean futureActive = evaluateHub(matchTime - 2 * tof, shift1Active);
 
         return futureActive;
     }
@@ -102,7 +102,7 @@ public class FMSHelper {
 
         boolean currentlyActive = evaluateHub(matchTime, shift1Active);
         boolean futureActive = evaluateHub(matchTime - tof, shift1Active);
-        
+
         return currentlyActive || futureActive;
     }
 

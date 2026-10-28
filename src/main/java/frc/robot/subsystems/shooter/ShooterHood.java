@@ -95,7 +95,8 @@ public class ShooterHood extends SubsystemBase {
     public void setGoal(Angle shootingAngle) {
         if (!zeroed)
             return;
-        targetAngle = Rotations.of(MathUtil.clamp(shootingAngle.in(Rotations), HoodConstants.MIN_ROT, HoodConstants.MAX_ANGLE));
+        targetAngle = Rotations
+                .of(MathUtil.clamp(shootingAngle.in(Rotations), HoodConstants.MIN_ROT, HoodConstants.MAX_ANGLE));
         motor.setControl(request.withPosition(targetAngle));
     }
 

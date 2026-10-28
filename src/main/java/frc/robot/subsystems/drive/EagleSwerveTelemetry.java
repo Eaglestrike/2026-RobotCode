@@ -1,6 +1,8 @@
 package frc.robot.subsystems.drive;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
@@ -131,7 +133,9 @@ public class EagleSwerveTelemetry {
 
     /**
      * Updates the target pose from the superstructure for visualization.
-     * @param targetPose An optional containing the target pose, or empty if no target
+     * 
+     * @param targetPose An optional containing the target pose, or empty if no
+     *                   target
      */
     public void setSuperstructureTargetPose(Optional<Pose2d> targetPose) {
         if (targetPose.isPresent()) {
@@ -144,10 +148,11 @@ public class EagleSwerveTelemetry {
 
     /**
      * Updates the autonomous trajectory on the Field2d for visualization.
+     * 
      * @param pathPoses The poses of the trajectory to display on the field.
      */
     public void setAutonomousTrajectory(List<Pose2d> pathPoses) {
-        if(pathPoses == null) {
+        if (pathPoses == null) {
             pathPoses = new ArrayList<>();
         }
         field.getObject("AutonomousPath").setPoses(pathPoses);

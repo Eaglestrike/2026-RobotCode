@@ -105,14 +105,13 @@ public class ShooterFlywheels extends SubsystemBase {
     public void requestVelocity(double vel) {
         vel /= 60;
         this.targetVel = RotationsPerSecond.of(vel);
-        if(Math.abs(vel - FlywheelConstants.IDLE_VELOCITY/60) < 0.1) {
+        if (Math.abs(vel - FlywheelConstants.IDLE_VELOCITY / 60) < 0.1) {
             motor.setVoltage(FlywheelConstants.IDLE_VOLTAGE);
         } else if (motor.getVelocity().getValue().isNear(
                 targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
             // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
             motor.setControl(velocityRequest.withVelocity(this.targetVel));
-        }
-        else if (vel < motor.getVelocity().getValueAsDouble()) {
+        } else if (vel < motor.getVelocity().getValueAsDouble()) {
             // Coast until just before the target if trying to reduce speed
             motor.setVoltage(0);
         } else {

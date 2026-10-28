@@ -410,9 +410,6 @@ public class EagleSwerveDrivetrain extends TunerSwerveDrivetrain implements Subs
                     Translation2d proj = new Translation2d(unitHeading.getX() * dot, unitHeading.getY() * dot);
                     Translation2d perpendicular = errorTrans.minus(proj);
 
-                    DogLog.log("Climb/PerpError", perpendicular.getNorm());
-                    DogLog.log("Climb/ProjError", proj.getNorm());
-
                     return perpendicular.getNorm() < 0.05 && proj.getNorm() < 0.05 && // Within 5 cm of target
                             Math.abs(error.getRotation().getDegrees()) < 5.0; // Within 5 degrees of target
                 })

@@ -35,7 +35,8 @@ public class Kicker extends SubsystemBase {
     public Command setManualVoltage(DoubleSupplier joystickPosition) {
         return run(() -> {
             motor.setControl(
-                    voltageOutReq.withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
+                    voltageOutReq
+                            .withOutput(joystickPosition.getAsDouble() * SerializationConstants.SPINDEXER_MAX_VOLTS));
         });
     }
 

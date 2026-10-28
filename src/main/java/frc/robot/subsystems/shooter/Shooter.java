@@ -1,5 +1,11 @@
 package frc.robot.subsystems.shooter;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
+
 import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
@@ -10,7 +16,6 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -19,14 +24,11 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
-import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.LUTSolver.ManualPosition;
+import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
-
-import static edu.wpi.first.units.Units.*;
 
 public class Shooter extends SubsystemBase {
     private static final int NT_PUBLISH_LIMIT = 25; // How many times to wait before publishing to networktables again
@@ -209,7 +211,7 @@ public class Shooter extends SubsystemBase {
         // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
         // targetTurretAngleDeg += autoTrim;
-//        DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
+        // DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
@@ -326,8 +328,8 @@ public class Shooter extends SubsystemBase {
         DogLog.forceNt.log("Shooter/FlywheelReady", flywheels.atVelocity());
         DogLog.forceNt.log("Shooter/ReadyToShoot", isReady());
 
-//        DogLog.log("Shooter/PredictedTargetTranslation3d",
-//                new Translation3d[] { lastSolverResult.predictedTarget() });
+        // DogLog.log("Shooter/PredictedTargetTranslation3d",
+        // new Translation3d[] { lastSolverResult.predictedTarget() });
 
         // Solver diagnostics
         DogLog.log("Shooter/Solver/Success", lastSolverResult != null && lastSolverResult.validShot());
