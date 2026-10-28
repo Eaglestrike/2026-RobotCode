@@ -30,6 +30,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
@@ -223,6 +224,39 @@ public class ShooterTurret extends SubsystemBase {
                 ShooterConstants.TurretConstants.OFFSET.getY(),
                 ShooterConstants.TurretConstants.OFFSET_HEIGHT,
                 new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
+    }
+
+    public Command runTests() {
+        double[] start = new double[2]; // {cancoder mech rotations, rotor mech rotations}
+
+        return Commands.sequence(
+                // 0. remember where both sensors are before moving
+                Commands.runOnce(() -> {
+                    start[0] = encoder.getPosition().getValueAsDouble() / TurretConstants.SENSOR_TO_MECHANISM;
+                    start[1] = motor.getRotorPosition().getValueAsDouble() / TurretConstants.GEAR_RATIO;
+                }),
+
+                // 1. Run the turret (small move, inside the soft limits)
+                requestPosition(Degrees.of(90)),
+                Commands.waitUntil(() -> motor.getPosition().getValue()
+                        .isNear(Degrees.of(90).plus(TurretConstants.ENCODER_OFFSET), TurretConstants.ANGLE_TOLERANCE))
+                        .withTimeout(3),
+
+                // 2. Compare the cancoder's travel to the internal motor's travel
+                Commands.runOnce(() -> {
+                    double cancoderDelta = encoder.getPosition().getValueAsDouble()
+                            / TurretConstants.SENSOR_TO_MECHANISM - start[0];
+                    double rotorDelta = motor.getRotorPosition().getValueAsDouble()
+                            / TurretConstants.GEAR_RATIO - start[1];
+
+                    boolean moved = Math.abs(cancoderDelta) > 0.05;
+                    boolean agrees = Math.abs(cancoderDelta - rotorDelta) < TurretConstants.ANGLE_TOLERANCE
+                            .in(Rotations);
+
+                    DogLog.log("ShooterTurret/Test/CancoderDelta", cancoderDelta);
+                    DogLog.log("ShooterTurret/Test/RotorDelta", rotorDelta);
+                    DogLog.log("ShooterTurret/Test/Passed", moved && agrees);
+                })).finallyDo(() -> motor.stopMotor());
     }
 
 }
