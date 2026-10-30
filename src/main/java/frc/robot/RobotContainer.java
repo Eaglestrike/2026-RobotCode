@@ -106,7 +106,7 @@ public class RobotContainer {
     private final int HOOD_BUTTON = 2;
     private final int TURRET_BUTTON = 1;
     private final int SERIALIZER_BUTTON = 3;
-
+    private final int FLYWHEELS_BUTTON = 4;
     private final int POS_1_BUTTON = 6;
     private final int POS_2_BUTTON = 7;
     private final int POS_3_BUTTON = 8;
@@ -235,16 +235,30 @@ public class RobotContainer {
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
         /*
-         * TODO: Change buttons to correct one
-         * Currently, they're just random numbers
+         * TODO: Change buttons for shooter manual controls to correct ones
+         * Currently, they're just random numbers for syntax purposes
          */
-        operatorController.button(2)
+        operatorController.button(FLYWHEELS_BUTTON)
                 .whileTrue(Commands.run(() -> {
-                    shooter.setManualFlywheelsInput(operatorController.getRightY());
+                    shooter.getFlywheels().setManualInput(operatorController.getRightY());
                 }))
-                .onFalse(shooter.setManualFlywheelsInput(0));
-        operatorController.button(2).whileTrue(shooter.setManualHoodInput(operatorController::getRightY))
-                .onFalse(shooter.setManualFlywheelsInput(0));
+                .onFalse(Commands.run(() -> {
+                    shooter.setManualFlywheelsInput(0);
+                }));
+        operatorController.button(HOOD_BUTTON)
+                .whileTrue(Commands.run(() -> {
+                    shooter.setManualHoodInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.setManualHoodInput(0);
+                }));
+        operatorController.button(TURRET_BUTTON)
+                .whileTrue(Commands.run(() -> {
+                    shooter.setManualTurretInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.setManualTurretInput(0);
+                }));
 
         // ---------------------------------
 

@@ -20,6 +20,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -44,6 +45,16 @@ public class ShooterTurret extends SubsystemBase {
     private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
 
     private boolean isRecentering = false;
+
+    private enum TurretState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING,
+        MANUAL,
+    }
+
+    private TurretState currentState = TurretState.AIMING;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -165,6 +176,8 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setManualInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = TurretState.MANUAL;
 
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;

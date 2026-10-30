@@ -36,6 +36,16 @@ public class ShooterHood extends SubsystemBase {
     private Angle targetAngle = Degrees.of(HoodConstants.DEFAULT_GOAL);
     private boolean zeroed = false;
 
+    private enum HoodState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING,
+        MANUAL,
+    }
+
+    private HoodState currentState = HoodState.AIMING;
+
     public ShooterHood() {
         this.motor = new TalonFX(HoodConstants.MOTOR_ID, RobotContainer.MECHANISM_CANBUS);
         cfg.Feedback.SensorToMechanismRatio = HoodConstants.GEAR_RATIO;
@@ -101,6 +111,8 @@ public class ShooterHood extends SubsystemBase {
     }
 
     public void setManualInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = HoodState.MANUAL;
         cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
         cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
         motor.getConfigurator().apply(cfg);

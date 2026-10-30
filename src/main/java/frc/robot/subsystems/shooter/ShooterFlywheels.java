@@ -13,6 +13,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -27,6 +28,16 @@ public class ShooterFlywheels extends SubsystemBase {
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
+
+    private enum FlywheelsState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING,
+        MANUAL,
+    }
+
+    private FlywheelsState currentState = FlywheelsState.AIMING;
 
     {
         if (ENABLE_TUNING) {
@@ -116,6 +127,8 @@ public class ShooterFlywheels extends SubsystemBase {
     }
 
     public void setManualInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = FlywheelsState.MANUAL;
         motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
     }
 
