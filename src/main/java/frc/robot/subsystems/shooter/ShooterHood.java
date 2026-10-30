@@ -5,7 +5,10 @@ import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.ArrayList;
 import java.util.function.DoubleSupplier;
+
+import org.jspecify.annotations.Nullable;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -25,8 +28,10 @@ import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotContainer;
+import frc.robot.selftest.TestFault;
 import frc.robot.subsystems.shooter.ShooterConstants.HoodConstants;
 
 public class ShooterHood extends SubsystemBase {
@@ -35,6 +40,7 @@ public class ShooterHood extends SubsystemBase {
     private final PositionVoltage request = new PositionVoltage(0);
     private Angle targetAngle = Degrees.of(HoodConstants.DEFAULT_GOAL);
     private boolean zeroed = false;
+    private ArrayList<TestFault> faults = new ArrayList<TestFault>();
 
     private enum HoodState {
         IDLE,
@@ -189,4 +195,32 @@ public class ShooterHood extends SubsystemBase {
                 turretPose.getZ() + 0.0713,
                 new Rotation3d(0, -getAngle().in(Radians), yaw));
     }
+
+    public @Nullable TestFault[] getFaults() {
+        if (faults.size() > 0) {
+            return (TestFault[]) faults.toArray();
+        }
+        return null;
+    }
+
+    public Command test() {
+        return Commands.sequence(
+                Commands.run(() -> {
+                    faults = new ArrayList<TestFault>();
+
+                    zero();
+                    if (!motor.getPosition().isNear(Degrees.of(0), Degrees.of(1))) {
+                        faults.add(new TestFault("Motor not zeroed correctly"));
+                    }
+
+                }), Commands.run(() -> {
+                    setGoal(Degrees.of(100));
+                }), Commands.run(() -> {
+
+                    if (!atTarget()) {
+                        faults.add(new TestFault("Motor not at target"));
+                    }
+                }));
+    }
+
 }
