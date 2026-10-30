@@ -275,8 +275,8 @@ public class RobotContainer {
         leftJoystick.trigger().onTrue(superstructure.stopIntakeRollers());
         // eject intake
         leftJoystick.button(3).onTrue(superstructure.ejectIntake());
-        // stow all
-        leftJoystick.button(2).onTrue(superstructure.stow());
+        // stow intake only (shooter keeps running)
+        leftJoystick.button(2).onTrue(superstructure.stowIntake());
         rightJoystick.button(3).whileTrue(Commands.run(() -> drivetrain.setControl(brakeRequest)));
         rightJoystick.button(4).onTrue(superstructure.stowIntake());
 

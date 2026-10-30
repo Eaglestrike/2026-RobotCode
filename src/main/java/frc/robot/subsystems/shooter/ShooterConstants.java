@@ -47,7 +47,7 @@ public final class ShooterConstants {
         public static final Translation2d OFFSET = new Translation2d(-0.12827, 0.05080);
         public static final double OFFSET_HEIGHT = 0.59673; // meters
 
-        public static final double MAGNET_OFFSET = -0.877695;
+        public static final double MAGNET_OFFSET = -0.817;
 
         /** In rotations of the turret — stow at back (zero sensor position) */
         public static final double STOW_POSITION = -0.5;
