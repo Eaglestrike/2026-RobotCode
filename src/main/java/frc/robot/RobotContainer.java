@@ -254,7 +254,7 @@ public class RobotContainer {
                 }));
         operatorController.button(TURRET_BUTTON)
                 .whileTrue(Commands.run(() -> {
-                    shooter.getTurret().setManualInput(operatorController.getRightY());
+                    turret.setManualInput(operatorController.getRightY());
                 }))
                 .onFalse(Commands.run(() -> {
                     shooter.getTurret().setManualInput(0);
@@ -281,16 +281,28 @@ public class RobotContainer {
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
-                .onFalse(turret.setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    turret.setManualInput(operatorController.getLeftY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    turret.setManualInput(0);
+                }));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
-                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    shooterFlywheels.setManualInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooterFlywheels.setManualInput(0);
+                }));
 
         buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
-                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    shooter.getHood().setManualInput(operatorController.getLeftY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.getHood().setManualInput(0);
+                }));
 
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(
