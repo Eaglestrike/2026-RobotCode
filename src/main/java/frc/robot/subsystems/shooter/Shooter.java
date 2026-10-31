@@ -30,7 +30,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.serialization.SerializationConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
-import frc.robot.subsystems.shooter.solver.LUTSolver.ManualPosition;
+import frc.robot.subsystems.shooter.solver.LUTSolver.PresetPositions;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
@@ -42,7 +42,6 @@ public class Shooter extends SubsystemBase {
         AIMING,
         SHOOTING,
         DUCKING,
-        MANUAL,
     }
 
     private final ShooterTurret turret;
@@ -57,7 +56,7 @@ public class Shooter extends SubsystemBase {
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
 
-    private ManualPosition manualPosition = null;
+    private PresetPositions presetPositions = null;
 
     private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
@@ -94,25 +93,6 @@ public class Shooter extends SubsystemBase {
         DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
             kickerVelPhaseShift = angle;
         });
-    }
-
-    public void setManualFlywheelsInput(double joystickPosition) {
-        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
-        currentState = ShooterState.MANUAL;
-        flywheels.setManualInput(joystickPosition);
-
-    }
-
-    public void setManualHoodInput(double joystickPosition) {
-        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
-        currentState = ShooterState.MANUAL;
-        hood.setManualInput(joystickPosition);
-    }
-
-    public void setManualTurretInput(double joystickPosition) {
-        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
-        currentState = ShooterState.MANUAL;
-        turret.setManualInput(joystickPosition);
     }
 
     public Command stowShooter() {

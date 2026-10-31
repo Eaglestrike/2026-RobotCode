@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter.solver;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Rotation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -208,27 +209,22 @@ public class LUTSolver implements ShooterSolver {
         // ----- END FERRY MAP -----
     }
 
-    public enum ManualPosition {
-        Position1, // in front of hub
-        Position2, // any trench (tuned with left)
-        Position3, // any corner (tuned with right)
-        Position4, // IFO tower
+    public enum PresetPositions {
+        Position1(1400.0, Rotation2d.fromDegrees(75)), // in front of hub
+        Position2(1651.0, Rotation2d.fromDegrees(70)), // any trench (tuned with left)
+        Position3(1955.0, Rotation2d.fromDegrees(57)), // any corner (tuned with right)
+        Position4(1596.0, Rotation2d.fromDegrees(69)); // IFO tower
+
+        public final double rpm;
+        public final Rotation2d hood;
+
+        private PresetPositions(double rpm, Rotation2d hood) {
+            this.rpm = rpm;
+            this.hood = hood;
+        }
     }
 
-    public static final Map<ManualPosition, Double> MANUAL_RPM_MAP = new HashMap<>();
-    public static final Map<ManualPosition, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
+    public static final Map<PresetPositions, Double> MANUAL_RPM_MAP = new HashMap<>();
+    public static final Map<PresetPositions, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
 
-    static {
-        MANUAL_RPM_MAP.put(ManualPosition.Position1, 1400.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position1, Rotation2d.fromDegrees(75));
-
-        MANUAL_RPM_MAP.put(ManualPosition.Position2, 1651.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position2, Rotation2d.fromDegrees(70));
-
-        MANUAL_RPM_MAP.put(ManualPosition.Position3, 1955.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position3, Rotation2d.fromDegrees(57));
-
-        MANUAL_RPM_MAP.put(ManualPosition.Position4, 1596.0);
-        MANUAL_HOOD_MAP.put(ManualPosition.Position4, Rotation2d.fromDegrees(69));
-    }
 }

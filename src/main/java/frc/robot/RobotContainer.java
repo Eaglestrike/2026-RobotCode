@@ -243,21 +243,21 @@ public class RobotContainer {
                     shooter.getFlywheels().setManualInput(operatorController.getRightY());
                 }))
                 .onFalse(Commands.run(() -> {
-                    shooter.setManualFlywheelsInput(0);
+                    shooter.getFlywheels().setManualInput(0);
                 }));
         operatorController.button(HOOD_BUTTON)
                 .whileTrue(Commands.run(() -> {
-                    shooter.setManualHoodInput(operatorController.getRightY());
+                    shooter.getHood().setManualInput(operatorController.getRightY());
                 }))
                 .onFalse(Commands.run(() -> {
-                    shooter.setManualHoodInput(0);
+                    shooter.getHood().setManualInput(0);
                 }));
         operatorController.button(TURRET_BUTTON)
                 .whileTrue(Commands.run(() -> {
-                    shooter.setManualTurretInput(operatorController.getRightY());
+                    shooter.getTurret().setManualInput(operatorController.getRightY());
                 }))
                 .onFalse(Commands.run(() -> {
-                    shooter.setManualTurretInput(0);
+                    shooter.getTurret().setManualInput(0);
                 }));
 
         // ---------------------------------
