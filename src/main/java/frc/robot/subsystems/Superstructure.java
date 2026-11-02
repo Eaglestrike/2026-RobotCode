@@ -21,6 +21,7 @@ import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
+import frc.robot.subsystems.toproller.TopRoller;
 
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
@@ -50,6 +51,7 @@ public class Superstructure extends SubsystemBase {
     private final IntakeWrist intakeWrist;
     private final Kicker kicker;
     private final Spindexer spindexer;
+    private final TopRoller topRoller;
     private final LED led;
     private final EagleSwerveDrivetrain drivetrain;
     private boolean tuning = false;
@@ -73,7 +75,7 @@ public class Superstructure extends SubsystemBase {
     }
 
     public Superstructure(Climb climb, Shooter shooter, IntakeRollers intakeRollers, IntakeWrist intakeWrist,
-            Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led) {
+            Kicker kicker, Spindexer spindexer, EagleSwerveDrivetrain drivetrain, LED led, TopRoller topRoller) {
         currentMode = ShootMode.SHOOT;
         isShooting = false;
         this.climb = climb;
@@ -82,6 +84,7 @@ public class Superstructure extends SubsystemBase {
         this.intakeWrist = intakeWrist;
         this.kicker = kicker;
         this.spindexer = spindexer;
+        this.topRoller = topRoller;
         this.led = led;
 
         DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
@@ -255,6 +258,7 @@ public class Superstructure extends SubsystemBase {
             setShooting(false);
             kicker.stopMotor();
             spindexer.stopMotor();
+            topRoller.stop();
             return;
         }
 
@@ -264,13 +268,16 @@ public class Superstructure extends SubsystemBase {
                             && Utils.getCurrentTimeSeconds() - startFerryingTime >= FERRY_WAIT_TIME)) {
                 kicker.startMotor();
                 spindexer.startKicking();
+                topRoller.start();
             } else {
                 kicker.stopMotor();
                 spindexer.startMotor(); // this starts at like 0.3 volts don't worry
+                topRoller.stop();
             }
         } else {
             kicker.stopMotor();
             spindexer.startMotor(); // this starts at like 0.3 volts don't worry
+            topRoller.stop();
         }
     }
 
