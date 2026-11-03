@@ -58,6 +58,7 @@ import frc.robot.subsystems.intake.IntakeWrist;
 import frc.robot.subsystems.led.LED;
 import frc.robot.subsystems.serialization.Kicker;
 import frc.robot.subsystems.serialization.Spindexer;
+import frc.robot.subsystems.toproller.TopRoller;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.ShooterFlywheels;
 import frc.robot.subsystems.shooter.ShooterTurret;
@@ -142,10 +143,11 @@ public class RobotContainer {
     private final IntakeWrist intakeWrist = new IntakeWrist();
     private final Kicker kicker = new Kicker();
     private final Spindexer spindexer = new Spindexer();
+    private final TopRoller topRoller = new TopRoller();
     private final Climb climb = new Climb();
     private final LED led = new LED();
     private final Superstructure superstructure = new Superstructure(climb, shooter, intakeRollers, intakeWrist,
-            kicker, spindexer, drivetrain, led);
+            kicker, spindexer, drivetrain, led, topRoller);
     private final Vision vision = new Vision(drivetrain);
 
     public RobotContainer() {
@@ -331,8 +333,7 @@ public class RobotContainer {
         // ---------------------------------
 
         buttonBoard.button(SHOOT_BUTTON)
-                .onTrue(Commands.runOnce(() ->
-                        superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
+                .onTrue(Commands.runOnce(() -> superstructure.setShooting(!superstructure.isShooting))).debounce(0.1);
 
         buttonBoard.button(TOGGLE_MODE_BUTTON)
                 .onTrue(Commands.runOnce(() -> superstructure.toggleMode())).debounce(0.1);
@@ -435,7 +436,7 @@ public class RobotContainer {
                     DogLog.log("Zones/InBlueZone", true);
                     superstructure.setMode(DriverStation.getAlliance()
                             .orElse(DriverStation.Alliance.Red) == DriverStation.Alliance.Blue ? ShootMode.SHOOT
-                            : ShootMode.FERRY);
+                                    : ShootMode.FERRY);
                 }));
 
         Trigger inSlowTrenchZoneTrigger = RebuiltZones.SLOW_TRENCH_ZONES
@@ -474,8 +475,7 @@ public class RobotContainer {
         almostHubActiveTrigger.onTrue(
                 Commands.runOnce(() -> operatorController.setRumble(RumbleType.kBothRumble, 0.5))
                         .andThen(new WaitCommand(3))
-                        .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0))
-        );
+                        .finallyDo(() -> operatorController.setRumble(RumbleType.kBothRumble, 0)));
     }
 
     private String previousAutoName = "";
@@ -547,8 +547,8 @@ public class RobotContainer {
                         t.start();
                     }),
                     Commands.run(
-                                    () -> drivetrain
-                                            .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
+                            () -> drivetrain
+                                    .setControl(drive.withVelocityX(0).withVelocityY(CLIMB_SPEED * multiplier)))
                             .until(() -> t.get() > 1),
                     climb.moveToUp(),
                     new PrintCommand("Finished climbing"),
