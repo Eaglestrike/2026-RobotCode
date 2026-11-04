@@ -9,6 +9,8 @@ import static edu.wpi.first.units.Units.Volts;
 
 import java.util.function.DoubleSupplier;
 
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
@@ -42,6 +44,7 @@ public class ShooterTurret extends SubsystemBase {
     private EagleSwerveDrivetrain drive;
     private TalonFXConfiguration cfg = new TalonFXConfiguration();
     private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
+    private StatusSignal<Angle> motorPosition;
 
     private boolean isRecentering = false;
 
@@ -83,9 +86,11 @@ public class ShooterTurret extends SubsystemBase {
         var talonFXSim = motor.getSimState();
         talonFXSim.setMotorType(TalonFXSimState.MotorType.KrakenX60);
 
-        DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
-            CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
-        });
+        this.motorPosition = motor.getPosition();
+
+        // DogLog.tunable("ShooterTurret/TurretRequest Deg", 0.0, x -> {
+        // CommandScheduler.getInstance().schedule(requestPosition(Degrees.of(x)));
+        // });
     }
 
     /**
@@ -120,7 +125,7 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public double getAngleRad() {
-        return (motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET).in(Rotations)) * Math.PI * 2;
+        return (motorPosition.getValue().minus(TurretConstants.ENCODER_OFFSET).in(Rotations)) * Math.PI * 2;
     }
 
     /**
@@ -140,7 +145,7 @@ public class ShooterTurret extends SubsystemBase {
     public void setAngle(Angle pos) {
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
         // DogLog.log("ShooterTurret/RequestedPosition", pos.in(Degrees), "Degrees");
-        var wind = nearestWind(motor.getPosition().getValue(), pos);
+        var wind = nearestWind(motorPosition.getValue(), pos);
         Angle setpoint = wind.getFirst();
         boolean wraps = wind.getSecond();
 
@@ -150,7 +155,7 @@ public class ShooterTurret extends SubsystemBase {
 
         // technically this should be in periodic() but setAngle()'s 5ms call interval
         // is faster >:(
-        if (isRecentering && motor.getPosition().getValue().isNear(setpoint, TurretConstants.ANGLE_TOLERANCE)) {
+        if (isRecentering && motorPosition.getValue().isNear(setpoint, TurretConstants.ANGLE_TOLERANCE)) {
             isRecentering = false;
         }
 
@@ -186,7 +191,8 @@ public class ShooterTurret extends SubsystemBase {
 
     @Override
     public void periodic() {
-        DogLog.log("ShooterTurret/Position", motor.getPosition().getValue().minus(TurretConstants.ENCODER_OFFSET));
+        BaseStatusSignal.refreshAll(motorPosition);
+        DogLog.log("ShooterTurret/Position", motorPosition.getValue().minus(TurretConstants.ENCODER_OFFSET));
         // DogLog.log("ShooterTurret/TargetPosition", targetAngle.in(Degrees),
         // "Degrees");
         // DogLog.log("ShooterTurret/AtTarget", atTarget());
@@ -223,7 +229,7 @@ public class ShooterTurret extends SubsystemBase {
                 ShooterConstants.TurretConstants.OFFSET.getX(),
                 ShooterConstants.TurretConstants.OFFSET.getY(),
                 ShooterConstants.TurretConstants.OFFSET_HEIGHT,
-                new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
+                new Rotation3d(0, 0, -motorPosition.getValue().in(Radians)));
     }
 
 }
