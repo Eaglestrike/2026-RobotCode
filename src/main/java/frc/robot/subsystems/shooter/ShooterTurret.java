@@ -20,6 +20,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import dev.doglog.DogLog;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -30,6 +31,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.shooter.ShooterConstants.TurretConstants;
@@ -43,7 +45,16 @@ public class ShooterTurret extends SubsystemBase {
     private CANcoderConfiguration encoderCfg = new CANcoderConfiguration();
 
     private boolean isRecentering = false;
-    private boolean isManual = false;
+
+    private enum TurretState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING,
+        MANUAL,
+    }
+
+    private TurretState currentState = TurretState.AIMING;
 
     public ShooterTurret(EagleSwerveDrivetrain drive) {
         this.drive = drive;
@@ -138,7 +149,7 @@ public class ShooterTurret extends SubsystemBase {
     }
 
     public void setAngle(Angle pos) {
-        if (isManual) {
+        if (currentState == TurretState.MANUAL) {
             return;
         }
         pos = pos.plus(TurretConstants.ENCODER_OFFSET);
@@ -167,22 +178,20 @@ public class ShooterTurret extends SubsystemBase {
         });
     }
 
-    public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return startRun(
-                () -> {
-                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
-                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
-                    motor.getConfigurator().apply(cfg);
-                    isManual = true;
-                },
-                () -> {
-                    motor.setVoltage(joystickPosition.getAsDouble() * TurretConstants.MAX_VOLTS);
-                }).finallyDo(() -> {
-                    cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-                    cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-                    motor.getConfigurator().apply(cfg);
-                    isManual = false;
-                });
+    public void setManualInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = TurretState.MANUAL;
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = false;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = false;
+        motor.getConfigurator().apply(cfg);
+
+        motor.setVoltage(joystickPosition * TurretConstants.MAX_VOLTS);
+
+        cfg.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
+        cfg.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
+        motor.getConfigurator().apply(cfg);
+
     }
 
     public boolean atTarget() {
@@ -229,6 +238,39 @@ public class ShooterTurret extends SubsystemBase {
                 ShooterConstants.TurretConstants.OFFSET.getY(),
                 ShooterConstants.TurretConstants.OFFSET_HEIGHT,
                 new Rotation3d(0, 0, -motor.getPosition().getValue().in(Radians)));
+    }
+
+    public Command runTests() {
+        double[] start = new double[2]; // {cancoder mech rotations, rotor mech rotations}
+
+        return Commands.sequence(
+                // 0. remember where both sensors are before moving
+                Commands.runOnce(() -> {
+                    start[0] = encoder.getPosition().getValueAsDouble() / TurretConstants.SENSOR_TO_MECHANISM;
+                    start[1] = motor.getRotorPosition().getValueAsDouble() / TurretConstants.GEAR_RATIO;
+                }),
+
+                // 1. Run the turret (small move, inside the soft limits)
+                requestPosition(Degrees.of(90)),
+                Commands.waitUntil(() -> motor.getPosition().getValue()
+                        .isNear(Degrees.of(90).plus(TurretConstants.ENCODER_OFFSET), TurretConstants.ANGLE_TOLERANCE))
+                        .withTimeout(3),
+
+                // 2. Compare the cancoder's travel to the internal motor's travel
+                Commands.runOnce(() -> {
+                    double cancoderDelta = encoder.getPosition().getValueAsDouble()
+                            / TurretConstants.SENSOR_TO_MECHANISM - start[0];
+                    double rotorDelta = motor.getRotorPosition().getValueAsDouble()
+                            / TurretConstants.GEAR_RATIO - start[1];
+
+                    boolean moved = Math.abs(cancoderDelta) > 0.05;
+                    boolean agrees = Math.abs(cancoderDelta - rotorDelta) < TurretConstants.ANGLE_TOLERANCE
+                            .in(Rotations);
+
+                    DogLog.log("ShooterTurret/Test/CancoderDelta", cancoderDelta);
+                    DogLog.log("ShooterTurret/Test/RotorDelta", rotorDelta);
+                    DogLog.log("ShooterTurret/Test/Passed", moved && agrees);
+                })).finallyDo(() -> motor.stopMotor());
     }
 
 }

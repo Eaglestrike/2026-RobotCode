@@ -106,7 +106,7 @@ public class RobotContainer {
     private final int HOOD_BUTTON = 2;
     private final int TURRET_BUTTON = 1;
     private final int SERIALIZER_BUTTON = 3;
-
+    private final int FLYWHEELS_BUTTON = 4;
     private final int POS_1_BUTTON = 6;
     private final int POS_2_BUTTON = 7;
     private final int POS_3_BUTTON = 8;
@@ -234,6 +234,31 @@ public class RobotContainer {
                 .onFalse(intakeRollers.setManualVoltage(() -> 0));
         operatorController.button(3).whileTrue(intakeWrist.setManualVoltage(operatorController::getLeftY))
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
+        /*
+         * TODO: Change buttons for shooter manual controls to correct ones
+         * Currently, they're just random numbers for syntax purposes
+         */
+        operatorController.button(FLYWHEELS_BUTTON)
+                .whileTrue(Commands.run(() -> {
+                    shooter.getFlywheels().setManualInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.getFlywheels().setManualInput(0);
+                }));
+        operatorController.button(HOOD_BUTTON)
+                .whileTrue(Commands.run(() -> {
+                    shooter.getHood().setManualInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.getHood().setManualInput(0);
+                }));
+        operatorController.button(TURRET_BUTTON)
+                .whileTrue(Commands.run(() -> {
+                    turret.setManualInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.getTurret().setManualInput(0);
+                }));
 
         // ---------------------------------
 
@@ -256,16 +281,28 @@ public class RobotContainer {
                 .onFalse(intakeWrist.setManualVoltage(() -> 0));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(turret.setManualVoltage(operatorController::getLeftY))
-                .onFalse(turret.setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    turret.setManualInput(operatorController.getLeftY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    turret.setManualInput(0);
+                }));
 
         buttonBoard.button(TURRET_BUTTON).and(deadbandTrigger(operatorController::getRightY, AXIS_DEADBAND))
-                .whileTrue(shooterFlywheels.setManualVoltage(operatorController::getRightY))
-                .onFalse(shooterFlywheels.setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    shooterFlywheels.setManualInput(operatorController.getRightY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooterFlywheels.setManualInput(0);
+                }));
 
         buttonBoard.button(HOOD_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
-                .whileTrue(shooter.getHood().setManualVoltage(operatorController::getLeftY))
-                .onFalse(shooter.getHood().setManualVoltage(() -> 0));
+                .whileTrue(Commands.run(() -> {
+                    shooter.getHood().setManualInput(operatorController.getLeftY());
+                }))
+                .onFalse(Commands.run(() -> {
+                    shooter.getHood().setManualInput(0);
+                }));
 
         buttonBoard.button(SERIALIZER_BUTTON).and(deadbandTrigger(operatorController::getLeftY, AXIS_DEADBAND))
                 .whileTrue(

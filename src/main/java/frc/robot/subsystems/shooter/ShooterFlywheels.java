@@ -13,7 +13,7 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -28,10 +28,16 @@ public class ShooterFlywheels extends SubsystemBase {
     private TalonFXConfiguration config = new TalonFXConfiguration();
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
-    private boolean isManual = false;
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, x -> {
-            });
+
+    private enum FlywheelsState {
+        IDLE,
+        AIMING,
+        SHOOTING,
+        DUCKING,
+        MANUAL,
+    }
+
+    private FlywheelsState currentState = FlywheelsState.AIMING;
 
     {
         if (ENABLE_TUNING) {
@@ -103,7 +109,7 @@ public class ShooterFlywheels extends SubsystemBase {
      * @param vel Target velocity in rotations per minute
      */
     public void requestVelocity(double vel) {
-        if (isManual) {
+        if (currentState == FlywheelsState.MANUAL) {
             return;
         }
         vel /= 60;
@@ -123,16 +129,10 @@ public class ShooterFlywheels extends SubsystemBase {
         }
     }
 
-    public Command setManualVoltage(DoubleSupplier joystickPosition) {
-        return startRun(
-                () -> {
-                    isManual = true;
-                },
-                () -> {
-                    motor.setVoltage(joystickPosition.getAsDouble() * FlywheelConstants.MAX_VOLTS);
-                }).finallyDo(() -> {
-                    isManual = false;
-                });
+    public void setManualInput(double joystickPosition) {
+        joystickPosition = MathUtil.clamp(joystickPosition, -1.0, 1.0);
+        currentState = FlywheelsState.MANUAL;
+        motor.setVoltage(joystickPosition * FlywheelConstants.MAX_VOLTS);
     }
 
     public boolean atVelocity() {

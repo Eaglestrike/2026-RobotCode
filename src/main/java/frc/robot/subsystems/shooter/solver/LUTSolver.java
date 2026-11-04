@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter.solver;
 
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Rotation;
 
 import java.util.HashMap;
 import java.util.Map;

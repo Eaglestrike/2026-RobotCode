@@ -6,14 +6,12 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -203,19 +201,20 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
+        // STEP 2: Actually execute the calculated aiming parameters
+
+        // STEP 2A: Command the turret
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
-        // double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
-        // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
-        // targetTurretAngleDeg += autoTrim;
-        // DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
             turret.setAngle(Degrees.of(targetTurretAngleDeg));
         }
+
+        // STEP 2B: COMMAND THE HOOD AND FLYWHEELS
 
         // If we're ducking, don't move the hood but spin flywheels at DUCK_RPM
         // when heading toward our alliance zone so we're ready to shoot on arrival.
@@ -226,10 +225,16 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
+            Rotation2d aimHood;
+            double aimRpm;
+
+            aimHood = result.hoodAngle();
+            aimRpm = result.rpm();
+
+            double targetHoodAngleDeg = aimHood.getDegrees() + Superstructure.hoodTrimDegrees;
             hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
-                flywheels.requestVelocity(result.rpm());
+                flywheels.requestVelocity(aimRpm);
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
