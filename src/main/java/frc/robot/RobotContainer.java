@@ -152,7 +152,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureBindings();
-        configureZoneBindings();
+        // configureZoneBindings();
         DogLog.forceNt.log("Override Triggers", overrideTriggers);
 
         NamedCommands.registerCommand("ClimbL1Left",
