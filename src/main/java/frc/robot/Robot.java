@@ -29,7 +29,7 @@ public class Robot extends TimedRobot {
     public Robot() {
         DogLog.setOptions(new DogLogOptions().withCaptureDs(true).withLogExtras(true));
         m_robotContainer = new RobotContainer();
-        addPeriodic(m_robotContainer.getSuperstructure()::fastPeriodic, Milliseconds.of(5));
+        addPeriodic(m_robotContainer.getSuperstructure()::fastPeriodic, Milliseconds.of(20));
     }
 
     @Override
