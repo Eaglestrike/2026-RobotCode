@@ -87,8 +87,9 @@ public class Superstructure extends SubsystemBase {
         this.topRoller = topRoller;
         this.led = led;
 
-        DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
-        DogLog.tunable("Superstructure/Shooting", isShooting, value -> setShooting(value));
+        // DogLog.tunable("Superstructure/Tuning", tuning, value -> tuning = value);
+        // DogLog.tunable("Superstructure/Shooting", isShooting, value ->
+        // setShooting(value));
         DogLog.forceNt.log("Superstructure/TurretTrim", turretTrimDegrees);
         DogLog.forceNt.log("Superstructure/HoodTrim", hoodTrimDegrees);
         this.drivetrain = drivetrain;

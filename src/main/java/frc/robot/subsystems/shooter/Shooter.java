@@ -86,12 +86,12 @@ public class Shooter extends SubsystemBase {
                     .ignoringDisable(true));
         }
 
-        DogLog.tunable("Shooter/KickerVelMagn", kickerVelMagn, angle -> {
-            kickerVelMagn = angle;
-        });
-        DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
-            kickerVelPhaseShift = angle;
-        });
+        // DogLog.tunable("Shooter/KickerVelMagn", kickerVelMagn, angle -> {
+        // kickerVelMagn = angle;
+        // });
+        // DogLog.tunable("Shooter/KickerVelPhaseShift", kickerVelPhaseShift, angle -> {
+        // kickerVelPhaseShift = angle;
+        // });
     }
 
     public Command stowShooter() {
@@ -186,7 +186,7 @@ public class Shooter extends SubsystemBase {
                 new ChassisSpeeds(shooterVx, shooterVy, robotSpeeds.omegaRadiansPerSecond),
                 robotPose.getRotation());
 
-        DogLog.log("Shooter/TurretVel", fieldSpeeds);
+        // DogLog.log("Shooter/TurretVel", fieldSpeeds);
 
         /* test: compensate for kicker */
         ChassisSpeeds kickerSpeeds = new ChassisSpeeds();
@@ -274,8 +274,9 @@ public class Shooter extends SubsystemBase {
     private double requestHoodAngleDeg = 0.0;
 
     {
-        DogLog.tunable("Shooter/RequestRPM", 0.0, rpm -> requestRpm = rpm);
-        DogLog.tunable("Shooter/RequestHoodAngleDeg", 0.0, angle -> requestHoodAngleDeg = angle);
+        // DogLog.tunable("Shooter/RequestRPM", 0.0, rpm -> requestRpm = rpm);
+        // DogLog.tunable("Shooter/RequestHoodAngleDeg", 0.0, angle ->
+        // requestHoodAngleDeg = angle);
     }
 
     public void shootManual() {

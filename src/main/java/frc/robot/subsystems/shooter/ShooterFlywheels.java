@@ -21,7 +21,7 @@ import frc.robot.RobotContainer;
 import frc.robot.subsystems.shooter.ShooterConstants.FlywheelConstants;
 
 public class ShooterFlywheels extends SubsystemBase {
-    public static final boolean ENABLE_TUNING = true;
+    public static final boolean ENABLE_TUNING = false;
 
     private TalonFX motor;
     private VelocityTorqueCurrentFOC velocityRequest = new VelocityTorqueCurrentFOC(0);
@@ -29,9 +29,10 @@ public class ShooterFlywheels extends SubsystemBase {
     private Slot0Configs slot0Configs = config.Slot0;
     private AngularVelocity targetVel = RotationsPerSecond.of(0);
 
-    private final DoubleSubscriber targetAccel = DogLog.tunable("ShooterFlywheels/targetAccel",
-            FlywheelConstants.MAX_ACCEL, x -> {
-            });
+    // private final DoubleSubscriber targetAccel =
+    // DogLog.tunable("ShooterFlywheels/targetAccel",
+    // FlywheelConstants.MAX_ACCEL, x -> {
+    // });
 
     {
         if (ENABLE_TUNING) {
@@ -92,9 +93,9 @@ public class ShooterFlywheels extends SubsystemBase {
         motor.getPosition().setUpdateFrequency(10);
         motor.optimizeBusUtilization();
 
-        DogLog.tunable("ShooterFlywheels/Request RPM", 0.0, x -> {
-            requestVelocity(x);
-        });
+        // DogLog.tunable("ShooterFlywheels/Request RPM", 0.0, x -> {
+        // requestVelocity(x);
+        // });
     }
 
     /**
@@ -105,14 +106,13 @@ public class ShooterFlywheels extends SubsystemBase {
     public void requestVelocity(double vel) {
         vel /= 60;
         this.targetVel = RotationsPerSecond.of(vel);
-        if(Math.abs(vel - FlywheelConstants.IDLE_VELOCITY/60) < 0.1) {
+        if (Math.abs(vel - FlywheelConstants.IDLE_VELOCITY / 60) < 0.1) {
             motor.setVoltage(FlywheelConstants.IDLE_VOLTAGE);
         } else if (motor.getVelocity().getValue().isNear(
                 targetVel, RotationsPerSecond.of(ShooterConstants.FlywheelConstants.VELOCITY_TOLERANCE))) {
             // motor.setControl(velocityRequest.withVelocity(this.targetVel).withAcceleration(targetAccel.get()));
             motor.setControl(velocityRequest.withVelocity(this.targetVel));
-        }
-        else if (vel < motor.getVelocity().getValueAsDouble()) {
+        } else if (vel < motor.getVelocity().getValueAsDouble()) {
             // Coast until just before the target if trying to reduce speed
             motor.setVoltage(0);
         } else {

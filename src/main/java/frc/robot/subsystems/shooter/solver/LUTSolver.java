@@ -21,9 +21,9 @@ public class LUTSolver implements ShooterSolver {
     private static double DRAG_COEFF = 0;
 
     static {
-        DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
-            DRAG_COEFF = v;
-        });
+        // DogLog.tunable("Shooter/Drag Coeff", DRAG_COEFF, v -> {
+        // DRAG_COEFF = v;
+        // });
     }
 
     public static Distance getDistanceToTarget(Translation3d launcherPose, Translation3d target) {

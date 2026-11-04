@@ -70,7 +70,7 @@ public class IntakeWrist extends SubsystemBase {
     }
 
     public boolean atPosition() {
-        return Math.abs(motor.getPosition().getValueAsDouble() - targPos.in(Rotations)) < 0.01;
+        return Math.abs(motor.getPosition().getValueAsDouble() - targPos.magnitude()) < 0.01;
     }
 
     @Override
@@ -100,9 +100,10 @@ public class IntakeWrist extends SubsystemBase {
         }
 
         DogLog.forceNt.log("IntakeWrist/CurrentState", currState.toString());
-        DogLog.forceNt.log("IntakeWrist/TargetPosition", targPos.in(Rotations));
-        DogLog.forceNt.log("IntakeWrist/CurrentPosition", motor.getPosition().getValueAsDouble());
-        DogLog.forceNt.log("IntakeWrist/ManualVoltage", manualVolts);
-        DogLog.forceNt.log("IntakeWrist/Zeroed", zeroed);
+        // DogLog.forceNt.log("IntakeWrist/TargetPosition", targPos.in(Rotations));
+        // DogLog.forceNt.log("IntakeWrist/CurrentPosition",
+        // motor.getPosition().getValueAsDouble());
+        // DogLog.forceNt.log("IntakeWrist/ManualVoltage", manualVolts);
+        // DogLog.forceNt.log("IntakeWrist/Zeroed", zeroed);
     }
 }
