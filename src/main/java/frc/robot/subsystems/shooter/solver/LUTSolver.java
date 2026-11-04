@@ -209,7 +209,7 @@ public class LUTSolver implements ShooterSolver {
         // ----- END FERRY MAP -----
     }
 
-    public enum PresetPositions {
+    public enum PresetPosition {
         Position1(1400.0, Rotation2d.fromDegrees(75)), // in front of hub
         Position2(1651.0, Rotation2d.fromDegrees(70)), // any trench (tuned with left)
         Position3(1955.0, Rotation2d.fromDegrees(57)), // any corner (tuned with right)
@@ -218,13 +218,13 @@ public class LUTSolver implements ShooterSolver {
         public final double rpm;
         public final Rotation2d hood;
 
-        private PresetPositions(double rpm, Rotation2d hood) {
+        private PresetPosition(double rpm, Rotation2d hood) {
             this.rpm = rpm;
             this.hood = hood;
         }
     }
 
-    public static final Map<PresetPositions, Double> MANUAL_RPM_MAP = new HashMap<>();
-    public static final Map<PresetPositions, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
+    public static final Map<PresetPosition, Double> MANUAL_RPM_MAP = new HashMap<>();
+    public static final Map<PresetPosition, Rotation2d> MANUAL_HOOD_MAP = new HashMap<>();
 
 }

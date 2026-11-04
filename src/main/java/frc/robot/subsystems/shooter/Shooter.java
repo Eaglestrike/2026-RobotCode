@@ -14,6 +14,7 @@ import dev.doglog.DogLog;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -30,6 +31,7 @@ import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
 import frc.robot.subsystems.serialization.SerializationConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
+import frc.robot.subsystems.shooter.solver.LUTSolver.PresetPosition;
 import frc.robot.subsystems.shooter.solver.LUTSolver.PresetPositions;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
@@ -56,7 +58,7 @@ public class Shooter extends SubsystemBase {
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
 
-    private PresetPositions presetPositions = null;
+    private PresetPosition presetPosition = null;
 
     private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
@@ -207,27 +209,20 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
+        // STEP 2: Actually execute the calculated aiming parameters
+
+        // STEP 2A: Command the turret
         // Convert field-relative turret angle to robot-relative
         double targetTurretAngleDeg = -(result.turretAngle().getDegrees() - robotPose.getRotation().getDegrees());
         DogLog.log("Shooter/TargetTurretAngleDeg", targetTurretAngleDeg);
-        // double autoTrim = LUTSolver.getAngleOffset(targetTurretAngleDeg);
-        // DogLog.log("ShooterDebug/AutoTrim", autoTrim * Math.PI / 180);
         targetTurretAngleDeg += Superstructure.turretTrimDegrees;
-        // targetTurretAngleDeg += autoTrim;
-        // DogLog.log("Shooter/TrimmedTargetTurretAngleDeg", targetTurretAngleDeg);
 
         // Command subsystems
         if (currentState != ShooterState.IDLE) {
             turret.setAngle(Degrees.of(targetTurretAngleDeg));
         }
 
-        if (currentState == ShooterState.MANUAL) {
-            if (manualPosition != null) {
-                double manualTurretAngleDeg = targetTurretAngleDeg; // keep aiming at target
-                double manualHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
-            }
-            return;
-        }
+        // STEP 2B: COMMAND THE HOOD AND FLYWHEELS
 
         // If we're ducking, don't move the hood but spin flywheels at DUCK_RPM
         // when heading toward our alliance zone so we're ready to shoot on arrival.
@@ -238,10 +233,20 @@ public class Shooter extends SubsystemBase {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
         } else if (currentState != ShooterState.IDLE) {
-            double targetHoodAngleDeg = result.hoodAngle().getDegrees() + Superstructure.hoodTrimDegrees;
+            Rotation2d aimHood;
+            double aimRpm;
+            if (presetPosition != null) {
+                aimHood = presetPosition.hood;
+                aimRpm = presetPosition.rpm;
+            } else {
+                aimHood = result.hoodAngle();
+                aimRpm = result.rpm();
+            }
+
+            double targetHoodAngleDeg = aimHood.getDegrees() + Superstructure.hoodTrimDegrees;
             hood.setGoal(Degrees.of(targetHoodAngleDeg));
             if (currentState == ShooterState.SHOOTING) {
-                flywheels.requestVelocity(result.rpm());
+                flywheels.requestVelocity(aimRpm);
             } else {
                 flywheels.requestVelocity(ShooterConstants.FlywheelConstants.IDLE_VELOCITY);
             }
