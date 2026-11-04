@@ -6,12 +6,9 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 
-import java.util.function.DoubleSupplier;
-
 import com.ctre.phoenix6.Utils;
 
 import dev.doglog.DogLog;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -28,11 +25,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Superstructure;
 import frc.robot.subsystems.drive.EagleSwerveDrivetrain;
-import frc.robot.subsystems.serialization.SerializationConstants;
 import frc.robot.subsystems.shooter.sim.FuelSim;
 import frc.robot.subsystems.shooter.solver.LUTSolver;
-import frc.robot.subsystems.shooter.solver.LUTSolver.PresetPosition;
-import frc.robot.subsystems.shooter.solver.LUTSolver.PresetPositions;
 import frc.robot.subsystems.shooter.solver.ShooterSolver;
 import frc.robot.subsystems.shooter.solver.ShooterSolver.ShotData;
 
@@ -57,8 +51,6 @@ public class Shooter extends SubsystemBase {
 
     private ShooterState currentState = ShooterState.AIMING;
     private ShooterState lastState = currentState;
-
-    private PresetPosition presetPosition = null;
 
     private int ntPublishCount = 0;
     private double distanceToTarget = 0.0;
@@ -235,13 +227,9 @@ public class Shooter extends SubsystemBase {
         } else if (currentState != ShooterState.IDLE) {
             Rotation2d aimHood;
             double aimRpm;
-            if (presetPosition != null) {
-                aimHood = presetPosition.hood;
-                aimRpm = presetPosition.rpm;
-            } else {
-                aimHood = result.hoodAngle();
-                aimRpm = result.rpm();
-            }
+
+            aimHood = result.hoodAngle();
+            aimRpm = result.rpm();
 
             double targetHoodAngleDeg = aimHood.getDegrees() + Superstructure.hoodTrimDegrees;
             hood.setGoal(Degrees.of(targetHoodAngleDeg));
