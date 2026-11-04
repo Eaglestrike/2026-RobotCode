@@ -6,7 +6,6 @@ import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 
 import java.util.ArrayList;
-import java.util.function.DoubleSupplier;
 
 import org.jspecify.annotations.Nullable;
 
@@ -27,6 +26,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -91,6 +91,8 @@ public class ShooterHood extends SubsystemBase {
             zeroed = true;
         }
         DogLog.forceNt.log("ShooterHood/isZeroed", zeroed);
+
+        SmartDashboard.putData("ShooterHood/Test", this.test());
     }
 
     /**
@@ -196,6 +198,10 @@ public class ShooterHood extends SubsystemBase {
                 new Rotation3d(0, -getAngle().in(Radians), yaw));
     }
 
+    /**
+     * @return An array of the faults (through TestFault objects) that were found in
+     *         the motor.
+     */
     public @Nullable TestFault[] getFaults() {
         if (faults.size() > 0) {
             return (TestFault[]) faults.toArray();
@@ -203,20 +209,24 @@ public class ShooterHood extends SubsystemBase {
         return null;
     }
 
+    /**
+     * Run testing commands.
+     */
     public Command test() {
         return Commands.sequence(
                 Commands.run(() -> {
                     faults = new ArrayList<TestFault>();
 
                     zero();
+                    if (!zeroed) {
+
+                    }
                     if (!motor.getPosition().isNear(Degrees.of(0), Degrees.of(1))) {
                         faults.add(new TestFault("Motor not zeroed correctly"));
                     }
-
                 }), Commands.run(() -> {
                     setGoal(Degrees.of(100));
                 }), Commands.run(() -> {
-
                     if (!atTarget()) {
                         faults.add(new TestFault("Motor not at target"));
                     }
