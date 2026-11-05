@@ -35,6 +35,6 @@ public final class IntakeConstants {
 
         public static final double MAX_VOLTS = 4.0;
 
-        public static final double kP = 30;
+        public static final double kP = 20;
     }
 }
