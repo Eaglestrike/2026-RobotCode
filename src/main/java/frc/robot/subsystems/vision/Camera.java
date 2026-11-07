@@ -10,9 +10,8 @@ import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.estimation.TargetModel;
 import org.photonvision.targeting.PhotonPipelineResult;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Transform3d;
+import frc.robot.FieldConstants;
 
 public class Camera {
     private PhotonCamera camera;
@@ -22,7 +21,7 @@ public class Camera {
     Camera(String initialName, Transform3d robotToCamera, Consumer<PoseObservation> addVisionMeasurement) {
         camera = new PhotonCamera(initialName);
         poseEstimator = new PhotonPoseEstimator(
-                AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded),
+                FieldConstants.AprilTagLayoutType.OFFICIAL.getLayout(),
                 robotToCamera);
         poseEstimator.setTagModel(TargetModel.kAprilTag36h11);
         this.addVisionMeasurement = addVisionMeasurement;
